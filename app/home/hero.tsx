@@ -40,7 +40,7 @@ export default function Hero() {
                 <div className="absolute top-1/2 left-1/4 w-96 h-96 bg-accent rounded-full opacity-10 blur-3xl"></div>
             </div>
 
-            <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+            <div className="relative z-10 max-w-7xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-12 items-center pt-24 md:pt-32 px-4 sm:px-6 lg:px-8">
                 {/* Content */}
                 <div className="text-center lg:text-left space-y-8">
                     <div className="space-y-4">

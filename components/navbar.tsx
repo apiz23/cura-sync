@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
+import { ModeToggle } from "@/components/mode-toggle"; // 👈 import toggle
 
 export default function Navbar() {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -78,6 +79,7 @@ export default function Navbar() {
 
                     {/* Right actions desktop */}
                     <div className="hidden md:flex items-center space-x-3 ml-6">
+                        <ModeToggle /> {/* 👈 toggle in desktop */}
                         <Link href="/login">
                             <Button
                                 variant="ghost"
@@ -122,7 +124,9 @@ export default function Navbar() {
                                         Contact
                                     </Link>
 
-                                    <div className="pt-6 space-y-4 border-t">
+                                    <div className="pt-6 flex flex-col space-y-4 border-t">
+                                        <ModeToggle />{" "}
+                                        {/* 👈 toggle in drawer */}
                                         <Link href="/login">
                                             <Button
                                                 variant="outline"
