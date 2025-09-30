@@ -4,7 +4,7 @@ import React from "react";
 export default function Feature() {
     return (
         <section
-            className="min-h-[70vh] py-16 px-4 md:px-8 lg:px-16 bg-gradient-to-tr from-background to-muted"
+            className="min-h-[70vh] py-16 px-4 md:px-8 lg:px-16 bg-gradient-to-br from-background to-muted"
             id="feature"
         >
             <div className="container mx-auto">

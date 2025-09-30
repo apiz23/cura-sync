@@ -34,14 +34,11 @@ export default function AnalyzePage() {
         setError(null);
 
         try {
-            const res = await fetch(
-                `${process.env.NEXT_PUBLIC_CURA_SYNC_AI}/analyze`,
-                {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ symptoms }),
-                }
-            );
+            const res = await fetch("/api/analyze", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ symptoms }),
+            });
 
             if (!res.ok) {
                 const errData = await res.json();

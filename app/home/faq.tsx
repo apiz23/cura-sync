@@ -42,7 +42,7 @@ export default function FAQ() {
 
     return (
         <section
-            className="min-h-[70vh] flex items-center py-16 px-4 bg-gradient-to-br from-background to-muted"
+            className="min-h-[70vh] flex items-center py-16 px-4 bg-gradient-to-tr from-background to-muted"
             id="faq"
         >
             <div className="container mx-auto max-w-4xl">

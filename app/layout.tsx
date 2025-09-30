@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Merriweather, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Navbar from "@/components/navbar";
@@ -7,8 +7,20 @@ import { ThemeProvider } from "@/components/theme-provider";
 
 const inter = Inter({
     subsets: ["latin"],
-    weight: ["600", "700"],
-    variable: "--font-inter",
+    weight: ["400", "500", "600", "700"],
+    variable: "--font-sans",
+});
+
+const merriweather = Merriweather({
+    subsets: ["latin"],
+    weight: ["400", "700"],
+    variable: "--font-serif",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+    subsets: ["latin"],
+    weight: ["400", "700"],
+    variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
@@ -23,7 +35,9 @@ export default function RootLayout({
 }>) {
     return (
         <html lang="en" suppressHydrationWarning>
-            <body className={`${inter.className} antialiased`}>
+            <body
+                className={`${inter.className} ${merriweather.className} ${jetbrainsMono.className} antialiased`}
+            >
                 <ThemeProvider
                     attribute="class"
                     defaultTheme="dark"
@@ -31,7 +45,6 @@ export default function RootLayout({
                     disableTransitionOnChange
                 >
                     <Navbar />
-
                     {children}
                     <Toaster />
                 </ThemeProvider>
