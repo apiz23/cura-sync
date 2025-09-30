@@ -145,7 +145,8 @@ export default function Hero() {
                                 <div className="space-y-3">
                                     <div className="bg-muted rounded-lg p-3 border border-border">
                                         <div className="text-sm text-muted-foreground">
-                                            "Headache and fever for 2 days..."
+                                            {"'"}Headache and fever for 2
+                                            days...{"'"}
                                         </div>
                                     </div>
 
@@ -156,7 +157,7 @@ export default function Hero() {
                                             "Headache",
                                             "Cough",
                                             "Fatigue",
-                                        ].map((symptom, i) => (
+                                        ].map((symptom) => (
                                             <div
                                                 key={symptom}
                                                 className="bg-secondary rounded-lg p-2 text-center border border-border"

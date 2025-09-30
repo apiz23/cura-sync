@@ -32,10 +32,10 @@ export async function POST(req: NextRequest) {
 
         const data = await jamAIRes.json();
         return NextResponse.json(data);
-    } catch (err: any) {
-        return NextResponse.json(
-            { error: err.message || "Unknown error" },
-            { status: 500 }
-        );
+    } catch (err: unknown) {
+        if (err instanceof Error) {
+            return NextResponse.json({ error: err.message }, { status: 500 });
+        }
+        return NextResponse.json({ error: "Unknown error" }, { status: 500 });
     }
 }

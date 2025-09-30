@@ -9,7 +9,6 @@ import {
     type ReactNode,
 } from "react";
 import { motion } from "motion/react";
-import { useTheme } from "next-themes"; // 👈 for detecting theme
 
 import { cn } from "@/lib/utils";
 
@@ -101,10 +100,8 @@ export const LightRays = forwardRef<HTMLDivElement, LightRaysProps>(
             count = 7,
             color = "color-mix(in srgb, var(--primary) 30%, transparent)",
             blur = 36,
-            opacity = 0.65,
             speed = 14,
             length = "70vh",
-            fill = true,
             ...props
         },
         ref
