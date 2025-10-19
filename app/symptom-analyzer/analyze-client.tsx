@@ -70,7 +70,15 @@ export default function AnalyzePage() {
     const allSymptoms = useMemo(() => {
         const symptomsList = [...selectedSymptoms];
         if (textInput.trim()) {
-            return [...symptomsList, textInput.trim()];
+            // Split long additional input into manageable chunks
+            const additionalSymptoms = textInput
+                .trim()
+                .split(/[.,]/)
+                .filter((s) => s.trim());
+            return [
+                ...symptomsList,
+                ...additionalSymptoms.map((s) => s.trim()),
+            ];
         }
         return symptomsList;
     }, [selectedSymptoms, textInput]);
@@ -96,295 +104,361 @@ export default function AnalyzePage() {
             const data = await res.json();
             setResult(data);
         } catch (err) {
-            console.error(err); // fix unused variable
+            console.error(err);
             setError("Something went wrong. Please try again.");
         } finally {
             setLoading(false);
         }
     };
 
+    // Function to truncate long symptom text for display
+    const truncateSymptom = (symptom: string, maxLength: number = 30) => {
+        if (symptom.length <= maxLength) return symptom;
+        return symptom.substring(0, maxLength) + "...";
+    };
+
     return (
-        <>
-            <div className="min-h-screen bg-background pt-20 pb-8 px-4">
-                <div className="max-w-4xl mx-auto space-y-8 pt-8">
-                    {/* Header */}
-                    <div className="text-center space-y-6">
-                        <div className="flex flex-col items-center space-y-4">
-                            <div className="p-4 bg-primary rounded-3xl shadow-lg">
-                                <Stethoscope className="h-10 w-10 text-primary-foreground" />
-                            </div>
-                            <div className="space-y-3">
-                                <h1 className="text-4xl font-bold text-foreground">
-                                    Symptom Checker
-                                </h1>
-                                <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
-                                    AI-powered health insights with professional
-                                    guidance
-                                </p>
-                            </div>
+        <div className="min-h-screen bg-background pt-20 pb-8 px-4">
+            <div className="max-w-4xl mx-auto space-y-8 pt-8">
+                {/* Header */}
+                <div className="text-center space-y-6">
+                    <div className="flex flex-col items-center space-y-4">
+                        <div className="p-4 bg-primary rounded-3xl shadow-lg">
+                            <Stethoscope className="h-10 w-10 text-primary-foreground" />
+                        </div>
+                        <div className="space-y-3">
+                            <h1 className="text-4xl font-bold text-foreground">
+                                Symptom Checker
+                            </h1>
+                            <p className="text-lg text-muted-foreground max-w-md mx-auto leading-relaxed">
+                                AI-powered health insights with professional
+                                guidance
+                            </p>
                         </div>
                     </div>
+                </div>
 
-                    {/* Results Card */}
-                    {result && (
-                        <Card className="border-border shadow-lg">
-                            <CardContent className="p-8 space-y-8">
-                                <div className="flex justify-between items-start">
-                                    <div className="space-y-4">
-                                        <div className="flex items-center gap-3">
-                                            <div className="p-2 bg-accent rounded-lg">
-                                                <Sparkles className="h-6 w-6 text-accent-foreground" />
-                                            </div>
-                                            <h2 className="text-2xl font-bold text-foreground">
-                                                Analysis Complete
-                                            </h2>
+                {/* Results Card */}
+                {result && (
+                    <Card className="border-border shadow-lg">
+                        <CardContent className="p-6 space-y-6">
+                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
+                                <div className="space-y-4 flex-1">
+                                    <div className="flex items-center gap-3">
+                                        <div className="p-2 bg-accent rounded-lg">
+                                            <Sparkles className="h-6 w-6 text-accent-foreground" />
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
+                                        <h2 className="text-2xl font-bold text-foreground">
+                                            Analysis Complete
+                                        </h2>
+                                    </div>
+
+                                    {/* Improved Symptoms Display */}
+                                    <div className="space-y-3">
+                                        <p className="text-sm font-medium text-muted-foreground">
+                                            Selected Symptoms (
+                                            {allSymptoms.length}):
+                                        </p>
+                                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
                                             {allSymptoms.map(
                                                 (symptom, index) => (
                                                     <Badge
                                                         key={index}
                                                         variant="secondary"
-                                                        className="bg-secondary text-secondary-foreground px-3 py-1 rounded-full"
+                                                        className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full max-w-full break-words"
+                                                        title={symptom} // Show full text on hover
                                                     >
-                                                        {symptom}
+                                                        <span className="truncate block">
+                                                            {truncateSymptom(
+                                                                symptom
+                                                            )}
+                                                        </span>
                                                     </Badge>
                                                 )
                                             )}
                                         </div>
                                     </div>
-                                    <Button
-                                        variant="outline"
-                                        onClick={clearAll}
-                                        className="border-border hover:bg-accent"
-                                    >
-                                        New Analysis
-                                    </Button>
+                                </div>
+                                <Button
+                                    variant="outline"
+                                    onClick={clearAll}
+                                    className="border-border hover:bg-accent shrink-0"
+                                >
+                                    New Analysis
+                                </Button>
+                            </div>
+
+                            <div className="grid gap-4">
+                                <div className="bg-card border border-border p-4 rounded-xl">
+                                    <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                                        <FileText className="h-4 w-4 text-primary" />
+                                        Possible Condition
+                                    </h3>
+                                    <p className="text-xl font-bold text-foreground break-words">
+                                        {result.possible_disease}
+                                    </p>
                                 </div>
 
-                                <div className="grid gap-6">
-                                    <div className="bg-card border border-border p-6 rounded-2xl">
-                                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                                            <FileText className="h-4 w-4 text-primary" />
-                                            Possible Condition
-                                        </h3>
-                                        <p className="text-2xl font-bold text-foreground">
-                                            {result.possible_disease}
+                                <div className="bg-card border border-border p-4 rounded-xl">
+                                    <h3 className="font-semibold text-foreground mb-2 flex items-center gap-2">
+                                        <Check className="h-4 w-4 text-primary" />
+                                        Confidence Level
+                                    </h3>
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-3 h-3 bg-primary rounded-full animate-pulse flex-shrink-0" />
+                                        <p className="text-lg font-semibold text-foreground break-words">
+                                            {result.confidence_level}
                                         </p>
                                     </div>
-
-                                    <div className="bg-card border border-border p-6 rounded-2xl">
-                                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                                            <Check className="h-4 w-4 text-primary" />
-                                            Confidence Level
-                                        </h3>
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-3 h-3 bg-primary rounded-full animate-pulse" />
-                                            <p className="text-xl font-semibold text-foreground">
-                                                {result.confidence_level}
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="bg-card border border-border p-6 rounded-2xl">
-                                        <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
-                                            <Stethoscope className="h-4 w-4 text-primary" />
-                                            Recommended Actions
-                                        </h3>
-                                        <div className="space-y-3">
-                                            {result.suggested_action
-                                                .split("\n")
-                                                .filter((line) =>
-                                                    line.trim().startsWith("-")
-                                                )
-                                                .map((line, index) => (
-                                                    <div
-                                                        key={index}
-                                                        className="flex items-start gap-3 p-3 bg-muted rounded-lg"
-                                                    >
-                                                        <div className="p-1 bg-primary rounded-full mt-1">
-                                                            <Check className="h-3 w-3 text-primary-foreground" />
-                                                        </div>
-                                                        <span className="text-foreground leading-relaxed">
-                                                            {line
-                                                                .replace(
-                                                                    /^-/,
-                                                                    ""
-                                                                )
-                                                                .trim()}
-                                                        </span>
-                                                    </div>
-                                                ))}
-                                        </div>
-                                    </div>
                                 </div>
 
-                                {/* Disclaimer */}
-                                <div className="p-6 bg-muted rounded-2xl border border-border">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 bg-accent rounded-lg flex-shrink-0">
-                                            <Shield className="h-5 w-5 text-accent-foreground" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <p className="font-semibold text-foreground">
-                                                Important Medical Disclaimer
-                                            </p>
-                                            <p className="text-sm text-muted-foreground leading-relaxed">
-                                                This AI analysis is for
-                                                informational purposes only and
-                                                is not a substitute for
-                                                professional medical advice.
-                                                Always consult with a qualified
-                                                healthcare provider for proper
-                                                diagnosis and treatment.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
-                    {/* Error Alert */}
-                    {error && (
-                        <div className="p-6 bg-destructive/10 rounded-2xl border border-destructive/20 flex items-center gap-4 shadow-lg">
-                            <div className="p-2 bg-destructive/20 rounded-lg">
-                                <AlertCircle className="h-5 w-5 text-destructive" />
-                            </div>
-                            <div>
-                                <p className="font-medium text-foreground">
-                                    Attention Required
-                                </p>
-                                <p className="text-muted-foreground mt-1">
-                                    {error}
-                                </p>
-                            </div>
-                        </div>
-                    )}
-
-                    {/* Input Section */}
-                    {!result && (
-                        <Card className="border-border shadow-lg">
-                            <CardContent className="p-8 space-y-8">
-                                {/* Common Symptoms */}
-                                <div className="space-y-6">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-2 bg-accent rounded-lg">
-                                            <FileText className="h-5 w-5 text-accent-foreground" />
-                                        </div>
-                                        <div>
-                                            <h3 className="font-semibold text-lg text-foreground">
-                                                Select Your Symptoms
-                                            </h3>
-                                            <p className="text-sm text-muted-foreground mt-1">
-                                                Click to add or remove symptoms
-                                            </p>
-                                        </div>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-3">
-                                        {commonSymptoms.map((symptom) => (
-                                            <Button
-                                                key={symptom}
-                                                type="button"
-                                                variant={
-                                                    selectedSymptoms.includes(
-                                                        symptom
-                                                    )
-                                                        ? "default"
-                                                        : "outline"
-                                                }
-                                                className={cn(
-                                                    "rounded-full transition-all duration-200 border-2",
-                                                    selectedSymptoms.includes(
-                                                        symptom
-                                                    )
-                                                        ? "bg-primary hover:bg-primary/90 text-primary-foreground border-primary shadow-lg scale-105"
-                                                        : "border-border hover:border-primary/50 hover:bg-accent"
-                                                )}
-                                                onClick={() =>
-                                                    toggleSymptom(symptom)
-                                                }
-                                            >
-                                                {selectedSymptoms.includes(
-                                                    symptom
-                                                ) ? (
-                                                    <X className="h-4 w-4 mr-2" />
-                                                ) : (
-                                                    <Plus className="h-4 w-4 mr-2" />
-                                                )}
-                                                {symptom}
-                                            </Button>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* Additional Details */}
-                                <div className="space-y-4">
-                                    <h3 className="font-medium text-foreground flex items-center gap-2">
-                                        <span className="p-1 bg-accent rounded">
-                                            <FileText className="h-4 w-4 text-accent-foreground" />
-                                        </span>
-                                        Additional Details
-                                        <span className="text-sm text-muted-foreground font-normal">
-                                            (Optional)
-                                        </span>
+                                <div className="bg-card border border-border p-4 rounded-xl">
+                                    <h3 className="font-semibold text-foreground mb-3 flex items-center gap-2">
+                                        <Stethoscope className="h-4 w-4 text-primary" />
+                                        Recommended Actions
                                     </h3>
+                                    <div className="space-y-2">
+                                        {result.suggested_action
+                                            .split("\n")
+                                            .filter((line) =>
+                                                line.trim().startsWith("-")
+                                            )
+                                            .map((line, index) => (
+                                                <div
+                                                    key={index}
+                                                    className="flex items-start gap-3 p-3 bg-muted rounded-lg"
+                                                >
+                                                    <div className="p-1 bg-primary rounded-full mt-0.5 flex-shrink-0">
+                                                        <Check className="h-3 w-3 text-primary-foreground" />
+                                                    </div>
+                                                    <span className="text-foreground leading-relaxed break-words">
+                                                        {line
+                                                            .replace(/^-/, "")
+                                                            .trim()}
+                                                    </span>
+                                                </div>
+                                            ))}
+                                    </div>
+                                </div>
+                            </div>
+
+                            {/* Disclaimer */}
+                            <div className="p-4 bg-muted rounded-xl border border-border">
+                                <div className="flex items-start gap-3">
+                                    <div className="p-1.5 bg-accent rounded-lg flex-shrink-0 mt-0.5">
+                                        <Shield className="h-4 w-4 text-accent-foreground" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <p className="font-semibold text-foreground text-sm">
+                                            Important Medical Disclaimer
+                                        </p>
+                                        <p className="text-xs text-muted-foreground leading-relaxed">
+                                            This AI analysis is for
+                                            informational purposes only and is
+                                            not a substitute for professional
+                                            medical advice. Always consult with
+                                            a qualified healthcare provider for
+                                            proper diagnosis and treatment.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Error Alert */}
+                {error && (
+                    <div className="p-4 bg-destructive/10 rounded-xl border border-destructive/20 flex items-start gap-3">
+                        <div className="p-1.5 bg-destructive/20 rounded-lg flex-shrink-0 mt-0.5">
+                            <AlertCircle className="h-4 w-4 text-destructive" />
+                        </div>
+                        <div className="flex-1">
+                            <p className="font-medium text-foreground text-sm">
+                                Attention Required
+                            </p>
+                            <p className="text-muted-foreground text-sm mt-0.5">
+                                {error}
+                            </p>
+                        </div>
+                    </div>
+                )}
+
+                {/* Input Section */}
+                {!result && (
+                    <Card className="border-border shadow-lg">
+                        <CardContent className="p-6 space-y-6">
+                            {/* Common Symptoms */}
+                            <div className="space-y-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="p-2 bg-accent rounded-lg">
+                                        <FileText className="h-5 w-5 text-accent-foreground" />
+                                    </div>
+                                    <div>
+                                        <h3 className="font-semibold text-lg text-foreground">
+                                            Select Your Symptoms
+                                        </h3>
+                                        <p className="text-sm text-muted-foreground mt-0.5">
+                                            Click to add or remove symptoms
+                                        </p>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-wrap gap-2">
+                                    {commonSymptoms.map((symptom) => (
+                                        <Button
+                                            key={symptom}
+                                            type="button"
+                                            variant={
+                                                selectedSymptoms.includes(
+                                                    symptom
+                                                )
+                                                    ? "default"
+                                                    : "outline"
+                                            }
+                                            size="sm"
+                                            className={cn(
+                                                "rounded-full transition-all duration-200 border",
+                                                selectedSymptoms.includes(
+                                                    symptom
+                                                )
+                                                    ? "bg-primary hover:bg-primary/90 text-primary-foreground border-primary shadow scale-105"
+                                                    : "border-border hover:border-primary/50 hover:bg-accent"
+                                            )}
+                                            onClick={() =>
+                                                toggleSymptom(symptom)
+                                            }
+                                        >
+                                            {selectedSymptoms.includes(
+                                                symptom
+                                            ) ? (
+                                                <X className="h-3 w-3 mr-1.5" />
+                                            ) : (
+                                                <Plus className="h-3 w-3 mr-1.5" />
+                                            )}
+                                            {symptom}
+                                        </Button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* Additional Details */}
+                            <div className="space-y-3">
+                                <h3 className="font-medium text-foreground flex items-center gap-2">
+                                    <span className="p-1 bg-accent rounded">
+                                        <FileText className="h-3 w-3 text-accent-foreground" />
+                                    </span>
+                                    Additional Details
+                                    <span className="text-sm text-muted-foreground font-normal">
+                                        (Optional)
+                                    </span>
+                                </h3>
+                                <div className="space-y-2">
                                     <Textarea
                                         value={textInput}
                                         onChange={(e) =>
                                             setTextInput(e.target.value)
                                         }
-                                        placeholder="Describe other symptoms, severity, duration, or any specific concerns..."
-                                        rows={4}
-                                        className="resize-none border-2 border-border focus:border-primary rounded-xl p-4 text-lg transition-colors bg-input"
+                                        placeholder="Describe other symptoms, severity, duration, or any specific concerns. You can separate multiple symptoms with commas or periods."
+                                        rows={3}
+                                        className="resize-none border border-border focus:border-primary rounded-lg p-3 text-sm transition-colors bg-input min-h-[80px]"
                                     />
-                                </div>
-
-                                {/* Action Buttons */}
-                                <div className="space-y-4">
-                                    <Button
-                                        onClick={handleAnalyze}
-                                        disabled={
-                                            loading || allSymptoms.length === 0
-                                        }
-                                        className={cn(
-                                            "w-full py-4 text-lg font-semibold rounded-xl transition-all duration-200 shadow-lg",
-                                            allSymptoms.length > 0
-                                                ? "bg-primary hover:bg-primary/90 text-primary-foreground hover:shadow-xl transform hover:scale-[1.02]"
-                                                : "bg-muted text-muted-foreground cursor-not-allowed"
-                                        )}
-                                    >
-                                        {loading ? (
-                                            <>
-                                                <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                                                Analyzing Symptoms...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <Sparkles className="mr-3 h-5 w-5" />
-                                                Analyze{" "}
-                                                {allSymptoms.length > 0 &&
-                                                    `(${allSymptoms.length} symptoms)`}
-                                            </>
-                                        )}
-                                    </Button>
-
-                                    {allSymptoms.length > 0 && (
-                                        <Button
-                                            variant="outline"
-                                            onClick={clearAll}
-                                            className="w-full py-3 rounded-xl border-2 border-border hover:bg-accent hover:border-destructive/50"
-                                        >
-                                            Clear All Symptoms
-                                        </Button>
+                                    {textInput.length > 100 && (
+                                        <p className="text-xs text-muted-foreground">
+                                            {textInput.length} characters • Long
+                                            descriptions will be split into
+                                            multiple symptoms
+                                        </p>
                                     )}
                                 </div>
-                            </CardContent>
-                        </Card>
-                    )}
+                            </div>
+
+                            {/* Selected Symptoms Preview */}
+                            {allSymptoms.length > 0 && (
+                                <div className="p-3 bg-accent/30 rounded-lg border border-border">
+                                    <p className="text-sm font-medium text-foreground mb-2">
+                                        Selected Symptoms ({allSymptoms.length}
+                                        ):
+                                    </p>
+                                    <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
+                                        {allSymptoms.map((symptom, index) => (
+                                            <Badge
+                                                key={index}
+                                                variant="secondary"
+                                                className="bg-background text-foreground px-2 py-1 rounded-full text-xs max-w-full"
+                                            >
+                                                <span className="truncate block">
+                                                    {truncateSymptom(
+                                                        symptom,
+                                                        25
+                                                    )}
+                                                </span>
+                                            </Badge>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Action Buttons */}
+                            <div className="space-y-3">
+                                <Button
+                                    onClick={handleAnalyze}
+                                    disabled={
+                                        loading || allSymptoms.length === 0
+                                    }
+                                    className={cn(
+                                        "w-full py-3 text-base font-semibold rounded-lg transition-all duration-200 shadow",
+                                        allSymptoms.length > 0
+                                            ? "bg-primary hover:bg-primary/90 text-primary-foreground hover:shadow-md transform hover:scale-[1.01]"
+                                            : "bg-muted text-muted-foreground cursor-not-allowed"
+                                    )}
+                                >
+                                    {loading ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Analyzing Symptoms...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Sparkles className="mr-2 h-4 w-4" />
+                                            Analyze{" "}
+                                            {allSymptoms.length > 0 &&
+                                                `(${allSymptoms.length})`}
+                                        </>
+                                    )}
+                                </Button>
+
+                                {allSymptoms.length > 0 && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={clearAll}
+                                        className="w-full py-2 rounded-lg border border-border hover:bg-accent hover:border-destructive/50 text-sm"
+                                    >
+                                        Clear All Symptoms
+                                    </Button>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+                )}
+
+                {/* Footer */}
+                <div className="text-center space-y-3">
+                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
+                        <div className="p-1 bg-accent rounded">
+                            <Shield className="h-3 w-3 text-accent-foreground" />
+                        </div>
+                        <span className="text-xs font-medium">
+                            Your privacy is protected • HIPAA compliant
+                        </span>
+                    </div>
+                    <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed">
+                        Always consult a healthcare professional for medical
+                        diagnosis. In case of emergency, contact emergency
+                        services immediately.
+                    </p>
                 </div>
             </div>
-        </>
+        </div>
     );
 }
