@@ -4,7 +4,6 @@ export async function POST(req: Request) {
     try {
         const { session_id, message } = await req.json();
 
-        // Validate input
         if (!message || !message.trim()) {
             return NextResponse.json(
                 { reply: "Message cannot be empty" },
@@ -17,7 +16,7 @@ export async function POST(req: Request) {
         const res = await fetch(
             `${
                 process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"
-            }/analyze`,
+            }/chat`,
             {
                 method: "POST",
                 headers: {
@@ -25,7 +24,7 @@ export async function POST(req: Request) {
                 },
                 body: JSON.stringify({
                     session_id: session_id || `session-${Date.now()}`,
-                    message: message.trim(),
+                    message: message.trim(), // ✅ Keep it as "message"
                 }),
             }
         );
@@ -43,6 +42,7 @@ export async function POST(req: Request) {
     } catch (err) {
         const error = err instanceof Error ? err : new Error(String(err));
         console.error("API Route Error:", error);
+
         return NextResponse.json(
             { reply: `Error: ${error.message}` },
             { status: 500 }
