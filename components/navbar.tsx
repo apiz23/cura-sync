@@ -24,7 +24,7 @@ export default function Navbar() {
     return (
         <header
             className={cn(
-                "fixed top-0 left-0 right-0 z-[9999] w-full transition-all duration-500 border-b",
+                "fixed top-0 left-0 right-0 z-[40] w-full transition-all duration-500 border-b",
                 isScrolled
                     ? "bg-background/95 backdrop-blur-xl shadow-sm border-border/50"
                     : "bg-transparent backdrop-blur-md border-transparent"
@@ -52,7 +52,7 @@ export default function Navbar() {
                                 "text-xl font-bold transition-colors duration-300",
                                 isScrolled
                                     ? "text-foreground"
-                                    : "text-foreground" // Always use foreground color for better visibility
+                                    : "text-foreground" 
                             )}
                         >
                             CuraSync

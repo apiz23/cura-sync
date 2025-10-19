@@ -1,23 +1,18 @@
 import type { Metadata } from "next";
-import { Inter, Merriweather, JetBrains_Mono } from "next/font/google";
+import { DM_Sans, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "sonner";
 import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
+import ChatbotLauncher from "@/components/chatbot-launcher";
 
-const inter = Inter({
+const dmSans = DM_Sans({
     subsets: ["latin"],
     weight: ["400", "500", "600", "700"],
     variable: "--font-sans",
 });
 
-const merriweather = Merriweather({
-    subsets: ["latin"],
-    weight: ["400", "700"],
-    variable: "--font-serif",
-});
-
-const jetbrainsMono = JetBrains_Mono({
+const spaceMono = Space_Mono({
     subsets: ["latin"],
     weight: ["400", "700"],
     variable: "--font-mono",
@@ -36,7 +31,7 @@ export default function RootLayout({
     return (
         <html lang="en" suppressHydrationWarning>
             <body
-                className={`${inter.className} ${merriweather.className} ${jetbrainsMono.className} antialiased`}
+                className={`${dmSans.className} ${spaceMono.className} antialiased`}
             >
                 <ThemeProvider
                     attribute="class"
@@ -45,6 +40,7 @@ export default function RootLayout({
                     disableTransitionOnChange
                 >
                     <Navbar />
+                    <ChatbotLauncher />
                     {children}
                     <Toaster />
                 </ThemeProvider>

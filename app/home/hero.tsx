@@ -82,7 +82,7 @@ export default function Hero() {
 
                     {/* CTA Buttons */}
                     <div className="flex flex-col sm:flex-row gap-3 justify-center lg:justify-start">
-                        <Link href="/symptom-checker">
+                        <Link href="/symptom-analyzer">
                             <Button
                                 size="lg"
                                 className="w-full sm:w-auto text-base py-6 px-8 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300"

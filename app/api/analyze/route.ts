@@ -12,7 +12,9 @@ export async function POST(req: NextRequest) {
         }
 
         const jamAIRes = await fetch(
-            `${process.env.NEXT_PUBLIC_CURA_SYNC_AI}/analyze`,
+            `${
+                process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"
+            }/analyze`,
             {
                 method: "POST",
                 headers: {
