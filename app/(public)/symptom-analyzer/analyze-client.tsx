@@ -70,7 +70,6 @@ export default function AnalyzePage() {
     const allSymptoms = useMemo(() => {
         const symptomsList = [...selectedSymptoms];
         if (textInput.trim()) {
-            // Split long additional input into manageable chunks
             const additionalSymptoms = textInput
                 .trim()
                 .split(/[.,]/)
@@ -165,7 +164,7 @@ export default function AnalyzePage() {
                                                     <Badge
                                                         key={index}
                                                         variant="secondary"
-                                                        className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full max-w-full break-words"
+                                                        className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full max-w-full wrap-break-words"
                                                         title={symptom} // Show full text on hover
                                                     >
                                                         <span className="truncate block">
@@ -194,7 +193,7 @@ export default function AnalyzePage() {
                                         <FileText className="h-4 w-4 text-primary" />
                                         Possible Condition
                                     </h3>
-                                    <p className="text-xl font-bold text-foreground break-words">
+                                    <p className="text-xl font-bold text-foreground wrap-wrap-break-words">
                                         {result.possible_disease}
                                     </p>
                                 </div>
@@ -205,8 +204,8 @@ export default function AnalyzePage() {
                                         Confidence Level
                                     </h3>
                                     <div className="flex items-center gap-3">
-                                        <div className="w-3 h-3 bg-primary rounded-full animate-pulse flex-shrink-0" />
-                                        <p className="text-lg font-semibold text-foreground break-words">
+                                        <div className="w-3 h-3 bg-primary rounded-full animate-pulse shrink-0" />
+                                        <p className="text-lg font-semibold text-foreground wrap-break-words">
                                             {result.confidence_level}
                                         </p>
                                     </div>
@@ -228,10 +227,10 @@ export default function AnalyzePage() {
                                                     key={index}
                                                     className="flex items-start gap-3 p-3 bg-muted rounded-lg"
                                                 >
-                                                    <div className="p-1 bg-primary rounded-full mt-0.5 flex-shrink-0">
+                                                    <div className="p-1 bg-primary rounded-full mt-0.5 shrink-0">
                                                         <Check className="h-3 w-3 text-primary-foreground" />
                                                     </div>
-                                                    <span className="text-foreground leading-relaxed break-words">
+                                                    <span className="text-foreground leading-relaxed wrap-break-words">
                                                         {line
                                                             .replace(/^-/, "")
                                                             .trim()}
@@ -245,7 +244,7 @@ export default function AnalyzePage() {
                             {/* Disclaimer */}
                             <div className="p-4 bg-muted rounded-xl border border-border">
                                 <div className="flex items-start gap-3">
-                                    <div className="p-1.5 bg-accent rounded-lg flex-shrink-0 mt-0.5">
+                                    <div className="p-1.5 bg-accent rounded-lg shrink-0 mt-0.5">
                                         <Shield className="h-4 w-4 text-accent-foreground" />
                                     </div>
                                     <div className="space-y-1">
@@ -270,7 +269,7 @@ export default function AnalyzePage() {
                 {/* Error Alert */}
                 {error && (
                     <div className="p-4 bg-destructive/10 rounded-xl border border-destructive/20 flex items-start gap-3">
-                        <div className="p-1.5 bg-destructive/20 rounded-lg flex-shrink-0 mt-0.5">
+                        <div className="p-1.5 bg-destructive/20 rounded-lg shrink-0 mt-0.5">
                             <AlertCircle className="h-4 w-4 text-destructive" />
                         </div>
                         <div className="flex-1">

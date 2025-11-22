@@ -1,6 +1,5 @@
 "use client";
 
-import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Button } from "@/components/ui/button";
@@ -10,56 +9,25 @@ import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
 import { ModeToggle } from "@/components/mode-toggle";
 
 export default function Navbar() {
-    const [isScrolled, setIsScrolled] = useState(false);
     const pathname = usePathname();
 
-    useEffect(() => {
-        const handleScroll = () => {
-            setIsScrolled(window.scrollY > 10);
-        };
-        window.addEventListener("scroll", handleScroll);
-        return () => window.removeEventListener("scroll", handleScroll);
-    }, []);
-
     return (
-        <header
-            className={cn(
-                "fixed top-0 left-0 right-0 z-[40] w-full transition-all duration-500 border-b",
-                isScrolled
-                    ? "bg-background/95 backdrop-blur-xl shadow-sm border-border/50"
-                    : "bg-transparent backdrop-blur-md border-transparent"
-            )}
-        >
+        <header className="fixed top-0 left-0 right-0 z-40 w-full transition-all">
             <div className="container mx-auto px-4 md:px-6">
                 <div className="flex h-16 items-center justify-between">
-                    {/* Logo - Fixed for light mode */}
                     <Link
                         href="/"
                         className="flex items-center space-x-3 group"
                     >
-                        <div
-                            className={cn(
-                                "flex items-center justify-center w-10 h-10 rounded-xl transition-all duration-300 group-hover:scale-105",
-                                isScrolled
-                                    ? "bg-primary shadow-md"
-                                    : "bg-primary shadow-lg"
-                            )}
-                        >
+                        <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-primary shadow-md transition-all duration-300 group-hover:scale-105">
                             <Stethoscope className="h-5 w-5 text-primary-foreground" />
                         </div>
-                        <span
-                            className={cn(
-                                "text-xl font-bold transition-colors duration-300",
-                                isScrolled
-                                    ? "text-foreground"
-                                    : "text-foreground" 
-                            )}
-                        >
+                        <span className="text-xl font-bold text-foreground transition-colors duration-300">
                             CuraSync
                         </span>
                     </Link>
 
-                    {/* Desktop nav - Fixed colors */}
+                    {/* Desktop nav */}
                     <nav className="hidden md:flex items-center space-x-1 ml-auto">
                         <Link
                             href="/"
@@ -67,11 +35,7 @@ export default function Navbar() {
                                 "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 relative",
                                 pathname === "/"
                                     ? "text-primary bg-primary/10 font-semibold"
-                                    : cn(
-                                          isScrolled
-                                              ? "text-muted-foreground hover:text-primary hover:bg-muted/50"
-                                              : "text-foreground/90 hover:text-primary hover:bg-accent/50"
-                                      )
+                                    : "text-foreground/90 hover:text-primary hover:bg-accent/50"
                             )}
                         >
                             Home
@@ -85,11 +49,7 @@ export default function Navbar() {
                                 "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 relative",
                                 pathname === "/pricing"
                                     ? "text-primary bg-primary/10 font-semibold"
-                                    : cn(
-                                          isScrolled
-                                              ? "text-muted-foreground hover:text-primary hover:bg-muted/50"
-                                              : "text-foreground/90 hover:text-primary hover:bg-accent/50"
-                                      )
+                                    : "text-foreground/90 hover:text-primary hover:bg-accent/50"
                             )}
                         >
                             Pricing
@@ -103,11 +63,7 @@ export default function Navbar() {
                                 "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 relative",
                                 pathname === "/contact"
                                     ? "text-primary bg-primary/10 font-semibold"
-                                    : cn(
-                                          isScrolled
-                                              ? "text-muted-foreground hover:text-primary hover:bg-muted/50"
-                                              : "text-foreground/90 hover:text-primary hover:bg-accent/50"
-                                      )
+                                    : "text-foreground/90 hover:text-primary hover:bg-accent/50"
                             )}
                         >
                             Contact
@@ -117,52 +73,38 @@ export default function Navbar() {
                         </Link>
                     </nav>
 
-                    {/* Right actions desktop - Fixed colors */}
+                    {/* Right actions desktop */}
                     <div className="hidden md:flex items-center space-x-2 ml-6">
                         <ModeToggle />
-                        <Link href="/login">
+                        <Link href="/auth/login">
                             <Button
-                                variant={isScrolled ? "ghost" : "outline"}
+                                variant="ghost"
                                 size="sm"
-                                className={cn(
-                                    "transition-all duration-300",
-                                    isScrolled
-                                        ? "text-muted-foreground hover:text-primary"
-                                        : "border-border text-foreground hover:bg-accent"
-                                )}
+                                className="transition-all duration-300 text-muted-foreground hover:text-primary hover:bg-accent"
                             >
                                 Login
                             </Button>
                         </Link>
-                        <Link href="/signup">
+                        {/* <Link href="/auth/register">
                             <Button
                                 size="sm"
-                                className={cn(
-                                    "transition-all duration-300 shadow-lg",
-                                    "bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
-                                )}
+                                className="transition-all duration-300 shadow-lg bg-primary hover:bg-primary/90 text-primary-foreground font-medium"
                             >
                                 Sign Up
                             </Button>
-                        </Link>
+                        </Link> */}
                     </div>
 
                     <div className="md:hidden flex items-center space-x-2">
-                        {/* Mode toggle now outside drawer */}
                         <ModeToggle />
 
                         {/* Drawer menu */}
                         <Drawer>
                             <DrawerTrigger asChild>
                                 <Button
-                                    variant={isScrolled ? "ghost" : "outline"}
+                                    variant="ghost"
                                     size="icon"
-                                    className={cn(
-                                        "transition-all duration-300",
-                                        isScrolled
-                                            ? ""
-                                            : "border-border text-foreground hover:bg-accent"
-                                    )}
+                                    className="transition-all duration-300 border-border text-foreground hover:bg-accent"
                                 >
                                     <Menu className="h-5 w-5" />
                                 </Button>
@@ -204,7 +146,7 @@ export default function Navbar() {
                                     </Link>
 
                                     <div className="pt-6 flex flex-col space-y-4 border-t border-border">
-                                        <Link href="/login">
+                                        <Link href="/auth/login">
                                             <Button
                                                 variant="outline"
                                                 className="w-full text-foreground"
@@ -212,11 +154,11 @@ export default function Navbar() {
                                                 Login
                                             </Button>
                                         </Link>
-                                        <Link href="/signup">
+                                        {/* <Link href="/auth/register">
                                             <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground">
                                                 Sign Up
                                             </Button>
-                                        </Link>
+                                        </Link> */}
                                     </div>
                                 </div>
                             </DrawerContent>

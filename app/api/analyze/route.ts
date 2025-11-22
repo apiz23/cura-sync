@@ -1,43 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export async function POST(req: NextRequest) {
-    try {
-        const { symptoms } = await req.json();
+  try {
+    const { symptoms } = await req.json();
 
-        if (!symptoms || !symptoms.trim()) {
-            return NextResponse.json(
-                { error: "Symptoms cannot be empty" },
-                { status: 400 }
-            );
-        }
-
-        const jamAIRes = await fetch(
-            `${
-                process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"
-            }/analyze`,
-            {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                },
-                body: JSON.stringify({ symptoms }),
-            }
-        );
-
-        if (!jamAIRes.ok) {
-            const errData = await jamAIRes.json();
-            return NextResponse.json(
-                { error: errData.detail || "Failed to analyze symptoms" },
-                { status: 500 }
-            );
-        }
-
-        const data = await jamAIRes.json();
-        return NextResponse.json(data);
-    } catch (err: unknown) {
-        if (err instanceof Error) {
-            return NextResponse.json({ error: err.message }, { status: 500 });
-        }
-        return NextResponse.json({ error: "Unknown error" }, { status: 500 });
+    if (!symptoms || !symptoms.trim()) {
+      return NextResponse.json(
+        { error: "Symptoms cannot be empty" },
+        { status: 400 },
+      );
     }
+
+    const jamAIRes = await fetch(
+      `${
+        process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"
+      }/analyze`,
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ symptoms }),
+      },
+    );
+
+    if (!jamAIRes.ok) {
+      const errData = await jamAIRes.json();
+      return NextResponse.json(
+        { error: errData.detail || "Failed to analyze symptoms" },
+        { status: 500 },
+      );
+    }
+
+    const data = await jamAIRes.json();
+    return NextResponse.json(data);
+  } catch (err: unknown) {
+    if (err instanceof Error) {
+      return NextResponse.json({ error: err.message }, { status: 500 });
+    }
+    return NextResponse.json({ error: "Unknown error" }, { status: 500 });
+  }
 }
