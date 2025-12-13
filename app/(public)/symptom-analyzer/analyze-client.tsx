@@ -8,8 +8,6 @@ import {
     Sparkles,
     Check,
     Shield,
-    Plus,
-    X,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
@@ -17,6 +15,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import AnimatedTags from "@/components/smoothui/animated-tags";
 
 interface AnalysisResult {
     possible_disease: string;
@@ -50,12 +49,9 @@ export default function AnalyzePage() {
         []
     );
 
-    const toggleSymptom = useCallback((symptom: string) => {
-        setSelectedSymptoms((prev) =>
-            prev.includes(symptom)
-                ? prev.filter((s) => s !== symptom)
-                : [...prev, symptom]
-        );
+    // Wrapper to handle tag changes and reset results
+    const handleTagChange = useCallback((items: string[]) => {
+        setSelectedSymptoms(items);
         setResult(null);
         setError(null);
     }, []);
@@ -165,7 +161,7 @@ export default function AnalyzePage() {
                                                         key={index}
                                                         variant="secondary"
                                                         className="bg-secondary text-secondary-foreground px-3 py-1.5 rounded-full max-w-full wrap-break-words"
-                                                        title={symptom} // Show full text on hover
+                                                        title={symptom}
                                                     >
                                                         <span className="truncate block">
                                                             {truncateSymptom(
@@ -287,7 +283,7 @@ export default function AnalyzePage() {
                 {!result && (
                     <Card className="border-border shadow-lg">
                         <CardContent className="p-6 space-y-6">
-                            {/* Common Symptoms */}
+                            {/* Common Symptoms - Now using AnimatedTags */}
                             <div className="space-y-4">
                                 <div className="flex items-center gap-3">
                                     <div className="p-2 bg-accent rounded-lg">
@@ -303,41 +299,13 @@ export default function AnalyzePage() {
                                     </div>
                                 </div>
 
-                                <div className="flex flex-wrap gap-2">
-                                    {commonSymptoms.map((symptom) => (
-                                        <Button
-                                            key={symptom}
-                                            type="button"
-                                            variant={
-                                                selectedSymptoms.includes(
-                                                    symptom
-                                                )
-                                                    ? "default"
-                                                    : "outline"
-                                            }
-                                            size="sm"
-                                            className={cn(
-                                                "rounded-full transition-all duration-200 border",
-                                                selectedSymptoms.includes(
-                                                    symptom
-                                                )
-                                                    ? "bg-primary hover:bg-primary/90 text-primary-foreground border-primary shadow scale-105"
-                                                    : "border-border hover:border-primary/50 hover:bg-accent"
-                                            )}
-                                            onClick={() =>
-                                                toggleSymptom(symptom)
-                                            }
-                                        >
-                                            {selectedSymptoms.includes(
-                                                symptom
-                                            ) ? (
-                                                <X className="h-3 w-3 mr-1.5" />
-                                            ) : (
-                                                <Plus className="h-3 w-3 mr-1.5" />
-                                            )}
-                                            {symptom}
-                                        </Button>
-                                    ))}
+                                <div className="w-full">
+                                    <AnimatedTags
+                                        initialTags={commonSymptoms}
+                                        onChange={handleTagChange}
+                                        selectedTags={selectedSymptoms}
+                                        className="w-full"
+                                    />
                                 </div>
                             </div>
 
@@ -372,12 +340,12 @@ export default function AnalyzePage() {
                                 </div>
                             </div>
 
-                            {/* Selected Symptoms Preview */}
+                            {/* Selected Symptoms Preview (Combined Manual + Tags) */}
                             {allSymptoms.length > 0 && (
                                 <div className="p-3 bg-accent/30 rounded-lg border border-border">
                                     <p className="text-sm font-medium text-foreground mb-2">
-                                        Selected Symptoms ({allSymptoms.length}
-                                        ):
+                                        All Symptoms to Analyze (
+                                        {allSymptoms.length}):
                                     </p>
                                     <div className="flex flex-wrap gap-1.5 max-h-20 overflow-y-auto">
                                         {allSymptoms.map((symptom, index) => (

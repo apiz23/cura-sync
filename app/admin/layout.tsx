@@ -7,6 +7,7 @@ import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminHeader } from "@/components/admin-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ClerkProvider } from "@clerk/nextjs";
+import { AuthAdminProvider } from "@/components/authprovideradmin";
 
 const dmSans = DM_Sans({
     subsets: ["latin"],
@@ -42,16 +43,25 @@ export default function AdminLayout({
                         enableSystem
                         disableTransitionOnChange
                     >
-                        <SidebarProvider>
-                            <AdminSidebar />
-                            <SidebarInset>
-                                <AdminHeader />
+                        <AuthAdminProvider>
+                            <SidebarProvider
+                                style={
+                                    {
+                                        "--sidebar-width": "20rem",
+                                        "--sidebar-width-mobile": "20rem",
+                                    } as React.CSSProperties
+                                }
+                            >
+                                <AdminSidebar />
+                                <SidebarInset>
+                                    <AdminHeader />
 
-                                {children}
-                            </SidebarInset>
-                        </SidebarProvider>
+                                    {children}
+                                </SidebarInset>
+                            </SidebarProvider>
+                        </AuthAdminProvider>
                         <Toaster
-                            position="top-right"
+                            position="bottom-right"
                             theme="dark"
                             richColors
                             closeButton

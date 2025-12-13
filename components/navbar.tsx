@@ -71,6 +71,20 @@ export default function Navbar() {
                                 <span className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
                             )}
                         </Link>
+                        <Link
+                            href="/partner/register"
+                            className={cn(
+                                "px-4 py-2 text-sm font-medium rounded-lg transition-all duration-300 relative",
+                                pathname === "/partner/register"
+                                    ? "text-primary bg-primary/10 font-semibold"
+                                    : "text-foreground/90 hover:text-primary hover:bg-accent/50"
+                            )}
+                        >
+                            Register Health Center
+                            {pathname === "/partner/register" && (
+                                <span className="absolute bottom-1 left-1/2 transform -translate-x-1/2 w-1 h-1 bg-primary rounded-full" />
+                            )}
+                        </Link>
                     </nav>
 
                     {/* Right actions desktop */}
@@ -143,6 +157,17 @@ export default function Navbar() {
                                         )}
                                     >
                                         Contact
+                                    </Link>
+                                    <Link
+                                        href="/partner/register"
+                                        className={cn(
+                                            "text-lg font-medium py-3 px-4 rounded-lg transition-colors",
+                                            pathname === "/partner/register"
+                                                ? "text-primary bg-primary/10 font-semibold"
+                                                : "text-foreground hover:text-primary hover:bg-accent"
+                                        )}
+                                    >
+                                        Register Health Center
                                     </Link>
 
                                     <div className="pt-6 flex flex-col space-y-4 border-t border-border">

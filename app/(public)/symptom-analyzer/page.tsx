@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import AnalyzeClient from "./analyze-client";
+import { SymptomChecker } from "@/components/symptoms-checker";
 
 export const metadata: Metadata = {
     title: "Symptom Analyzer | CuraSync",
@@ -15,5 +15,5 @@ export const metadata: Metadata = {
 };
 
 export default function AnalyzePage() {
-    return <AnalyzeClient />;
+    return <SymptomChecker className="mt-10" />;
 }

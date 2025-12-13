@@ -36,7 +36,7 @@ export default function UserLayout({
                 <body
                     className={`${dmSans.className} ${spaceMono.variable} antialiased bg-background text-foreground`}
                 >
-                    <ThemeProvider
+                    <ThemeProvider 
                         attribute="class"
                         defaultTheme="dark"
                         enableSystem

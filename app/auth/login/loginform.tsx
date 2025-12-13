@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSignIn, useUser } from "@clerk/nextjs";
+import { useSignUp, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Stethoscope } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
@@ -13,51 +13,57 @@ export function LoginForm({
     className,
     ...props
 }: React.ComponentProps<"div">) {
-    const { isLoaded: isSignInLoaded, signIn } = useSignIn();
-    const { isLoaded: isUserLoaded, isSignedIn } = useUser();
+    const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
+    const { isLoaded: userLoaded, isSignedIn } = useUser();
     const router = useRouter();
 
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
 
     useEffect(() => {
-        if (isUserLoaded && isSignedIn) {
+        if (userLoaded && isSignedIn) {
             router.replace("/user/dashboard");
         }
-    }, [isUserLoaded, isSignedIn, router]);
+    }, [userLoaded, isSignedIn, router]);
 
-    const handleGoogleSignIn = async () => {
-        if (!isSignInLoaded) return;
+    const handleGoogleAuth = async () => {
+        if (!isSignUpLoaded) return;
 
-        setIsLoading(true);
         setError("");
+        setIsLoading(true);
 
         try {
-            await signIn.authenticateWithRedirect({
+            await signUp.authenticateWithRedirect({
                 strategy: "oauth_google",
                 redirectUrl: "/user/sso-callback",
                 redirectUrlComplete: "/user/dashboard",
             });
         } catch (err: unknown) {
-            console.error("Google sign in error:", err);
+            console.error("Google Auth Error:", err);
 
-            setIsLoading(false);
-
-            if (typeof err === "object" && err !== null && "errors" in err) {
-                const errObj = err as { errors?: { message?: string }[] };
+            if (
+                typeof err === "object" &&
+                err !== null &&
+                "errors" in err &&
+                Array.isArray(
+                    (err as { errors?: { message?: string }[] }).errors
+                )
+            ) {
                 setError(
-                    errObj.errors?.[0]?.message ||
-                        "Failed to sign in with Google"
+                    (err as { errors: { message?: string }[] }).errors[0]
+                        ?.message || "Failed to connect with Google"
                 );
+            } else if (err instanceof Error) {
+                setError(err.message);
             } else {
-                setError("Failed to sign in with Google");
+                setError("Failed to connect with Google");
             }
+        } finally {
+            setIsLoading(false);
         }
     };
 
-    if (!isUserLoaded || isSignedIn) {
-        return null;
-    }
+    if (!userLoaded || isSignedIn) return null;
 
     return (
         <div className={cn("flex flex-col gap-6", className)} {...props}>
@@ -83,8 +89,8 @@ export function LoginForm({
                 <Button
                     variant="outline"
                     type="button"
-                    onClick={handleGoogleSignIn}
                     disabled={isLoading}
+                    onClick={handleGoogleAuth}
                     className="h-12 border-border hover:bg-accent rounded-lg w-full flex items-center justify-center gap-3 text-base font-medium"
                 >
                     {isLoading ? (

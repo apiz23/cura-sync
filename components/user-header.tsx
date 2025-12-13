@@ -16,17 +16,42 @@ import {
     Mail,
     BadgeCheck,
 } from "lucide-react";
-import { Avatar, AvatarFallback, AvatarImage } from "./ui/avatar";
-import { useUser } from "@clerk/nextjs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useUser, SignOutButton } from "@clerk/nextjs";
 import { useState, useRef, useEffect } from "react";
-import { SidebarTrigger } from "./ui/sidebar";
-import { Separator } from "./ui/separator";
-import { SignOutButton } from "@clerk/nextjs";
+import { SidebarTrigger } from "@/components/ui/sidebar";
+import { Separator } from "@/components/ui/separator";
+import { usePathname } from "next/navigation";
+import { getPageTitle } from "@/lib/getPageTitle";
 
 export function UserHeader() {
     const { user, isLoaded, isSignedIn } = useUser();
     const [isDropdownOpen, setIsDropdownOpen] = useState(false);
     const dropdownRef = useRef<HTMLDivElement | null>(null);
+    const pathname = usePathname();
+
+    const pageTitle = getPageTitle(pathname);
+
+    useEffect(() => {
+        const syncUser = async () => {
+            if (!isLoaded || !isSignedIn) return;
+
+            try {
+                const response = await fetch("/api/auth/sync", {
+                    method: "POST",
+                });
+                if (!response.ok) {
+                    console.error("Sync API failed");
+                } else {
+                    console.log("✅ User synced via API");
+                }
+            } catch (err) {
+                console.error("Sync error:", err);
+            }
+        };
+
+        syncUser();
+    }, [isLoaded, isSignedIn]);
 
     const initials = (
         (user?.firstName?.[0] || "") + (user?.lastName?.[0] || "") || "GU"
@@ -50,7 +75,6 @@ export function UserHeader() {
                 setIsDropdownOpen(false);
             }
         };
-
         document.addEventListener("mousedown", handleClickOutside);
         return () =>
             document.removeEventListener("mousedown", handleClickOutside);
@@ -69,8 +93,8 @@ export function UserHeader() {
     }
 
     return (
-        <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50 px-6">
-            <div className="flex items-center gap-4">
+        <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/60 sticky top-0 z-50 px-4 py-10">
+            <div className="flex items-center gap-4 p-0">
                 <SidebarTrigger className="h-9 w-9 data-[state=open]:bg-accent transition-all duration-200 hover:scale-105" />
                 <Separator
                     orientation="vertical"
@@ -79,8 +103,8 @@ export function UserHeader() {
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>
-                            <BreadcrumbPage className="text-sm font-semibold text-foreground">
-                                Dashboard
+                            <BreadcrumbPage className="text-sm font-semibold text-foreground animate-in fade-in slide-in-from-left-2">
+                                {pageTitle}
                             </BreadcrumbPage>
                         </BreadcrumbItem>
                     </BreadcrumbList>
@@ -149,20 +173,6 @@ export function UserHeader() {
                                             <p className="text-xs truncate flex-1">
                                                 {email}
                                             </p>
-                                        </div>
-                                        <div className="flex items-center gap-2">
-                                            <div
-                                                className={`w-2 h-2 rounded-full ${
-                                                    isSignedIn
-                                                        ? "bg-green-500 animate-pulse"
-                                                        : "bg-muted-foreground"
-                                                }`}
-                                            ></div>
-                                            <span className="text-xs text-muted-foreground">
-                                                {isSignedIn
-                                                    ? "Online"
-                                                    : "Offline"}
-                                            </span>
                                         </div>
                                     </div>
                                 </div>

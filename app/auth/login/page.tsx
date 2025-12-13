@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { LoginForm } from "./loginform";
 import { Stethoscope } from "lucide-react";
 import Link from "next/link";
+import Image from "next/image";
 
 export const metadata: Metadata = {
     title: "Login | CuraSync",
@@ -30,7 +31,7 @@ export default function LoginPage() {
                 </div>
             </div>
             <div className="bg-muted relative hidden lg:block">
-                <img
+                <Image
                     src="https://i.pinimg.com/originals/4a/d2/50/4ad250e7cb41de5d80d189ee49995b21.jpg"
                     alt="Image"
                     className="absolute inset-0 h-full w-full object-cover brightness-[0.8] grayscale-75  dark:brightness-[0.2] dark:grayscale"
