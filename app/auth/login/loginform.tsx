@@ -3,11 +3,11 @@
 import { useState, useEffect } from "react";
 import { useSignUp, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
-import { Stethoscope } from "lucide-react";
+import { Stethoscope, Shield, Activity, Loader2 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { Card, CardContent } from "@/components/ui/card";
 
 export function LoginForm({
     className,
@@ -19,6 +19,7 @@ export function LoginForm({
 
     const [error, setError] = useState("");
     const [isLoading, setIsLoading] = useState(false);
+    const [isHovering, setIsHovering] = useState(false);
 
     useEffect(() => {
         if (userLoaded && isSignedIn) {
@@ -66,61 +67,119 @@ export function LoginForm({
     if (!userLoaded || isSignedIn) return null;
 
     return (
-        <div className={cn("flex flex-col gap-6", className)} {...props}>
-            <div className="flex flex-col items-center gap-2 text-center">
-                <div className="flex size-10 items-center justify-center rounded-md bg-primary/10 text-primary">
-                    <Stethoscope className="size-6" />
-                </div>
-                <h1 className="text-2xl font-bold tracking-tight">
-                    Welcome to CuraSync
-                </h1>
-                <p className="text-sm text-muted-foreground">
-                    Sign in or create an account automatically
-                </p>
-            </div>
-
-            {error && (
-                <div className="bg-destructive/10 text-destructive text-sm p-3 rounded-lg text-center font-medium">
-                    {error}
-                </div>
-            )}
-
-            <div className="grid gap-4">
-                <Button
-                    variant="outline"
-                    type="button"
-                    disabled={isLoading}
-                    onClick={handleGoogleAuth}
-                    className="h-12 border-border hover:bg-accent rounded-lg w-full flex items-center justify-center gap-3 text-base font-medium"
+        <Card className="border-0 shadow-none bg-transparent">
+            <CardContent className="p-0">
+                <div
+                    className={cn("flex flex-col gap-8", className)}
+                    {...props}
                 >
-                    {isLoading ? (
-                        <span className="animate-pulse">Connecting...</span>
-                    ) : (
-                        <>
-                            <FcGoogle className="size-5" />
-                            Continue with Google
-                        </>
+                    {/* Header Section */}
+                    <div className="flex flex-col items-center gap-6 text-center">
+                        <div className="relative">
+                            <div className="relative size-20 flex items-center justify-center rounded-2xl bg-linear-to-br from-emerald-500 to-green-600 text-white shadow-lg">
+                                <Stethoscope className="size-10" />
+                            </div>
+                        </div>
+
+                        <div className="space-y-2">
+                            <h1 className="text-3xl font-bold tracking-tight">
+                                Welcome to CuraSync
+                            </h1>
+                            <p className="text-muted-foreground">
+                                Sign in or create an account automatically
+                            </p>
+                        </div>
+                    </div>
+
+                    {/* Features Highlight */}
+                    <div className="grid grid-cols-3 gap-3">
+                        {[
+                            {
+                                icon: Shield,
+                                label: "Secure",
+                                color: "text-blue-500",
+                                bg: "bg-blue-50 dark:bg-blue-950/20",
+                            },
+                            {
+                                icon: Activity,
+                                label: "Efficient",
+                                color: "text-emerald-500",
+                                bg: "bg-emerald-50 dark:bg-emerald-950/20",
+                            },
+                            {
+                                icon: Stethoscope,
+                                label: "Medical",
+                                color: "text-indigo-500",
+                                bg: "bg-indigo-50 dark:bg-indigo-950/20",
+                            },
+                        ].map((feature) => (
+                            <div
+                                key={feature.label}
+                                className={cn(
+                                    "flex flex-col items-center gap-2 p-3 rounded-xl transition-all hover:scale-105 hover:shadow-sm",
+                                    feature.bg
+                                )}
+                            >
+                                <feature.icon
+                                    className={cn("size-5", feature.color)}
+                                />
+                                <span className="text-sm font-medium">
+                                    {feature.label}
+                                </span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Error Message */}
+                    {error && (
+                        <div className="animate-in slide-in-from-top duration-300">
+                            <div className="bg-destructive/10 text-destructive text-sm p-4 rounded-xl text-center font-medium flex items-center justify-center gap-2">
+                                <div className="size-2 bg-destructive rounded-full animate-pulse" />
+                                {error}
+                            </div>
+                        </div>
                     )}
-                </Button>
-            </div>
 
-            <p className="text-center text-xs text-muted-foreground max-w-sm mx-auto px-4 leading-relaxed">
-                By clicking continue, you agree to our{" "}
-                <Link
-                    href="/terms"
-                    className="text-primary font-medium hover:underline underline-offset-4"
-                >
-                    Terms of Service
-                </Link>{" "}
-                and{" "}
-                <Link
-                    href="/privacy"
-                    className="text-primary font-medium hover:underline underline-offset-4"
-                >
-                    Privacy Policy
-                </Link>
-                .
-            </p>
-        </div>
+                    {/* Main Auth Section */}
+                    <div className="space-y-6 flex">
+                        <Button
+                            variant="outline"
+                            type="button"
+                            disabled={isLoading}
+                            onClick={handleGoogleAuth}
+                            onMouseEnter={() => setIsHovering(true)}
+                            onMouseLeave={() => setIsHovering(false)}
+                            className={cn(
+                                "h-12 w-fit mx-auto rounded-xl border-2 transition-all duration-300",
+                                "hover:border-primary hover:bg-accent/50 hover:shadow-md",
+                                "active:scale-[0.98]",
+                                isLoading && "opacity-70 cursor-not-allowed"
+                            )}
+                        >
+                            {isLoading ? (
+                                <div className="flex items-center justify-center gap-3">
+                                    <Loader2 className="size-5 animate-spin" />
+                                    <span className="font-semibold">
+                                        Connecting to Google...
+                                    </span>
+                                </div>
+                            ) : (
+                                <div className="flex items-center justify-center gap-3">
+                                    <div className="relative">
+                                        <FcGoogle className="size-6" />
+                                        {isHovering && (
+                                            <div className="absolute -inset-2 bg-white/20 rounded-full animate-ping" />
+                                        )}
+                                    </div>
+                                    <span className="font-semibold">
+                                        Continue with Google
+                                    </span>
+                                </div>
+                            )}
+                        </Button>
+                    </div>
+                </div>
+            </CardContent>
+        </Card>
     );
 }

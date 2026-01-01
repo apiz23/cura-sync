@@ -24,20 +24,18 @@ export function UserSidebar({
 
     return (
         <Sidebar {...props}>
-            <SidebarHeader className="border-b p-6 bg-linear-to-br from-primary/5 to-primary/10">
+            <SidebarHeader className="border-b p-4">
                 <div className="flex items-center gap-3">
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-primary rounded-xl shadow-lg">
-                            <Stethoscope className="h-6 w-6 text-primary-foreground" />
-                        </div>
-                        <div>
-                            <h1 className="text-xl font-bold bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
-                                CuraSync
-                            </h1>
-                            <p className="text-xs text-muted-foreground mt-0.5 font-medium">
-                                Health Management
-                            </p>
-                        </div>
+                    <div className="p-2 bg-primary rounded-xl shadow-lg">
+                        <Stethoscope className="h-6 w-6 text-primary-foreground" />
+                    </div>
+                    <div>
+                        <h1 className="text-xl font-bold bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+                            CuraSync
+                        </h1>
+                        <p className="text-xs text-muted-foreground mt-0.5 font-medium">
+                            Health Management
+                        </p>
                     </div>
                 </div>
             </SidebarHeader>

@@ -36,13 +36,20 @@ export default function UserLayout({
                 <body
                     className={`${dmSans.className} ${spaceMono.variable} antialiased bg-background text-foreground`}
                 >
-                    <ThemeProvider 
+                    <ThemeProvider
                         attribute="class"
                         defaultTheme="dark"
                         enableSystem
                         disableTransitionOnChange
                     >
-                        <SidebarProvider>
+                        <SidebarProvider
+                            style={
+                                {
+                                    "--sidebar-width": "20rem",
+                                    "--sidebar-width-mobile": "20rem",
+                                } as React.CSSProperties
+                            }
+                        >
                             <UserSidebar />
                             <SidebarInset>
                                 <UserHeader />
@@ -52,12 +59,7 @@ export default function UserLayout({
                             </SidebarInset>
                         </SidebarProvider>
 
-                        <Toaster
-                            position="top-right"
-                            theme="dark"
-                            richColors
-                            closeButton
-                        />
+                        <Toaster theme="dark" richColors closeButton />
                     </ThemeProvider>
                 </body>
             </html>

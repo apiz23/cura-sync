@@ -11,6 +11,7 @@ import {
 import { useState, useEffect } from "react";
 import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
+import Link from "next/link";
 
 function Hero() {
     const [currentFeature, setCurrentFeature] = useState(0);
@@ -48,7 +49,7 @@ function Hero() {
             </div>
 
             {/* Animated background grid */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,var(--color-border)_1px,transparent_1px),linear-gradient(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:24px_24px] opacity-20" />
+            <div className="absolute inset-0 bg-[linear-linear(to_right,var(--color-border)_1px,transparent_1px),linear-linear(to_bottom,var(--color-border)_1px,transparent_1px)] bg-[size:24px_24px] opacity-20" />
 
             <div className="relative z-10 mx-auto max-w-5xl text-center">
                 <motion.div
@@ -64,7 +65,7 @@ function Hero() {
                         className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20 backdrop-blur-sm mb-6"
                     >
                         <Sparkles className="h-4 w-4" />
-                        <span className="bg-gradient-to-r from-primary to-chart-2 bg-clip-text text-transparent font-bold">
+                        <span className="bg-linear-to-r from-primary to-chart-2 bg-clip-text text-transparent font-bold">
                             Next Generation Healthcare Platform
                         </span>
                     </motion.div>
@@ -76,7 +77,7 @@ function Hero() {
                         className="mb-6 text-5xl font-bold text-foreground md:text-7xl lg:text-8xl leading-tight"
                     >
                         Cura Sync
-                        <span className="block text-transparent bg-clip-text bg-gradient-to-r from-primary via-chart-2 to-chart-4 pb-2">
+                        <span className="block text-transparent bg-clip-text bg-linear-to-r from-primary via-chart-2 to-chart-4 pb-2">
                             Platform
                         </span>
                     </motion.h1>
@@ -126,19 +127,21 @@ function Hero() {
                     >
                         <Button
                             size="lg"
-                            className="gap-2 text-lg py-6 px-8 bg-gradient-to-r from-primary to-chart-2 hover:from-primary/90 hover:to-chart-2/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl border-0"
+                            className="gap-2 text-lg py-6 px-8 bg-linear-to-r from-primary to-chart-2 hover:from-primary/90 hover:to-chart-2/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl border-0"
                         >
                             <Mail className="h-5 w-5" />
                             Get Started
                         </Button>
-                        <Button
-                            size="lg"
-                            variant="outline"
-                            className="gap-2 text-lg py-6 px-8 border-2 border-border bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground rounded-xl transition-all duration-300"
-                        >
-                            View Demo
-                            <ArrowDown className="h-5 w-5" />
-                        </Button>
+                        <Link href="/symptom-analyzer">
+                            <Button
+                                size="lg"
+                                variant="outline"
+                                className="gap-2 text-lg py-6 px-8 border-2 border-border bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground rounded-xl transition-all duration-300"
+                            >
+                                View Demo
+                                <ArrowDown className="h-5 w-5" />
+                            </Button>
+                        </Link>
                     </motion.div>
 
                     {/* Trust Indicators */}

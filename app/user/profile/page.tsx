@@ -21,9 +21,10 @@ import {
     User,
     Mail,
     ShieldCheck,
-    Calendar,
     MapPin,
     Phone,
+    Edit3,
+    Camera,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -103,81 +104,117 @@ export default function ProfilePage() {
     if (!isClerkLoaded || isLoading) {
         return (
             <div className="flex h-[50vh] w-full items-center justify-center">
-                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <div className="flex flex-col items-center gap-4">
+                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                    <p className="text-sm text-muted-foreground">
+                        Loading profile...
+                    </p>
+                </div>
             </div>
         );
     }
 
     return (
-        <div className="space-y-6 p-6">
-            {/* Header */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">
-                        Profile
-                    </h1>
-                    <p className="text-muted-foreground mt-1">
-                        Manage your personal information and account settings
-                    </p>
-                </div>
-                <Badge variant="secondary" className="w-fit capitalize">
-                    <ShieldCheck className="h-3 w-3 mr-1" />
-                    {profile?.role} Account
-                </Badge>
-            </div>
-
-            <div className="grid gap-6 lg:grid-cols-3">
-                {/* Left Column - Profile Overview */}
+        <div className="container mx-auto p-4 md:p-6 space-y-6">
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                {/* Left Column - Profile Card */}
                 <div className="lg:col-span-1 space-y-6">
-                    {/* Profile Card */}
-                    <Card>
+                    {/* Profile Overview */}
+                    <Card className="border-border">
                         <CardContent className="p-6">
-                            <div className="flex flex-col items-center text-center space-y-4">
-                                <Avatar className="h-24 w-24 ring-4 ring-background shadow-lg">
-                                    <AvatarImage
-                                        src={
-                                            profile?.avatar_url ||
-                                            user?.imageUrl
+                            <div className="flex flex-col items-center space-y-5">
+                                {/* Avatar with edit button */}
+                                <div className="relative">
+                                    <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
+                                        <AvatarImage
+                                            src={
+                                                profile?.avatar_url ||
+                                                user?.imageUrl
+                                            }
+                                            alt={profile?.full_name}
+                                        />
+                                        <AvatarFallback className="bg-primary/10 text-primary text-2xl font-semibold">
+                                            {profile?.full_name?.[0]?.toUpperCase() ||
+                                                "U"}
+                                        </AvatarFallback>
+                                    </Avatar>
+                                    <Button
+                                        size="icon"
+                                        variant="secondary"
+                                        className="absolute bottom-0 right-0 h-8 w-8 rounded-full border-2 border-background"
+                                        onClick={() =>
+                                            toast.info(
+                                                "Avatar upload coming soon"
+                                            )
                                         }
-                                    />
-                                    <AvatarFallback className="text-2xl bg-primary/10 text-primary font-semibold">
-                                        {profile?.full_name?.[0]?.toUpperCase() ||
-                                            "U"}
-                                    </AvatarFallback>
-                                </Avatar>
-
-                                <div className="space-y-2">
-                                    <h3 className="text-xl font-semibold">
-                                        {profile?.full_name || "User"}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground flex items-center justify-center gap-2">
-                                        <Mail className="h-3 w-3" />
-                                        {profile?.email}
-                                    </p>
+                                    >
+                                        <Camera className="h-3 w-3" />
+                                    </Button>
                                 </div>
 
-                                <div className="w-full pt-4 space-y-3">
-                                    {profile?.created_at && (
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Calendar className="h-4 w-4" />
-                                            <span>
-                                                Joined{" "}
-                                                {new Date(
-                                                    profile.created_at
-                                                ).toLocaleDateString()}
-                                            </span>
-                                        </div>
-                                    )}
+                                {/* User Info */}
+                                <div className="text-center space-y-2">
+                                    <h3 className="text-xl font-semibold text-foreground">
+                                        {profile?.full_name || "User"}
+                                    </h3>
+                                    <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+                                        <Mail className="h-3 w-3" />
+                                        <span className="truncate">
+                                            {profile?.email}
+                                        </span>
+                                    </div>
+                                </div>
+
+                                {/* Stats */}
+                                <div className="grid grid-cols-2 gap-4 w-full pt-2">
+                                    <div className="text-center p-3 rounded-lg bg-muted/30">
+                                        <p className="text-2xl font-bold text-foreground">
+                                            {profile?.created_at
+                                                ? new Date(
+                                                      profile.created_at
+                                                  ).getFullYear()
+                                                : "2024"}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Member Since
+                                        </p>
+                                    </div>
+                                    <div className="text-center p-3 rounded-lg bg-muted/30">
+                                        <p className="text-2xl font-bold text-foreground capitalize">
+                                            {profile?.role?.[0] || "U"}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Role
+                                        </p>
+                                    </div>
+                                </div>
+
+                                {/* Contact Details */}
+                                <div className="w-full space-y-3 pt-4">
                                     {profile?.location && (
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <MapPin className="h-4 w-4" />
-                                            <span>{profile.location}</span>
+                                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20">
+                                            <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-muted-foreground">
+                                                    Location
+                                                </p>
+                                                <p className="text-sm font-medium truncate">
+                                                    {profile.location}
+                                                </p>
+                                            </div>
                                         </div>
                                     )}
                                     {profile?.phone && (
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                            <Phone className="h-4 w-4" />
-                                            <span>{profile.phone}</span>
+                                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20">
+                                            <Phone className="h-4 w-4 text-primary flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-muted-foreground">
+                                                    Phone
+                                                </p>
+                                                <p className="text-sm font-medium">
+                                                    {profile.phone}
+                                                </p>
+                                            </div>
                                         </div>
                                     )}
                                 </div>
@@ -185,44 +222,38 @@ export default function ProfilePage() {
                         </CardContent>
                     </Card>
 
-                    {/* Quick Stats */}
-                    <Card>
+                    {/* Account Status */}
+                    <Card className="border-border">
                         <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium">
-                                Account Overview
+                            <CardTitle className="text-sm font-medium flex items-center gap-2">
+                                <ShieldCheck className="h-4 w-4" />
+                                Account Status
                             </CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            <div className="flex justify-between items-center">
+                        <CardContent className="space-y-4">
+                            <div className="flex items-center justify-between">
                                 <span className="text-sm text-muted-foreground">
                                     Status
                                 </span>
-                                <Badge
-                                    variant="outline"
-                                    className="bg-green-50 text-green-700 border-green-200"
-                                >
+                                <Badge className="bg-green-500/10 text-green-600 border-green-200">
                                     Active
                                 </Badge>
                             </div>
-                            <div className="flex justify-between items-center">
+                            <div className="flex items-center justify-between">
                                 <span className="text-sm text-muted-foreground">
-                                    Member since
+                                    Email
                                 </span>
-                                <span className="text-sm font-medium">
-                                    {profile?.created_at
-                                        ? new Date(
-                                              profile.created_at
-                                          ).getFullYear()
-                                        : "2024"}
-                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                    Verified
+                                </Badge>
                             </div>
-                            <div className="flex justify-between items-center">
+                            <div className="flex items-center justify-between">
                                 <span className="text-sm text-muted-foreground">
-                                    Role
+                                    2FA
                                 </span>
-                                <span className="text-sm font-medium capitalize">
-                                    {profile?.role}
-                                </span>
+                                <Badge variant="outline" className="text-xs">
+                                    Enabled
+                                </Badge>
                             </div>
                         </CardContent>
                     </Card>
@@ -230,126 +261,72 @@ export default function ProfilePage() {
 
                 {/* Right Column - Edit Form */}
                 <div className="lg:col-span-2">
-                    <Card>
+                    <Card className="border-border h-full">
                         <CardHeader>
-                            <CardTitle>Edit Profile</CardTitle>
-                            <CardDescription>
-                                Update your personal information and contact
-                                details
-                            </CardDescription>
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <CardTitle className="flex items-center gap-2">
+                                        <Edit3 className="h-5 w-5 text-primary" />
+                                        Edit Profile
+                                    </CardTitle>
+                                    <CardDescription>
+                                        Update your personal information
+                                    </CardDescription>
+                                </div>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             <form onSubmit={handleUpdate} className="space-y-6">
-                                <div className="grid gap-6">
-                                    {/* Personal Information Section */}
-                                    <div className="space-y-4">
-                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                                            Personal Information
-                                        </h4>
-
-                                        <div className="grid gap-4">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="email">
-                                                    Email Address
-                                                </Label>
-                                                <div className="relative">
-                                                    <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        id="email"
-                                                        value={
-                                                            profile?.email || ""
-                                                        }
-                                                        disabled
-                                                        className="pl-9 bg-muted/50 cursor-not-allowed"
-                                                    />
-                                                </div>
-                                                <p className="text-[0.8rem] text-muted-foreground">
-                                                    Email is managed via your
-                                                    login provider
-                                                </p>
+                                {/* Personal Information */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-medium text-foreground">
+                                        Personal Information
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="email"
+                                                className="text-sm"
+                                            >
+                                                Email Address
+                                            </Label>
+                                            <div className="relative">
+                                                <Mail className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="email"
+                                                    value={profile?.email || ""}
+                                                    disabled
+                                                    className="pl-9 bg-muted/50"
+                                                    readOnly
+                                                />
                                             </div>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="full_name">
-                                                    Full Name
-                                                </Label>
-                                                <div className="relative">
-                                                    <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        id="full_name"
-                                                        value={
-                                                            formData.full_name
-                                                        }
-                                                        onChange={(e) =>
-                                                            setFormData({
-                                                                ...formData,
-                                                                full_name:
-                                                                    e.target
-                                                                        .value,
-                                                            })
-                                                        }
-                                                        className="pl-9"
-                                                        placeholder="Enter your full name"
-                                                    />
-                                                </div>
-                                            </div>
+                                            <p className="text-xs text-muted-foreground">
+                                                Managed by your login provider
+                                            </p>
                                         </div>
-                                    </div>
 
-                                    <Separator />
-
-                                    {/* Contact Information Section */}
-                                    <div className="space-y-4">
-                                        <h4 className="text-sm font-semibold text-muted-foreground uppercase tracking-wide">
-                                            Contact Information
-                                        </h4>
-
-                                        <div className="grid gap-4">
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="location">
-                                                    Location
-                                                </Label>
-                                                <div className="relative">
-                                                    <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        id="location"
-                                                        value={
-                                                            formData.location
-                                                        }
-                                                        onChange={(e) =>
-                                                            setFormData({
-                                                                ...formData,
-                                                                location:
-                                                                    e.target
-                                                                        .value,
-                                                            })
-                                                        }
-                                                        className="pl-9"
-                                                        placeholder="Enter your location"
-                                                    />
-                                                </div>
-                                            </div>
-
-                                            <div className="grid gap-2">
-                                                <Label htmlFor="phone">
-                                                    Phone Number
-                                                </Label>
-                                                <div className="relative">
-                                                    <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                    <Input
-                                                        id="phone"
-                                                        value={formData.phone}
-                                                        onChange={(e) =>
-                                                            setFormData({
-                                                                ...formData,
-                                                                phone: e.target
-                                                                    .value,
-                                                            })
-                                                        }
-                                                        className="pl-9"
-                                                        placeholder="Enter your phone number"
-                                                    />
-                                                </div>
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="full_name"
+                                                className="text-sm"
+                                            >
+                                                Full Name
+                                            </Label>
+                                            <div className="relative">
+                                                <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="full_name"
+                                                    value={formData.full_name}
+                                                    onChange={(e) =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            full_name:
+                                                                e.target.value,
+                                                        })
+                                                    }
+                                                    className="pl-9"
+                                                    placeholder="Your full name"
+                                                />
                                             </div>
                                         </div>
                                     </div>
@@ -357,7 +334,68 @@ export default function ProfilePage() {
 
                                 <Separator />
 
-                                <div className="flex justify-end gap-3 pt-4">
+                                {/* Contact Information */}
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-medium text-foreground">
+                                        Contact Information
+                                    </h3>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="location"
+                                                className="text-sm"
+                                            >
+                                                Location
+                                            </Label>
+                                            <div className="relative">
+                                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="location"
+                                                    value={formData.location}
+                                                    onChange={(e) =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            location:
+                                                                e.target.value,
+                                                        })
+                                                    }
+                                                    className="pl-9"
+                                                    placeholder="City, Country"
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="phone"
+                                                className="text-sm"
+                                            >
+                                                Phone Number
+                                            </Label>
+                                            <div className="relative">
+                                                <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="phone"
+                                                    value={formData.phone}
+                                                    onChange={(e) =>
+                                                        setFormData({
+                                                            ...formData,
+                                                            phone: e.target
+                                                                .value,
+                                                        })
+                                                    }
+                                                    className="pl-9"
+                                                    placeholder="+1 (555) 000-0000"
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                {/* Form Actions */}
+                                <div className="flex flex-col-reverse md:flex-row gap-3 pt-4">
                                     <Button
                                         type="button"
                                         variant="outline"
@@ -370,13 +408,15 @@ export default function ProfilePage() {
                                                 phone: profile?.phone || "",
                                             })
                                         }
+                                        className="md:flex-1"
+                                        disabled={isSaving}
                                     >
-                                        Reset
+                                        Reset Changes
                                     </Button>
                                     <Button
                                         type="submit"
                                         disabled={isSaving}
-                                        className="min-w-[120px]"
+                                        className="md:flex-1"
                                     >
                                         {isSaving ? (
                                             <>
@@ -386,7 +426,7 @@ export default function ProfilePage() {
                                         ) : (
                                             <>
                                                 <Save className="mr-2 h-4 w-4" />
-                                                Save Changes
+                                                Save Profile
                                             </>
                                         )}
                                     </Button>

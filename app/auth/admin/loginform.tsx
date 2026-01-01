@@ -2,11 +2,18 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { GalleryVerticalEnd } from "lucide-react";
+import { Shield, Lock, Eye, EyeOff, Loader2, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
 import { toast } from "sonner";
 
 export function AdminLoginForm({
@@ -16,84 +23,214 @@ export function AdminLoginForm({
     const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
+    const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
-        setLoading(true);
 
-        const res = await fetch("/api/auth/admin-login", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ email, password }),
-        });
-
-        const data = await res.json();
-
-        if (res.ok) {
-            toast.success("Login successful!");
-
-            localStorage.setItem(
-                "cura-auth",
-                JSON.stringify({
-                    email: email,
-                    loggedInAt: Date.now(),
-                })
-            );
-
-            router.refresh();
-            router.push("/admin/dashboard");
-        } else {
-            toast.error(data.error || "Login failed");
+        if (!email || !password) {
+            toast.error("Please enter both email and password");
+            return;
         }
 
-        setLoading(false);
+        setLoading(true);
+
+        try {
+            const res = await fetch("/api/auth/admin-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
+
+            const data = await res.json();
+
+            if (res.ok) {
+                toast.success("Admin login successful!");
+
+                sessionStorage.setItem(
+                    "cura-auth",
+                    JSON.stringify({
+                        email: email,
+                        loggedInAt: Date.now(),
+                        role: "admin",
+                        sessionId: data.sessionId || Date.now().toString(),
+                    })
+                );
+
+                setTimeout(() => {
+                    router.refresh();
+                    router.push("/admin/dashboard");
+                }, 500);
+            } else {
+                toast.error(data.error || "Invalid credentials");
+            }
+        } catch (error) {
+            console.error("Login error:", error);
+            toast.error("Network error. Please try again.");
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
-        <div className={cn("flex flex-col gap-6", className)} {...props}>
-            <form onSubmit={handleLogin}>
-                <FieldGroup>
-                    <div className="flex flex-col items-center gap-2 text-center">
-                        <div className="flex size-8 items-center justify-center rounded-md">
-                            <GalleryVerticalEnd className="size-6" />
+        <div className={cn("w-full max-w-md mx-auto", className)} {...props}>
+            <Card className="border shadow-lg bg-card">
+                <CardHeader className="text-center space-y-6 pb-8">
+                    <div className="flex justify-center">
+                        <div className="size-20 rounded-2xl bg-linear-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
+                            <Shield className="size-10 text-primary-foreground" />
                         </div>
-                        <h1 className="text-xl font-bold">
-                            Welcome to CuraSync
-                        </h1>
                     </div>
 
-                    <Field>
-                        <FieldLabel htmlFor="email">Email</FieldLabel>
-                        <Input
-                            id="email"
-                            type="email"
-                            required
-                            placeholder="admin@example.com"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                        />
-                    </Field>
+                    <div className="space-y-3">
+                        <CardTitle className="text-3xl font-bold tracking-tight text-foreground">
+                            Admin Portal
+                        </CardTitle>
+                        <CardDescription className="text-muted-foreground text-base">
+                            Secure access to system administration
+                        </CardDescription>
+                    </div>
+                </CardHeader>
 
-                    <Field>
-                        <FieldLabel htmlFor="password">Password</FieldLabel>
-                        <Input
-                            id="password"
-                            type="password"
-                            required
-                            placeholder="********"
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                        />
-                    </Field>
+                <CardContent className="space-y-8">
+                    <form onSubmit={handleLogin}>
+                        <FieldGroup className="space-y-6">
+                            {/* Email Field */}
+                            <Field>
+                                <FieldLabel
+                                    htmlFor="email"
+                                    className="text-foreground/90 font-medium"
+                                >
+                                    Email Address
+                                </FieldLabel>
+                                <div className="relative group">
+                                    <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent rounded-xl -m-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                    <div className="relative">
+                                        <Input
+                                            id="email"
+                                            type="email"
+                                            required
+                                            placeholder="admin@example.com"
+                                            value={email}
+                                            onChange={(e) =>
+                                                setEmail(e.target.value)
+                                            }
+                                            className="h-12 pl-11 rounded-xl border-input bg-input text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                            disabled={loading}
+                                        />
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                            <svg
+                                                className="w-5 h-5"
+                                                fill="none"
+                                                stroke="currentColor"
+                                                viewBox="0 0 24 24"
+                                            >
+                                                <path
+                                                    strokeLinecap="round"
+                                                    strokeLinejoin="round"
+                                                    strokeWidth={2}
+                                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
+                                                />
+                                            </svg>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Field>
 
-                    <Field>
-                        <Button type="submit" disabled={loading}>
-                            {loading ? "Logging in..." : "Login"}
-                        </Button>
-                    </Field>
-                </FieldGroup>
-            </form>
+                            {/* Password Field */}
+                            <Field>
+                                <FieldLabel
+                                    htmlFor="password"
+                                    className="text-foreground/90 font-medium"
+                                >
+                                    Password
+                                </FieldLabel>
+                                <div className="relative group">
+                                    <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent rounded-xl -m-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+                                    <div className="relative">
+                                        <Input
+                                            id="password"
+                                            type={
+                                                showPassword
+                                                    ? "text"
+                                                    : "password"
+                                            }
+                                            required
+                                            placeholder="Enter your password"
+                                            value={password}
+                                            onChange={(e) =>
+                                                setPassword(e.target.value)
+                                            }
+                                            className="h-12 pl-11 pr-11 rounded-xl border-input bg-input text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20"
+                                            disabled={loading}
+                                        />
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground">
+                                            <Lock className="w-5 h-5" />
+                                        </div>
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent"
+                                            onClick={() =>
+                                                setShowPassword(!showPassword)
+                                            }
+                                            disabled={loading}
+                                        >
+                                            {showPassword ? (
+                                                <EyeOff className="w-4 h-4" />
+                                            ) : (
+                                                <Eye className="w-4 h-4" />
+                                            )}
+                                        </Button>
+                                    </div>
+                                </div>
+                            </Field>
+
+                            {/* Login Button */}
+                            <Button
+                                type="submit"
+                                disabled={loading}
+                                className="w-full h-12 rounded-xl bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                                size="lg"
+                            >
+                                {loading ? (
+                                    <>
+                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
+                                        Authenticating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Key className="w-5 h-5 mr-2" />
+                                        Sign In
+                                    </>
+                                )}
+                            </Button>
+                        </FieldGroup>
+                    </form>
+
+                    {/* Security Note */}
+                    <div className="p-5 rounded-xl bg-accent/50 border border-border">
+                        <div className="flex items-start gap-4">
+                            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                                <Shield className="w-5 h-5 text-primary" />
+                            </div>
+                            <div className="space-y-1.5">
+                                <p className="text-sm font-medium text-foreground">
+                                    Secure Access
+                                </p>
+                                <p className="text-sm text-muted-foreground leading-relaxed">
+                                    This portal is restricted to authorized
+                                    administrators only. All activities are
+                                    logged and monitored for security
+                                    compliance.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

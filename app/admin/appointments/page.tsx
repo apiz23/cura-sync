@@ -1,409 +1,666 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import supabase from "@/lib/supabase";
 import {
-  Calendar,
-  Clock,
-  User,
-  Search,
-  Filter,
-  CheckCircle,
-  XCircle,
-  Clock4,
-  Eye,
-  Edit,
-  Trash2,
-  Plus,
-  CalendarDays,
-  Users,
-  Building2,
-  Stethoscope
+    Calendar,
+    Clock,
+    User,
+    Search,
+    CheckCircle,
+    XCircle,
+    Clock4,
+    Eye,
+    CalendarDays,
+    Building2,
+    Loader2,
+    MoreVertical,
+    ChevronLeft,
+    ChevronRight,
 } from "lucide-react";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
+import { AppointmentSheet } from "./AppointmentSheet";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Appointment } from "@/app/types";
+import { useAuth } from "@/components/authprovideradmin";
+import Image from "next/image";
 
-interface Appointment {
-  id: string;
-  profile_id: string | null;
-  facility_id: string | null;
-  appointment_date: string;
-  start_time: string;
-  end_time: string;
-  status: string;
-  reason_for_visit: string | null;
-  patient_name?: string;
-  facility_name?: string;
-}
+type AppointmentRow = {
+    id: string;
+    profile_id: string | null;
+    facility_id: string | null;
+    appointment_date: string;
+    start_time: string;
+    end_time: string;
+    status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+    patient_avatar?: string | null;
+    reason_for_visit: string | null;
+};
 
 export default function AppointmentsPage() {
-  const [appointments, setAppointments] = useState<Appointment[]>([]);
-  const [filteredAppointments, setFilteredAppointments] = useState<Appointment[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [searchTerm, setSearchTerm] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [dateFilter, setDateFilter] = useState<string>("");
+    const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [filteredAppointments, setFilteredAppointments] = useState<
+        Appointment[]
+    >([]);
+    const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
-    async function fetchAppointments() {
-      const { data, error } = await supabase
-        .from("cura_appointments")
-        .select(`
-          *,
-          profiles:profile_id (name),
-          facilities:facility_id (name)
-        `)
-        .order("appointment_date", { ascending: true });
+    const [searchTerm, setSearchTerm] = useState("");
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [dateFilter, setDateFilter] = useState("");
 
-      if (error) {
-        console.error("Error fetching appointments:", error);
-      } else {
-        const enhancedData = data.map(appt => ({
-          ...appt,
-          patient_name: appt.profiles?.name,
-          facility_name: appt.facilities?.name
-        }));
-        setAppointments(enhancedData);
-        setFilteredAppointments(enhancedData);
-      }
-      setLoading(false);
-    }
+    const [sheetOpen, setSheetOpen] = useState(false);
+    const [selectedAppointment, setSelectedAppointment] =
+        useState<Appointment | null>(null);
 
-    fetchAppointments();
-  }, []);
+    const [currentPage, setCurrentPage] = useState(1);
+    const itemsPerPage = 10;
 
-  useEffect(() => {
-    let filtered = appointments;
+    const { staff, loading: authLoading } = useAuth();
 
-    // Search filter
-    if (searchTerm) {
-      filtered = filtered.filter(appt =>
-        appt.patient_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appt.facility_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appt.reason_for_visit?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        appt.id.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+    const fetchAppointments = useCallback(async () => {
+        try {
+            setLoading(true);
 
-    // Status filter
-    if (statusFilter !== "all") {
-      filtered = filtered.filter(appt => appt.status === statusFilter);
-    }
+            if (!staff?.facility_id) {
+                toast.error("No facility linked to this staff account");
+                return;
+            }
 
-    // Date filter
-    if (dateFilter) {
-      filtered = filtered.filter(appt => appt.appointment_date === dateFilter);
-    }
+            const { data, error } = await supabase
+                .from("cura_appointments")
+                .select(
+                    `
+                    id,
+                    profile_id,
+                    facility_id,
+                    appointment_date,
+                    start_time,
+                    end_time,
+                    status,
+                    reason_for_visit
+                `
+                )
+                .eq("facility_id", staff.facility_id)
+                .order("appointment_date", { ascending: false })
+                .order("start_time", { ascending: true });
 
-    setFilteredAppointments(filtered);
-  }, [searchTerm, statusFilter, dateFilter, appointments]);
+            if (error) throw error;
 
-  const getStatusIcon = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return <CheckCircle className="w-4 h-4 text-chart-1" />;
-      case 'cancelled':
-        return <XCircle className="w-4 h-4 text-destructive" />;
-      case 'pending':
-        return <Clock4 className="w-4 h-4 text-chart-3" />;
-      default:
-        return null;
-    }
-  };
+            const rows = (data ?? []) as AppointmentRow[];
 
-  const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'confirmed':
-        return "bg-chart-1/10 text-chart-1";
-      case 'cancelled':
-        return "bg-destructive/10 text-destructive";
-      case 'pending':
-        return "bg-chart-3/10 text-chart-3";
-      default:
-        return "bg-muted text-muted-foreground";
-    }
-  };
+            const mapped: Appointment[] = await Promise.all(
+                rows.map(async (appt) => {
+                    let patientName = "Unknown Patient";
+                    let avatarUrl: string | null = null;
 
-  const formatDate = (date: string) => {
-    return new Date(date).toLocaleDateString('en-US', {
-      weekday: 'short',
-      year: 'numeric',
-      month: 'short',
-      day: 'numeric'
-    });
-  };
+                    if (appt.profile_id) {
+                        try {
+                            const res = await fetch(
+                                `/api/user/profile/${appt.profile_id}`
+                            );
 
-  const formatTime = (time: string) => {
-    return new Date(`1970-01-01T${time}`).toLocaleTimeString('en-US', {
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: true
-    });
-  };
+                            if (res.ok) {
+                                const profile = await res.json();
+                                patientName = profile.full_name ?? patientName;
+                                avatarUrl = profile.avatar_url;
+                            }
+                        } catch {}
+                    }
 
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-background">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto"></div>
-          <p className="mt-4 text-muted-foreground">Loading appointments...</p>
-        </div>
-      </div>
+                    return {
+                        id: appt.id,
+                        profile_id: appt.profile_id,
+                        facility_id: appt.facility_id,
+                        appointment_date: appt.appointment_date,
+                        start_time: appt.start_time,
+                        end_time: appt.end_time,
+                        status: appt.status,
+                        reason_for_visit: appt.reason_for_visit,
+                        patient_name: patientName,
+                        patient_avatar: avatarUrl,
+                        facility_name: "Current Facility",
+                    };
+                })
+            );
+
+            setAppointments(mapped);
+            setFilteredAppointments(mapped);
+        } catch (err) {
+            console.error(err);
+            toast.error("Failed to load appointments");
+        } finally {
+            setLoading(false);
+        }
+    }, [staff]);
+
+    useEffect(() => {
+        if (!authLoading && staff) {
+            fetchAppointments();
+        }
+    }, [authLoading, staff, fetchAppointments]);
+
+    useEffect(() => {
+        let filtered = appointments;
+
+        if (searchTerm) {
+            filtered = filtered.filter(
+                (a) =>
+                    a.patient_name
+                        .toLowerCase()
+                        .includes(searchTerm.toLowerCase()) ||
+                    a.reason_for_visit
+                        ?.toLowerCase()
+                        .includes(searchTerm.toLowerCase()) ||
+                    a.id.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+        }
+
+        if (statusFilter !== "all") {
+            filtered = filtered.filter((a) => a.status === statusFilter);
+        }
+
+        if (dateFilter) {
+            filtered = filtered.filter(
+                (a) => a.appointment_date === dateFilter
+            );
+        }
+
+        setFilteredAppointments(filtered);
+        setCurrentPage(1);
+    }, [searchTerm, statusFilter, dateFilter, appointments]);
+
+    const formatDate = (date: string) =>
+        new Date(date).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+
+    const formatTime = (time: string) => {
+        const [hours, minutes] = time.split(":");
+        const hour = parseInt(hours, 10);
+        const ampm = hour >= 12 ? "PM" : "AM";
+        const displayHour = hour % 12 || 12;
+        return `${displayHour}:${minutes} ${ampm}`;
+    };
+
+    const getStatusIcon = (status: Appointment["status"]) => {
+        switch (status) {
+            case "CONFIRMED":
+                return <CheckCircle className="w-3 h-3" />;
+            case "CANCELLED":
+                return <XCircle className="w-3 h-3" />;
+            case "PENDING":
+                return <Clock4 className="w-3 h-3" />;
+            case "COMPLETED":
+                return <CheckCircle className="w-3 h-3" />;
+        }
+    };
+
+    const getStatusColor = (status: Appointment["status"]) => {
+        switch (status) {
+            case "CONFIRMED":
+                return "bg-green-500/10 text-green-600 border-green-200";
+            case "CANCELLED":
+                return "bg-red-500/10 text-red-600 border-red-200";
+            case "PENDING":
+                return "bg-amber-500/10 text-amber-600 border-amber-200";
+            case "COMPLETED":
+                return "bg-blue-500/10 text-blue-600 border-blue-200";
+        }
+    };
+
+    const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentAppointments = filteredAppointments.slice(
+        startIndex,
+        endIndex
     );
-  }
 
-  return (
-    <div className="min-h-screen bg-background p-6">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
-          <div>
-            <h1 className="text-3xl font-bold text-foreground serif">Appointments</h1>
-            <p className="text-muted-foreground mt-2">
-              Manage and track all patient appointments
-            </p>
-          </div>
-          <button className="inline-flex items-center justify-center px-4 py-2.5 bg-primary text-primary-foreground font-medium rounded-lg hover:bg-primary/90 transition-colors shadow-sm">
-            <Plus className="w-5 h-5 mr-2" />
-            New Appointment
-          </button>
-        </div>
-
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-          <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Total Appointments</p>
-                <p className="text-2xl font-bold mt-2 text-foreground">{appointments.length}</p>
-              </div>
-              <div className="p-3 bg-primary/10 rounded-lg">
-                <CalendarDays className="w-6 h-6 text-primary" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Confirmed</p>
-                <p className="text-2xl font-bold mt-2 text-foreground">
-                  {appointments.filter(a => a.status === 'confirmed').length}
+    if (loading) {
+        return (
+            <div className="container mx-auto p-6 flex flex-col items-center justify-center min-h-[400px] space-y-4">
+                <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                <p className="text-sm text-muted-foreground">
+                    Loading appointments...
                 </p>
-              </div>
-              <div className="p-3 bg-chart-1/10 rounded-lg">
-                <Users className="w-6 h-6 text-chart-1" />
-              </div>
             </div>
-          </div>
-          
-          <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Pending</p>
-                <p className="text-2xl font-bold mt-2 text-foreground">
-                  {appointments.filter(a => a.status === 'pending').length}
-                </p>
-              </div>
-              <div className="p-3 bg-chart-3/10 rounded-lg">
-                <Clock4 className="w-6 h-6 text-chart-3" />
-              </div>
-            </div>
-          </div>
-          
-          <div className="bg-card rounded-xl p-6 shadow-sm border border-border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-muted-foreground">Cancelled</p>
-                <p className="text-2xl font-bold mt-2 text-foreground">
-                  {appointments.filter(a => a.status === 'cancelled').length}
-                </p>
-              </div>
-              <div className="p-3 bg-destructive/10 rounded-lg">
-                <XCircle className="w-6 h-6 text-destructive" />
-              </div>
-            </div>
-          </div>
-        </div>
+        );
+    }
 
-        {/* Filters */}
-        <div className="bg-card rounded-xl p-6 shadow-sm border border-border mb-6">
-          <div className="flex flex-col lg:flex-row gap-4">
-            <div className="flex-1">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-5 h-5" />
-                <input
-                  type="text"
-                  placeholder="Search by patient, facility, or reason..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-input"
-                />
-              </div>
-            </div>
-            
-            <div className="flex gap-4">
-              <select
-                value={statusFilter}
-                onChange={(e) => setStatusFilter(e.target.value)}
-                className="px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-card"
-              >
-                <option value="all">All Status</option>
-                <option value="confirmed">Confirmed</option>
-                <option value="pending">Pending</option>
-                <option value="cancelled">Cancelled</option>
-              </select>
-              
-              <input
-                type="date"
-                value={dateFilter}
-                onChange={(e) => setDateFilter(e.target.value)}
-                className="px-4 py-3 border border-border rounded-lg focus:ring-2 focus:ring-ring focus:border-transparent bg-card"
-              />
-              
-              <button className="px-4 py-3 border border-border rounded-lg hover:bg-accent hover:text-accent-foreground transition-colors">
-                <Filter className="w-5 h-5" />
-              </button>
-            </div>
-          </div>
-        </div>
-
-        {/* Appointments Table */}
-        <div className="bg-card rounded-xl shadow-sm border border-border overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="bg-accent border-b border-border">
-                <tr>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-accent-foreground uppercase tracking-wider">
-                    Patient
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-accent-foreground uppercase tracking-wider">
-                    Date & Time
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-accent-foreground uppercase tracking-wider">
-                    Facility
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-accent-foreground uppercase tracking-wider">
-                    Reason
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-accent-foreground uppercase tracking-wider">
-                    Status
-                  </th>
-                  <th className="px-6 py-4 text-left text-xs font-semibold text-accent-foreground uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {filteredAppointments.length === 0 ? (
-                  <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center">
-                      <div className="flex flex-col items-center justify-center">
-                        <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
-                        <h3 className="text-lg font-medium text-foreground mb-2">No appointments found</h3>
-                        <p className="text-muted-foreground">Try adjusting your filters or search term</p>
-                      </div>
-                    </td>
-                  </tr>
-                ) : (
-                  filteredAppointments.map((appt) => (
-                    <tr key={appt.id} className="hover:bg-accent/10 transition-colors">
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <div className="flex-shrink-0 h-10 w-10 bg-primary/10 rounded-lg flex items-center justify-center">
-                            <User className="w-5 h-5 text-primary" />
-                          </div>
-                          <div className="ml-4">
-                            <div className="text-sm font-medium text-foreground">
-                              {appt.patient_name || 'Unknown Patient'}
+    return (
+        <div className="container mx-auto p-4 md:p-6 space-y-6">
+            {/* Stats Cards */}
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                {[
+                    {
+                        label: "Total",
+                        value: appointments.length,
+                        icon: CalendarDays,
+                        color: "bg-primary/10 text-primary",
+                    },
+                    {
+                        label: "Confirmed",
+                        value: appointments.filter(
+                            (a) => a.status === "CONFIRMED"
+                        ).length,
+                        icon: CheckCircle,
+                        color: "bg-green-500/10 text-green-500",
+                    },
+                    {
+                        label: "Pending",
+                        value: appointments.filter(
+                            (a) => a.status === "PENDING"
+                        ).length,
+                        icon: Clock4,
+                        color: "bg-amber-500/10 text-amber-500",
+                    },
+                    {
+                        label: "Cancelled",
+                        value: appointments.filter(
+                            (a) => a.status === "CANCELLED"
+                        ).length,
+                        icon: XCircle,
+                        color: "bg-red-500/10 text-red-500",
+                    },
+                ].map((stat) => (
+                    <Card key={stat.label}>
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm text-muted-foreground">
+                                        {stat.label}
+                                    </p>
+                                    <p className="text-2xl font-bold mt-2">
+                                        {stat.value}
+                                    </p>
+                                </div>
+                                <div className={`p-3 rounded-lg ${stat.color}`}>
+                                    <stat.icon className="w-5 h-5" />
+                                </div>
                             </div>
-                            <div className="text-sm text-muted-foreground">ID: {appt.profile_id?.slice(0, 8)}...</div>
-                          </div>
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="text-sm text-foreground">
-                          <div className="flex items-center gap-2">
-                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                            {formatDate(appt.appointment_date)}
-                          </div>
-                          <div className="flex items-center gap-2 mt-1">
-                            <Clock className="w-4 h-4 text-muted-foreground" />
-                            {formatTime(appt.start_time)} - {formatTime(appt.end_time)}
-                          </div>
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center">
-                          <Building2 className="w-4 h-4 text-muted-foreground mr-2" />
-                          <span className="text-sm text-foreground">
-                            {appt.facility_name || 'Unknown Facility'}
-                          </span>
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4">
-                        <div className="flex items-center gap-2 text-sm text-foreground max-w-xs truncate">
-                          <Stethoscope className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                          <span className="truncate">{appt.reason_for_visit || 'Not specified'}</span>
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          {getStatusIcon(appt.status)}
-                          <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(appt.status)}`}>
-                            {appt.status.charAt(0).toUpperCase() + appt.status.slice(1)}
-                          </span>
-                        </div>
-                      </td>
-                      
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <button className="p-2 text-muted-foreground hover:text-primary hover:bg-primary/10 rounded-lg transition-colors">
-                            <Eye className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-muted-foreground hover:text-chart-2 hover:bg-chart-2/10 rounded-lg transition-colors">
-                            <Edit className="w-4 h-4" />
-                          </button>
-                          <button className="p-2 text-muted-foreground hover:text-destructive hover:bg-destructive/10 rounded-lg transition-colors">
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </div>
+                        </CardContent>
+                    </Card>
+                ))}
+            </div>
 
-        {/* Pagination/Info */}
-        <div className="flex items-center justify-between mt-6 px-4">
-          <div className="text-sm text-muted-foreground">
-            Showing <span className="font-medium text-foreground">{filteredAppointments.length}</span> of{' '}
-            <span className="font-medium text-foreground">{appointments.length}</span> appointments
-          </div>
-          <div className="flex items-center space-x-2">
-            <button className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
-              Previous
-            </button>
-            <button className="px-3 py-2 border border-primary rounded-lg text-sm bg-primary/10 text-primary font-medium">
-              1
-            </button>
-            <button className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
-              2
-            </button>
-            <button className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
-              3
-            </button>
-            <button className="px-3 py-2 border border-border rounded-lg text-sm hover:bg-accent hover:text-accent-foreground transition-colors">
-              Next
-            </button>
-          </div>
+            {/* Filters */}
+            <Card>
+                <CardContent className="p-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                        <div className="lg:col-span-2">
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                                <Input
+                                    placeholder="Search appointments..."
+                                    value={searchTerm}
+                                    onChange={(e) =>
+                                        setSearchTerm(e.target.value)
+                                    }
+                                    className="pl-9"
+                                />
+                            </div>
+                        </div>
+                        <div>
+                            <Select
+                                value={statusFilter}
+                                onValueChange={setStatusFilter}
+                            >
+                                <SelectTrigger>
+                                    <SelectValue placeholder="All Status" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Status
+                                    </SelectItem>
+                                    <SelectItem value="PENDING">
+                                        Pending
+                                    </SelectItem>
+                                    <SelectItem value="CONFIRMED">
+                                        Confirmed
+                                    </SelectItem>
+                                    <SelectItem value="COMPLETED">
+                                        Completed
+                                    </SelectItem>
+                                    <SelectItem value="CANCELLED">
+                                        Cancelled
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div>
+                            <Input
+                                type="date"
+                                value={dateFilter}
+                                onChange={(e) => setDateFilter(e.target.value)}
+                            />
+                        </div>
+                    </div>
+                </CardContent>
+            </Card>
+
+            {/* Table */}
+            <Card>
+                <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                        <div>
+                            <CardTitle>Appointment List</CardTitle>
+                            <CardDescription>
+                                Showing {startIndex + 1}-
+                                {Math.min(
+                                    endIndex,
+                                    filteredAppointments.length
+                                )}{" "}
+                                of {filteredAppointments.length} appointments
+                            </CardDescription>
+                        </div>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <span>Rows per page:</span>
+                            <Select
+                                value={itemsPerPage.toString()}
+                                onValueChange={() => {}}
+                            >
+                                <SelectTrigger className="w-20 h-8">
+                                    <SelectValue placeholder="10" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="10">10</SelectItem>
+                                    <SelectItem value="25">25</SelectItem>
+                                    <SelectItem value="50">50</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                    </div>
+                </CardHeader>
+                <CardContent>
+                    <div className="rounded-md border">
+                        <Table>
+                            <TableHeader>
+                                <TableRow>
+                                    <TableHead className="w-[250px]">
+                                        Patient
+                                    </TableHead>
+                                    <TableHead className="w-[150px]">
+                                        Date
+                                    </TableHead>
+                                    <TableHead className="w-[120px]">
+                                        Time
+                                    </TableHead>
+                                    <TableHead className="w-[200px]">
+                                        Facility
+                                    </TableHead>
+                                    <TableHead className="w-[100px]">
+                                        Status
+                                    </TableHead>
+                                    <TableHead className="text-right w-[100px]">
+                                        Actions
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {currentAppointments.length === 0 ? (
+                                    <TableRow>
+                                        <TableCell
+                                            colSpan={6}
+                                            className="h-24 text-center"
+                                        >
+                                            <div className="flex flex-col items-center justify-center">
+                                                <Calendar className="w-12 h-12 text-muted-foreground mb-4" />
+                                                <h3 className="text-lg font-medium">
+                                                    No appointments found
+                                                </h3>
+                                                <p className="text-sm text-muted-foreground mt-1">
+                                                    Try adjusting your filters
+                                                </p>
+                                            </div>
+                                        </TableCell>
+                                    </TableRow>
+                                ) : (
+                                    currentAppointments.map((appt) => (
+                                        <TableRow
+                                            key={appt.id}
+                                            className="group"
+                                        >
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="h-10 w-10 rounded-full overflow-hidden bg-muted flex items-center justify-center">
+                                                        {appt.patient_avatar ? (
+                                                            <Image
+                                                                src={
+                                                                    appt.patient_avatar
+                                                                }
+                                                                alt={
+                                                                    appt.patient_name
+                                                                }
+                                                                width={40}
+                                                                height={40}
+                                                                className="object-cover"
+                                                            />
+                                                        ) : (
+                                                            <User className="w-4 h-4 text-muted-foreground" />
+                                                        )}
+                                                    </div>
+
+                                                    <p className="font-medium text-foreground">
+                                                        {appt.patient_name}
+                                                    </p>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Calendar className="w-3 h-3 text-muted-foreground" />
+                                                    <span className="text-sm font-medium">
+                                                        {formatDate(
+                                                            appt.appointment_date
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Clock className="w-3 h-3 text-muted-foreground" />
+                                                    <span className="text-sm font-medium">
+                                                        {formatTime(
+                                                            appt.start_time
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-2">
+                                                    <Building2 className="w-3 h-3 text-muted-foreground" />
+                                                    <span className="text-sm">
+                                                        {appt.facility_name}
+                                                    </span>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    variant="outline"
+                                                    className={`gap-1.5 px-2.5 py-1 ${getStatusColor(
+                                                        appt.status
+                                                    )}`}
+                                                >
+                                                    {getStatusIcon(appt.status)}
+                                                    {appt.status
+                                                        .charAt(0)
+                                                        .toUpperCase() +
+                                                        appt.status
+                                                            .slice(1)
+                                                            .toLowerCase()}
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-1">
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8"
+                                                        onClick={() => {
+                                                            setSelectedAppointment(
+                                                                appt
+                                                            );
+                                                            setSheetOpen(true);
+                                                        }}
+                                                    >
+                                                        <Eye className="w-4 h-4" />
+                                                    </Button>
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger
+                                                            asChild
+                                                        >
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8"
+                                                            >
+                                                                <MoreVertical className="w-4 h-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent align="end">
+                                                            <DropdownMenuItem>
+                                                                Edit
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="text-red-600">
+                                                                Cancel
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem>
+                                                                Reschedule
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem>
+                                                                Send Reminder
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))
+                                )}
+                            </TableBody>
+                        </Table>
+                    </div>
+
+                    {/* Pagination */}
+                    {filteredAppointments.length > 0 && (
+                        <div className="flex items-center justify-between px-2 py-4">
+                            <div className="text-sm text-muted-foreground">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setCurrentPage((prev) =>
+                                            Math.max(prev - 1, 1)
+                                        )
+                                    }
+                                    disabled={currentPage === 1}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <ChevronLeft className="w-4 h-4" />
+                                </Button>
+                                {Array.from(
+                                    { length: Math.min(5, totalPages) },
+                                    (_, i) => {
+                                        let pageNum;
+                                        if (totalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (currentPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (
+                                            currentPage >=
+                                            totalPages - 2
+                                        ) {
+                                            pageNum = totalPages - 4 + i;
+                                        } else {
+                                            pageNum = currentPage - 2 + i;
+                                        }
+
+                                        return (
+                                            <Button
+                                                key={pageNum}
+                                                variant={
+                                                    currentPage === pageNum
+                                                        ? "default"
+                                                        : "outline"
+                                                }
+                                                size="sm"
+                                                className="h-8 w-8 p-0"
+                                                onClick={() =>
+                                                    setCurrentPage(pageNum)
+                                                }
+                                            >
+                                                {pageNum}
+                                            </Button>
+                                        );
+                                    }
+                                )}
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() =>
+                                        setCurrentPage((prev) =>
+                                            Math.min(prev + 1, totalPages)
+                                        )
+                                    }
+                                    disabled={currentPage === totalPages}
+                                    className="h-8 w-8 p-0"
+                                >
+                                    <ChevronRight className="w-4 h-4" />
+                                </Button>
+                            </div>
+                        </div>
+                    )}
+                </CardContent>
+            </Card>
+
+            {/* Sheet */}
+            <AppointmentSheet
+                open={sheetOpen}
+                onOpenChange={setSheetOpen}
+                appointment={selectedAppointment}
+                onUpdated={(updated) => {
+                    setAppointments((prev) =>
+                        prev.map((a) => (a.id === updated.id ? updated : a))
+                    );
+                    setFilteredAppointments((prev) =>
+                        prev.map((a) => (a.id === updated.id ? updated : a))
+                    );
+                }}
+            />
         </div>
-      </div>
-    </div>
-  );
+    );
 }

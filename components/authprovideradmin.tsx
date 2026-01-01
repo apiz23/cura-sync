@@ -2,41 +2,42 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import supabase from "@/lib/supabase";
-
-interface UserData {
-    id: string;
-    full_name: string;
-    email: string;
-    role: string;
-    specialization: string;
-    license_number: string;
-    facility_id: string;
-    years_of_experience: number;
-    phone_number: string;
-}
+import { Staff } from "@/app/types";
 
 interface AuthContextType {
-    staff: UserData | null;
+    staff: Staff | null;
     loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
-    const [user, setUser] = useState<UserData | null>(null);
+    const [staff, setStaff] = useState<Staff | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         async function loadUser() {
-            const raw = localStorage.getItem("cura-auth");
+            const raw = sessionStorage.getItem("cura-auth");
 
             if (!raw) {
                 setLoading(false);
                 return;
             }
 
-            const session = JSON.parse(raw);
+            let session;
+            try {
+                session = JSON.parse(raw);
+            } catch {
+                sessionStorage.removeItem("cura-auth");
+                setLoading(false);
+                return;
+            }
+
             const { email } = session;
+            if (!email) {
+                setLoading(false);
+                return;
+            }
 
             const { data, error } = await supabase
                 .from("cura_staff_profiles")
@@ -45,7 +46,7 @@ export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
                 .single();
 
             if (!error && data) {
-                setUser({
+                setStaff({
                     id: data.id,
                     full_name: data.full_name,
                     email: data.email,
@@ -54,7 +55,8 @@ export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
                     license_number: data.license_number,
                     facility_id: data.facility_id,
                     years_of_experience: data.years_of_experience,
-                    phone_number: data.phone_number,
+                    availability: data.availability,
+                    created_at: data.created_at,
                 });
             }
 
@@ -65,7 +67,7 @@ export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ staff: user, loading }}>
+        <AuthContext.Provider value={{ staff, loading }}>
             {children}
         </AuthContext.Provider>
     );

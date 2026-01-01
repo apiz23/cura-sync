@@ -23,7 +23,6 @@ import {
     Briefcase,
     Clock,
     Edit,
-    Download,
     Bell,
     FileText,
 } from "lucide-react";
@@ -53,9 +52,10 @@ interface StaffProfile {
 
 export default function StaffProfilePage() {
     const { staff: initialStaff, loading } = useAuth();
-    const [staff, setStaff] = useState<StaffProfile | null>(initialStaff as StaffProfile | null);
+    const [staff, setStaff] = useState<StaffProfile | null>(
+        initialStaff as StaffProfile | null
+    );
     const [isEditing, setIsEditing] = useState(false);
-    const [exporting, setExporting] = useState(false);
 
     const initials =
         (staff?.full_name?.split(" ")[0]?.[0] || "") +
@@ -81,35 +81,6 @@ export default function StaffProfilePage() {
         } catch (error) {
             console.error(error);
             toast.error("Something went wrong");
-        }
-    };
-
-    const handleExportProfile = async () => {
-        setExporting(true);
-        try {
-            const profileData = {
-                ...staff,
-                exported_at: new Date().toISOString(),
-            };
-
-            const blob = new Blob([JSON.stringify(profileData, null, 2)], {
-                type: "application/json",
-            });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement("a");
-            a.href = url;
-            a.download = `staff-profile-${staff?.full_name
-                .toLowerCase()
-                .replace(/\s+/g, "-")}.json`;
-            a.click();
-            URL.revokeObjectURL(url);
-
-            toast.success("Profile exported successfully!");
-        } catch (error) {
-            console.error(error);
-            toast.error("Failed to export profile");
-        } finally {
-            setExporting(false);
         }
     };
 
@@ -195,47 +166,6 @@ export default function StaffProfilePage() {
     return (
         <div className="p-4 md:p-6 lg:p-8 bg-linear-to-br from-background via-background to-accent/5">
             <div className="max-w-7xl mx-auto space-y-6">
-                {/* Header */}
-                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-                    <div>
-                        <div className="flex items-center gap-3 mb-2">
-                            <h1 className="text-3xl md:text-4xl font-bold text-foreground">
-                                Professional Profile
-                            </h1>
-                        </div>
-                        <p className="text-muted-foreground">
-                            Manage your professional identity and information
-                        </p>
-                    </div>
-                    <div className="flex flex-wrap gap-3">
-                        <Button
-                            variant="outline"
-                            className="rounded-xl border-border hover:bg-muted/50 gap-2"
-                            onClick={() => handleExportProfile()}
-                            disabled={exporting}
-                        >
-                            {exporting ? (
-                                <>
-                                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                                    Exporting...
-                                </>
-                            ) : (
-                                <>
-                                    <Download className="w-4 h-4" />
-                                    Export
-                                </>
-                            )}
-                        </Button>
-                        <Button
-                            className="rounded-xl gap-2 shadow-sm hover:shadow-md transition-shadow"
-                            onClick={() => setIsEditing(true)}
-                        >
-                            <Edit className="w-4 h-4" />
-                            Edit Profile
-                        </Button>
-                    </div>
-                </div>
-
                 <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                     <div className="lg:col-span-1 space-y-6">
                         <Card className="border-2 border-border/50 shadow-lg overflow-hidden">

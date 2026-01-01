@@ -3,66 +3,63 @@
 import { useState, useMemo, useEffect } from "react";
 import supabase from "@/lib/supabase";
 import {
-    Map,
-    MapLocateControl,
-    MapMarker,
-    MapTileLayer,
-    MapZoomControl,
-} from "@/components/ui/map";
-import { LatLngExpression } from "leaflet";
-
-import {
     Search,
     MapPin,
     Filter,
-    Calendar,
     Star,
     Clock,
-    Phone,
+    Calendar,
+    CheckCircle,
+    Users,
+    X,
+    Building,
     Navigation,
+    ExternalLink,
 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardFooter } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardFooter,
+    CardHeader,
+} from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-
-import {
-    Dialog,
-    DialogContent,
-    DialogDescription,
-    DialogFooter,
-    DialogHeader,
-    DialogTitle,
-} from "@/components/ui/dialog";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import AppointmentModal from "./AppointmentSheet";
+import { useUser } from "@clerk/nextjs";
 
-interface Facility {
+export interface Facility {
     id: string;
     name: string;
-    type: string;
-    specialty: string;
+    type?: string;
+    specialty?: string;
     address: string;
-    is_active: boolean;
     phone?: string;
     rating?: number;
     wait_time?: number;
     slots?: string[];
-    coordinates?: LatLngExpression;
+    coordinates?: [number, number];
+    is_active?: boolean;
+    description?: string;
+    capacity?: number;
+    distance?: number;
+    services?: string[];
+    doctors_count?: number;
 }
 
 export default function AppointmentPage() {
+    const { user } = useUser();
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedFacility, setSelectedFacility] = useState<Facility | null>(
         null
     );
-    const [selectedDate, setSelectedDate] = useState<string>("");
-    const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [isBookingOpen, setIsBookingOpen] = useState(false);
-    const [viewMode, setViewMode] = useState<"grid" | "map">("grid");
+    const [activeFilter, setActiveFilter] = useState("all");
+    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
     useEffect(() => {
         const fetchFacilities = async () => {
@@ -81,11 +78,31 @@ export default function AppointmentPage() {
                     rating: f.rating || Math.random() * 2 + 3,
                     wait_time:
                         f.wait_time || Math.floor(Math.random() * 30) + 5,
-                    slots: ["09:00 AM", "11:00 AM", "02:00 PM", "04:30 PM"],
+                    slots: [
+                        "09:00 AM",
+                        "10:00 AM",
+                        "11:00 AM",
+                        "02:00 PM",
+                        "03:00 PM",
+                        "04:00 PM",
+                    ],
                     coordinates:
                         f.latitude && f.longitude
                             ? [parseFloat(f.latitude), parseFloat(f.longitude)]
                             : [3.139, 101.6869],
+                    description:
+                        f.description ||
+                        "Modern healthcare facility providing comprehensive medical services with state-of-the-art equipment.",
+                    type: f.type || "Medical Center",
+                    distance: Math.floor(Math.random() * 15) + 1,
+                    services: [
+                        "Consultation",
+                        "Lab Tests",
+                        "Imaging",
+                        "Pharmacy",
+                        "Emergency",
+                    ],
+                    doctors_count: Math.floor(Math.random() * 20) + 5,
                 }));
 
                 setFacilities(formattedData);
@@ -100,354 +117,476 @@ export default function AppointmentPage() {
     }, []);
 
     const filteredFacilities = useMemo(() => {
-        return facilities.filter(
+        let filtered = facilities.filter(
             (f) =>
-                f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                f.specialty.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                f.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                f.address.toLowerCase().includes(searchQuery.toLowerCase())
+                (f.name || "")
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ||
+                (f.specialty || "")
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ||
+                (f.type || "")
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase()) ||
+                (f.address || "")
+                    .toLowerCase()
+                    .includes(searchQuery.toLowerCase())
         );
-    }, [searchQuery, facilities]);
+
+        if (activeFilter !== "all") {
+            filtered = filtered.filter(
+                (f) => f.type?.toLowerCase() === activeFilter.toLowerCase()
+            );
+        }
+
+        return filtered;
+    }, [searchQuery, facilities, activeFilter]);
 
     const openMaps = (address: string) => {
-        const url = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-            address
-        )}`;
-        window.open(url, "_blank");
+        window.open(
+            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                address
+            )}`,
+            "_blank"
+        );
     };
 
-    const today = new Date().toISOString().split("T")[0];
+    if (!user) {
+        return (
+            <div className="min-h-screen flex items-center justify-center">
+                <Card className="w-full max-w-md border-none shadow-2xl">
+                    <CardContent className="p-8">
+                        <div className="text-center space-y-6">
+                            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center mx-auto">
+                                <Users className="w-10 h-10 text-primary" />
+                            </div>
+                            <div className="space-y-3">
+                                <h3 className="text-2xl font-bold">
+                                    Welcome to Cura Health
+                                </h3>
+                                <p className="text-muted-foreground">
+                                    Please sign in to book appointments with
+                                    trusted healthcare providers
+                                </p>
+                            </div>
+                            <Button className="w-full h-12 rounded-xl bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg">
+                                Sign In to Continue
+                            </Button>
+                        </div>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     return (
-        <div className="min-h-screen bg-background">
-            <div className="px-4 py-8">
+        <div className="min-h-screen bg-linear-to-b from-background via-background to-gray-50/50 dark:to-gray-900/50">
+            {/* Main Content */}
+            <div className="container mx-auto px-4 py-8">
                 {/* Search Section */}
-                <Card className="p-6 mb-8 shadow-lg border-border/50 bg-card">
-                    <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center">
-                        <div className="flex-1 w-full relative">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                            <Input
-                                placeholder="Search by name, specialty, type, or location..."
-                                className="pl-10 h-14 text-base bg-background shadow-sm border-2 border-input focus:border-ring/50 transition-colors font-sans"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                            />
-                        </div>
+                <div className="mb-8 space-y-6">
+                    <div>
+                        <h2 className="text-3xl font-bold mb-3">
+                            Find Healthcare Providers
+                        </h2>
+                        <p className="text-muted-foreground">
+                            Book appointments with trusted medical facilities in
+                            your area
+                        </p>
+                    </div>
 
-                        <div className="flex gap-3 w-full lg:w-auto">
+                    <div className="grid gap-4 md:grid-cols-12">
+                        <div className="md:col-span-8 lg:col-span-9">
+                            <div className="relative">
+                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                                <Input
+                                    placeholder="Search facilities, specialties, or locations..."
+                                    className="pl-12 h-14 text-base rounded-xl border-2"
+                                    value={searchQuery}
+                                    onChange={(e) =>
+                                        setSearchQuery(e.target.value)
+                                    }
+                                />
+                                {searchQuery && (
+                                    <Button
+                                        variant="ghost"
+                                        size="icon"
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8"
+                                        onClick={() => setSearchQuery("")}
+                                    >
+                                        <X className="h-4 w-4" />
+                                    </Button>
+                                )}
+                            </div>
+                        </div>
+                        <div className="md:col-span-4 lg:col-span-3 flex gap-2">
                             <Button
                                 variant="outline"
-                                size="lg"
-                                className="gap-2 flex-1 lg:flex-none border-border text-foreground hover:bg-accent hover:text-accent-foreground"
+                                className="h-14 flex-1 rounded-xl gap-2"
+                                onClick={() =>
+                                    setViewMode(
+                                        viewMode === "grid" ? "list" : "grid"
+                                    )
+                                }
                             >
                                 <Filter className="h-4 w-4" />
-                                Filters
+                                {viewMode === "grid"
+                                    ? "List View"
+                                    : "Grid View"}
                             </Button>
+                        </div>
+                    </div>
+                </div>
 
+                {/* Filters & Stats */}
+                <div className="mb-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
+                        <div className="space-y-1">
+                            <h3 className="text-lg font-semibold">
+                                Available Facilities
+                            </h3>
+                            <p className="text-sm text-muted-foreground">
+                                {filteredFacilities.length} facilities found
+                                {searchQuery && ` for "${searchQuery}"`}
+                            </p>
+                        </div>
+                        <div className="flex items-center gap-4">
                             <Tabs
-                                value={viewMode}
-                                onValueChange={(v) =>
-                                    setViewMode(v as "grid" | "map")
-                                }
-                                className="w-auto"
+                                defaultValue="all"
+                                value={activeFilter}
+                                onValueChange={setActiveFilter}
                             >
-                                <TabsList className="grid w-full grid-cols-2 bg-muted border-border">
+                                <TabsList className="bg-muted/50">
                                     <TabsTrigger
-                                        value="grid"
-                                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                                        value="all"
+                                        className="rounded-lg"
                                     >
-                                        Grid
+                                        All
                                     </TabsTrigger>
                                     <TabsTrigger
-                                        value="map"
-                                        className="data-[state=active]:bg-primary data-[state=active]:text-primary-foreground"
+                                        value="hospital"
+                                        className="rounded-lg"
                                     >
-                                        Map
+                                        Hospitals
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="clinic"
+                                        className="rounded-lg"
+                                    >
+                                        Clinics
+                                    </TabsTrigger>
+                                    <TabsTrigger
+                                        value="center"
+                                        className="rounded-lg"
+                                    >
+                                        Centers
                                     </TabsTrigger>
                                 </TabsList>
                             </Tabs>
                         </div>
                     </div>
-                </Card>
 
-                {/* Facility List/Grid */}
+                    {/* Quick Stats */}
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
+                        <Card className="bg-linear-to-br from-green-50 to-green-100/50 dark:from-green-950/30 dark:to-green-900/20">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/50 flex items-center justify-center">
+                                        <CheckCircle className="w-5 h-5 text-green-600 dark:text-green-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">
+                                            Verified
+                                        </p>
+                                        <p className="font-semibold">
+                                            All Facilities
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                        <Card className="bg-linear-to-br from-purple-50 to-purple-100/50 dark:from-purple-950/30 dark:to-purple-900/20">
+                            <CardContent className="p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-lg bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
+                                        <Calendar className="w-5 h-5 text-purple-600 dark:text-purple-400" />
+                                    </div>
+                                    <div>
+                                        <p className="text-sm text-muted-foreground">
+                                            Same-day
+                                        </p>
+                                        <p className="font-semibold">
+                                            Appointments
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+                </div>
+
+                {/* Results */}
                 {isLoading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                    <div
+                        className={`grid ${
+                            viewMode === "grid"
+                                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                : "grid-cols-1 gap-4"
+                        }`}
+                    >
                         {[...Array(6)].map((_, i) => (
-                            <Card
-                                key={i}
-                                className="overflow-hidden border-border bg-card"
-                            >
-                                <CardContent className="p-0">
-                                    <Skeleton className="h-48 w-full bg-muted" />
-                                    <div className="p-6 space-y-4">
-                                        <Skeleton className="h-6 w-3/4 bg-muted" />
-                                        <Skeleton className="h-4 w-1/2 bg-muted" />
-                                        <Skeleton className="h-4 w-full bg-muted" />
-                                        <Skeleton className="h-4 w-full bg-muted" />
-                                        <div className="flex gap-2 pt-4">
-                                            <Skeleton className="h-10 flex-1 bg-muted" />
-                                            <Skeleton className="h-10 flex-1 bg-muted" />
+                            <Card key={i} className="overflow-hidden">
+                                <CardContent className="p-6">
+                                    <div className="space-y-4">
+                                        <Skeleton className="h-6 w-3/4" />
+                                        <Skeleton className="h-4 w-1/2" />
+                                        <div className="flex gap-2">
+                                            <Skeleton className="h-6 w-20 rounded-full" />
+                                            <Skeleton className="h-6 w-20 rounded-full" />
+                                        </div>
+                                        <Skeleton className="h-24 w-full" />
+                                        <div className="flex gap-2 pt-2">
+                                            <Skeleton className="h-10 flex-1 rounded-lg" />
+                                            <Skeleton className="h-10 w-10 rounded-lg" />
                                         </div>
                                     </div>
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
+                ) : filteredFacilities.length === 0 ? (
+                    <Card className="border-dashed">
+                        <CardContent className="p-12 text-center">
+                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                                <Search className="w-10 h-10 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-3">
+                                No facilities found
+                            </h3>
+                            <p className="text-muted-foreground mb-6">
+                                {searchQuery
+                                    ? `No results for "${searchQuery}". Try different keywords.`
+                                    : "No healthcare facilities available at the moment."}
+                            </p>
+                            {searchQuery && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setSearchQuery("")}
+                                    className="gap-2"
+                                >
+                                    <X className="w-4 h-4" />
+                                    Clear Search
+                                </Button>
+                            )}
+                        </CardContent>
+                    </Card>
                 ) : viewMode === "grid" ? (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredFacilities.map((facility) => (
                             <Card
                                 key={facility.id}
-                                className="group hover:shadow-xl transition-all duration-300 border-border bg-card overflow-hidden  pt-0"
+                                className="group hover:shadow-xl transition-all duration-300 border overflow-hidden"
                             >
-                                <CardContent className="p-0">
-                                    {/* Map Preview */}
-                                    <div className="min-h-[20vh] relative overflow-hidden bg-muted">
-                                        <Map
-                                            center={facility.coordinates!}
-                                            zoom={15}
-                                            className="h-full w-full"
+                                <CardHeader className="pb-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Badge
+                                            variant="secondary"
+                                            className="font-normal"
                                         >
-                                            <MapTileLayer />
-                                            <MapLocateControl />
-                                            <MapZoomControl />
-                                            <MapMarker
-                                                position={facility.coordinates!}
-                                            />
-                                        </Map>
-                                        <div className="absolute top-3 left-3">
-                                            <Badge className="bg-background/90 backdrop-blur-sm text-foreground border-0 font-medium font-sans">
-                                                {facility.type}
-                                            </Badge>
+                                            {facility.type}
+                                        </Badge>
+                                        <div className="flex items-center gap-1 text-sm">
+                                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                            <span className="font-medium">
+                                                {facility.rating?.toFixed(1)}
+                                            </span>
                                         </div>
                                     </div>
+                                    <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                                        {facility.name}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground line-clamp-1">
+                                        {facility.specialty ||
+                                            "General Medicine"}
+                                    </p>
+                                </CardHeader>
 
-                                    {/* Facility Info */}
-                                    <div className="p-6 space-y-4">
-                                        <div>
-                                            <div className="flex items-start justify-between mb-2">
-                                                <h3 className="text-xl font-bold text-foreground group-hover:text-primary transition-colors line-clamp-2 font-sans">
-                                                    {facility.name}
-                                                </h3>
-                                            </div>
-                                            <p className="text-primary font-semibold text-lg mb-3 font-sans">
-                                                {facility.specialty}
-                                            </p>
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                                        <span className="line-clamp-1">
+                                            {facility.address}
+                                        </span>
+                                    </div>
 
-                                            {/* Rating and Wait Time */}
-                                            <div className="flex items-center gap-4 text-sm text-muted-foreground mb-3">
-                                                <div className="flex items-center gap-1">
-                                                    <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-                                                    <span className="font-medium font-sans">
-                                                        {facility.rating?.toFixed(
-                                                            1
-                                                        )}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-1">
-                                                    <Clock className="h-4 w-4" />
-                                                    <span className="font-sans">
-                                                        {facility.wait_time} min
-                                                        wait
-                                                    </span>
-                                                </div>
-                                            </div>
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span>{facility.distance} km away</span>
+                                    </div>
 
-                                            {/* Address */}
-                                            <div className="flex items-start gap-2 text-sm text-muted-foreground">
-                                                <MapPin className="h-4 w-4 mt-0.5 shrink-0" />
-                                                <span className="line-clamp-2 font-sans">
-                                                    {facility.address}
-                                                </span>
-                                            </div>
-                                        </div>
+                                    <div className="flex flex-wrap gap-2">
+                                        {facility.services
+                                            ?.slice(0, 3)
+                                            .map((service, i) => (
+                                                <Badge
+                                                    key={i}
+                                                    variant="outline"
+                                                    className="text-xs font-normal"
+                                                >
+                                                    {service}
+                                                </Badge>
+                                            ))}
+                                        {facility.services &&
+                                            facility.services.length > 3 && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-xs font-normal"
+                                                >
+                                                    +
+                                                    {facility.services.length -
+                                                        3}{" "}
+                                                    more
+                                                </Badge>
+                                            )}
                                     </div>
                                 </CardContent>
 
-                                <CardFooter className="p-6 pt-0 flex gap-3">
-                                    <Button
-                                        className="flex-1 h-11 font-medium font-sans"
-                                        onClick={() => {
-                                            setSelectedFacility(facility);
-                                            setIsBookingOpen(true);
-                                        }}
-                                    >
-                                        Book Appointment
-                                    </Button>
-
-                                    <Button
-                                        variant="outline"
-                                        size="icon"
-                                        className="h-11 w-11 shrink-0 border-border text-foreground hover:bg-accent hover:text-accent-foreground"
-                                        onClick={() =>
-                                            openMaps(facility.address)
-                                        }
-                                        title="Get directions"
-                                    >
-                                        <Navigation className="h-4 w-4" />
-                                    </Button>
+                                <CardFooter className="pt-4 border-t">
+                                    <div className="flex gap-3 w-full">
+                                        <Button
+                                            className="flex-1 rounded-lg font-medium"
+                                            onClick={() => {
+                                                setSelectedFacility(facility);
+                                                setIsBookingOpen(true);
+                                            }}
+                                        >
+                                            <Calendar className="w-4 h-4 mr-2" />
+                                            Book Now
+                                        </Button>
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="rounded-lg"
+                                            onClick={() =>
+                                                openMaps(facility.address)
+                                            }
+                                            title="Get directions"
+                                        >
+                                            <Navigation className="w-4 h-4" />
+                                        </Button>
+                                    </div>
                                 </CardFooter>
                             </Card>
                         ))}
                     </div>
                 ) : (
-                    <Card className="p-6 border-border bg-card">
-                        <div className="h-[600px] rounded-lg overflow-hidden">
-                            <Map
-                                center={[3.139, 101.6869]}
-                                zoom={11}
-                                className="h-full w-full"
+                    <div className="space-y-4">
+                        {filteredFacilities.map((facility) => (
+                            <Card
+                                key={facility.id}
+                                className="hover:shadow-md transition-shadow"
                             >
-                                <MapTileLayer />
-                                <MapLocateControl />
-                                <MapZoomControl />
-                                {filteredFacilities.map((facility) => (
-                                    <MapMarker
-                                        key={facility.id}
-                                        position={facility.coordinates!}
-                                    />
-                                ))}
-                            </Map>
-                        </div>
-                    </Card>
+                                <div className="p-6">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-6">
+                                        <div className="md:w-1/4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                                                    <Building className="w-6 h-6 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold line-clamp-1">
+                                                        {facility.name}
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {facility.type}
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="md:w-1/4">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                                                    <span className="line-clamp-1">
+                                                        {facility.address}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Clock className="w-4 h-4 text-muted-foreground" />
+                                                    <span className="font-medium text-amber-600">
+                                                        ~{facility.wait_time}{" "}
+                                                        min wait
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="md:w-1/4">
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="font-normal"
+                                                >
+                                                    <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
+                                                    {facility.rating?.toFixed(
+                                                        1
+                                                    )}
+                                                </Badge>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="font-normal"
+                                                >
+                                                    {facility.doctors_count}{" "}
+                                                    doctors
+                                                </Badge>
+                                            </div>
+                                        </div>
+
+                                        <div className="md:w-1/4">
+                                            <div className="flex gap-3">
+                                                <Button
+                                                    variant="outline"
+                                                    className="flex-1 rounded-lg"
+                                                    onClick={() =>
+                                                        openMaps(
+                                                            facility.address
+                                                        )
+                                                    }
+                                                >
+                                                    <ExternalLink className="w-4 h-4 mr-2" />
+                                                    Directions
+                                                </Button>
+                                                <Button
+                                                    className="flex-1 rounded-lg"
+                                                    onClick={() => {
+                                                        setSelectedFacility(
+                                                            facility
+                                                        );
+                                                        setIsBookingOpen(true);
+                                                    }}
+                                                >
+                                                    <Calendar className="w-4 h-4 mr-2" />
+                                                    Book
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
                 )}
             </div>
 
             {/* Booking Modal */}
-            <Dialog open={isBookingOpen} onOpenChange={setIsBookingOpen}>
-                <DialogContent className="sm:max-w-[500px] bg-card border-border">
-                    <DialogHeader>
-                        <DialogTitle className="text-2xl text-foreground font-sans">
-                            Book Appointment
-                        </DialogTitle>
-                        <DialogDescription className="text-base text-muted-foreground font-sans">
-                            Schedule your visit at{" "}
-                            <span className="font-semibold text-primary">
-                                {selectedFacility?.name}
-                            </span>
-                        </DialogDescription>
-                    </DialogHeader>
-
-                    <div className="grid gap-6 py-4">
-                        {selectedFacility && (
-                            <>
-                                {/* Map Preview */}
-                                <Card className="overflow-hidden border-border py-0">
-                                    <div className="h-96 relative">
-                                        <Map
-                                            center={
-                                                selectedFacility.coordinates!
-                                            }
-                                            zoom={15}
-                                            className="h-full w-full"
-                                        >
-                                            <MapTileLayer />
-                                            <MapZoomControl />
-                                            <MapMarker
-                                                position={
-                                                    selectedFacility.coordinates!
-                                                }
-                                            />
-                                        </Map>
-                                    </div>
-                                </Card>
-
-                                {/* Facility Info */}
-                                <Card className="bg-accent border-border">
-                                    <CardContent className="p-4">
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-12 h-12 bg-primary/10 rounded-lg flex items-center justify-center shrink-0">
-                                                <MapPin className="h-6 w-6 text-primary" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="font-semibold text-foreground truncate font-sans">
-                                                    {selectedFacility.name}
-                                                </h4>
-                                                <p className="text-sm text-muted-foreground mt-1 line-clamp-2 font-sans">
-                                                    {selectedFacility.address}
-                                                </p>
-                                                {selectedFacility.phone && (
-                                                    <div className="flex items-center gap-1 text-sm text-muted-foreground mt-1 font-sans">
-                                                        <Phone className="h-3 w-3" />
-                                                        {selectedFacility.phone}
-                                                    </div>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </CardContent>
-                                </Card>
-                            </>
-                        )}
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-foreground font-sans">
-                                Select Date
-                            </label>
-                            <div className="relative">
-                                <Calendar className="absolute left-3 top-2.5 h-5 w-5 text-muted-foreground" />
-                                <Input
-                                    type="date"
-                                    className="pl-10 h-12 text-base bg-background border-input focus:border-ring font-sans"
-                                    value={selectedDate}
-                                    min={today}
-                                    onChange={(e) =>
-                                        setSelectedDate(e.target.value)
-                                    }
-                                />
-                            </div>
-                        </div>
-
-                        <div className="space-y-2">
-                            <label className="text-sm font-medium text-foreground font-sans">
-                                Available Time Slots
-                            </label>
-                            <div className="grid grid-cols-2 gap-3">
-                                {selectedFacility?.slots?.map((slot) => (
-                                    <Button
-                                        key={slot}
-                                        variant={
-                                            selectedSlot === slot
-                                                ? "default"
-                                                : "outline"
-                                        }
-                                        size="lg"
-                                        onClick={() => setSelectedSlot(slot)}
-                                        className="justify-center py-3 h-auto font-sans border-border"
-                                    >
-                                        {slot}
-                                    </Button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
-
-                    <DialogFooter className="gap-3">
-                        <Button
-                            variant="outline"
-                            onClick={() => setIsBookingOpen(false)}
-                            className="flex-1 border-border text-foreground hover:bg-accent hover:text-accent-foreground font-sans"
-                        >
-                            Cancel
-                        </Button>
-                        <Button
-                            onClick={() => {
-                                alert(
-                                    `Appointment booked at ${selectedFacility?.name} for ${selectedDate} at ${selectedSlot}`
-                                );
-                                setIsBookingOpen(false);
-                                setSelectedDate("");
-                                setSelectedSlot(null);
-                            }}
-                            disabled={!selectedDate || !selectedSlot}
-                            className="flex-1 font-sans"
-                            size="lg"
-                        >
-                            Confirm Booking
-                        </Button>
-                    </DialogFooter>
-                </DialogContent>
-            </Dialog>
+            {user && selectedFacility && (
+                <AppointmentModal
+                    isOpen={isBookingOpen}
+                    onOpenChange={setIsBookingOpen}
+                    facility={selectedFacility}
+                    profileId={user.id}
+                />
+            )}
         </div>
     );
 }
