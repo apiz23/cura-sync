@@ -61,18 +61,37 @@ export default function EditPatientModal({
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Simulate API delay
-        await new Promise((resolve) => setTimeout(resolve, 500));
+        try {
+            const res = await fetch(`/api/patients/${patient.id}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify({
+                    full_name: name,
+                    phone_number: phone,
+                    role,
+                    status,
+                }),
+            });
 
-        onSave({
-            ...patient,
-            full_name: name,
-            phone_number: phone,
-            role,
-            status,
-        });
+            if (!res.ok) {
+                throw new Error("Failed to update patient");
+            }
 
-        setIsSubmitting(false);
+            onSave({
+                ...patient,
+                full_name: name,
+                phone_number: phone,
+                role,
+                status,
+            });
+        } catch (error) {
+            console.error(error);
+            alert("Failed to update patient. Please try again.");
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const formatDate = (dateString: string) => {

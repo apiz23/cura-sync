@@ -47,22 +47,27 @@ export function AdminLoginForm({
 
             if (res.ok) {
                 toast.success("Admin login successful!");
-
+            
                 sessionStorage.setItem(
                     "cura-auth",
                     JSON.stringify({
-                        email: email,
-                        loggedInAt: Date.now(),
+                        email,
                         role: "admin",
                         sessionId: data.sessionId || Date.now().toString(),
+                        loggedInAt: Date.now(),
                     })
                 );
-
+            
+                if (data.facilityId) {
+                    sessionStorage.setItem("facilityId", data.facilityId);
+                }
+            
                 setTimeout(() => {
                     router.refresh();
                     router.push("/admin/dashboard");
                 }, 500);
-            } else {
+            }
+             else {
                 toast.error(data.error || "Invalid credentials");
             }
         } catch (error) {

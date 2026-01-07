@@ -36,31 +36,19 @@ import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Map, MapTileLayer, MapMarker } from "@/components/ui/map";
-
-type Facility = {
-    id: string;
-    name: string | null;
-    type: string | null;
-    specialty: string | null;
-    description: string | null;
-    address: string | null;
-    latitude: string | null;
-    longitude: string | null;
-    phone: string | null;
-    email: string | null;
-    opening_hours: string | null;
-    capacity: number | null;
-    services: string[] | null;
-    is_active: boolean;
-    created_at: string;
-    updated_at: string | null;
-};
+import {
+    Map,
+    MapMarker,
+    MarkerContent,
+    MarkerPopup,
+    MarkerTooltip,
+} from "@/components/ui/map";
+import { FacilityEdit } from "@/app/types";
 
 export default function EditFacilityPage() {
     const { staff, loading: authLoading } = useAuth();
 
-    const [facility, setFacility] = useState<Facility | null>(null);
+    const [facility, setFacility] = useState<FacilityEdit | null>(null);
     const [loading, setLoading] = useState(true);
     const [saving, setSaving] = useState(false);
     const [activeTab, setActiveTab] = useState("basic");
@@ -617,7 +605,7 @@ export default function EditFacilityPage() {
                                 </div>
 
                                 <div className="bg-muted/30 p-4 rounded-lg">
-                                    <div className="flex items-center gap-2 mb-2">
+                                    <div className="flex items-center gap-2 mb-4">
                                         <MapPin className="w-4 h-4 text-primary" />
                                         <h4 className="font-medium">
                                             Map Preview
@@ -625,43 +613,125 @@ export default function EditFacilityPage() {
                                     </div>
 
                                     {facility.latitude && facility.longitude ? (
-                                        <div className="aspect-video rounded-lg overflow-hidden border">
+                                        <div className="aspect-video rounded-lg overflow-hidden border bg-background">
                                             <Map
                                                 center={[
                                                     parseFloat(
-                                                        facility.latitude
+                                                        facility.longitude
                                                     ),
                                                     parseFloat(
-                                                        facility.longitude
+                                                        facility.latitude
                                                     ),
                                                 ]}
                                                 zoom={15}
-                                                className="h-full w-full"
                                             >
-                                                <MapTileLayer />
                                                 <MapMarker
-                                                    position={[
-                                                        parseFloat(
-                                                            facility.latitude
-                                                        ),
-                                                        parseFloat(
-                                                            facility.longitude
-                                                        ),
-                                                    ]}
-                                                />
+                                                    longitude={parseFloat(
+                                                        facility.longitude
+                                                    )}
+                                                    latitude={parseFloat(
+                                                        facility.latitude
+                                                    )}
+                                                >
+                                                    <MarkerContent>
+                                                        <div className="size-8 rounded-full bg-primary border-2 border-white shadow-lg flex items-center justify-center">
+                                                            <Building2 className="w-4 h-4 text-white" />
+                                                        </div>
+                                                    </MarkerContent>
+                                                    <MarkerTooltip>
+                                                        {facility.name ||
+                                                            "Your Facility"}
+                                                    </MarkerTooltip>
+                                                    <MarkerPopup>
+                                                        <div className="space-y-2 p-2">
+                                                            <div className="flex items-start gap-2">
+                                                                <Building2 className="w-4 h-4 text-primary mt-0.5" />
+                                                                <div>
+                                                                    <p className="font-medium text-foreground">
+                                                                        {facility.name ||
+                                                                            "Your Facility"}
+                                                                    </p>
+                                                                    <p className="text-sm text-muted-foreground">
+                                                                        {facility.address ||
+                                                                            "No address set"}
+                                                                    </p>
+                                                                </div>
+                                                            </div>
+                                                            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                                <Globe className="w-3 h-3" />
+                                                                <span>
+                                                                    {parseFloat(
+                                                                        facility.latitude
+                                                                    ).toFixed(
+                                                                        6
+                                                                    )}
+                                                                    ,{" "}
+                                                                    {parseFloat(
+                                                                        facility.longitude
+                                                                    ).toFixed(
+                                                                        6
+                                                                    )}
+                                                                </span>
+                                                            </div>
+                                                            {facility.type && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="mt-1"
+                                                                >
+                                                                    {
+                                                                        facility.type
+                                                                    }
+                                                                </Badge>
+                                                            )}
+                                                        </div>
+                                                    </MarkerPopup>
+                                                </MapMarker>
                                             </Map>
                                         </div>
                                     ) : (
                                         <div className="aspect-video bg-muted/50 rounded-lg flex items-center justify-center">
                                             <div className="text-center">
-                                                <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-2" />
-                                                <p className="text-sm text-muted-foreground">
+                                                <Globe className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                                                <p className="text-sm text-muted-foreground font-medium">
                                                     Add coordinates to enable
                                                     map preview
+                                                </p>
+                                                <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                                                    Enter latitude and longitude
+                                                    above to see your facility
+                                                    location on the map
                                                 </p>
                                             </div>
                                         </div>
                                     )}
+                                </div>
+
+                                <div className="text-sm text-muted-foreground space-y-1">
+                                    <div className="flex items-center gap-2">
+                                        <AlertCircle className="w-4 h-4" />
+                                        <span className="font-medium">
+                                            Note:
+                                        </span>
+                                    </div>
+                                    <ul className="list-disc pl-5 space-y-1">
+                                        <li>
+                                            Coordinates should be in decimal
+                                            degrees format
+                                        </li>
+                                        <li>
+                                            Latitude ranges from -90 (South) to
+                                            90 (North)
+                                        </li>
+                                        <li>
+                                            Longitude ranges from -180 (West) to
+                                            180 (East)
+                                        </li>
+                                        <li>
+                                            You can find coordinates using
+                                            Google Maps or other mapping
+                                            services
+                                        </li>
+                                    </ul>
                                 </div>
                             </CardContent>
                         </Card>

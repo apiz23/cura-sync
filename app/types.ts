@@ -57,3 +57,38 @@ export type SessionStaff = {
     role: "admin" | "doctor" | "nurse";
     facility_id: string;
 };
+
+export type Medication = {
+    id: string;
+    profile_id: string;
+    name: string;
+    dosage: string;
+    frequency: string;
+    schedule: string;
+    status: "ACTIVE" | "COMPLETED" | "STOPPED";
+    start_date: string;
+    end_date?: string | null;
+    notes?: string | null;
+    prescribed_by?: string | null;
+    created_at?: string;
+    updated_at?: string;
+};
+
+export type FacilityEdit = {
+    id: string;
+    name: string | null;
+    type: string | null;
+    specialty: string | null;
+    description: string | null;
+    address: string | null;
+    latitude: string | null;
+    longitude: string | null;
+    phone: string | null;
+    email: string | null;
+    opening_hours: string | null;
+    capacity: number | null;
+    services: string[] | null;
+    is_active: boolean;
+    created_at: string;
+    updated_at: string | null;
+};

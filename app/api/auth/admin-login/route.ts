@@ -37,9 +37,13 @@ export async function POST(req: Request) {
             );
         }
 
-        // Success
         return NextResponse.json(
-            { success: true, userId: user.id, role: user.role },
+            {
+                success: true,
+                userId: user.id,
+                role: user.role,
+                facilityId: user.facility_id,
+            },
             { status: 200 }
         );
     } catch (error) {

@@ -109,9 +109,9 @@ export default function ContactPage() {
                                 Contact CuraSync
                             </h1>
                             <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                                Get in touch with our support team. We{"'"}re here
-                                to help you with any questions about our health
-                                platform.
+                                Get in touch with our support team. We{"'"}re
+                                here to help you with any questions about our
+                                health platform.
                             </p>
                         </div>
                     </div>
@@ -130,8 +130,8 @@ export default function ContactPage() {
                                         Message Sent Successfully!
                                     </h3>
                                     <p className="text-sm text-muted-foreground">
-                                        Thank you for contacting us. We{"'"}ll get
-                                        back to you within 2 hours.
+                                        Thank you for contacting us. We{"'"}ll
+                                        get back to you within 2 hours.
                                     </p>
                                 </div>
                             </div>
@@ -152,7 +152,7 @@ export default function ContactPage() {
                                 {contactMethods.map((method, index) => (
                                     <div
                                         key={index}
-                                        className="space-y-3 p-4 bg-muted rounded-xl border border-border"
+                                        className="space-y-3 p-4 bg-muted/50 rounded-xl border border-border"
                                     >
                                         <div className="flex items-start justify-between">
                                             <div className="flex items-center gap-3">
@@ -198,7 +198,7 @@ export default function ContactPage() {
                                 </h2>
 
                                 <div className="space-y-3">
-                                    <div className="p-3 bg-muted rounded-lg">
+                                    <div className="p-3 bg-muted/50 rounded-lg">
                                         <p className="font-medium text-foreground">
                                             CuraSync Headquarters
                                         </p>
@@ -231,8 +231,9 @@ export default function ContactPage() {
                                             Send us a Message
                                         </h2>
                                         <p className="text-muted-foreground">
-                                            Fill out the form below and we{"'"}ll
-                                            get back to you as soon as possible.
+                                            Fill out the form below and we{"'"}
+                                            ll get back to you as soon as
+                                            possible.
                                         </p>
                                     </div>
 
@@ -256,7 +257,7 @@ export default function ContactPage() {
                                                     value={formData.name}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter your full name"
-                                                    className="bg-input border-border focus:border-primary"
+                                                    className="bg-white dark:bg-card border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                                                 />
                                             </div>
                                             <div className="space-y-2">
@@ -274,7 +275,7 @@ export default function ContactPage() {
                                                     value={formData.email}
                                                     onChange={handleInputChange}
                                                     placeholder="Enter your email"
-                                                    className="bg-input border-border focus:border-primary"
+                                                    className="bg-white dark:bg-card border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                                                 />
                                             </div>
                                         </div>
@@ -294,7 +295,7 @@ export default function ContactPage() {
                                                 value={formData.subject}
                                                 onChange={handleInputChange}
                                                 placeholder="What is this regarding?"
-                                                className="bg-input border-border focus:border-primary"
+                                                className="bg-white dark:bg-card border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                                             />
                                         </div>
 
@@ -313,7 +314,7 @@ export default function ContactPage() {
                                                 value={formData.message}
                                                 onChange={handleInputChange}
                                                 placeholder="Please describe your inquiry in detail..."
-                                                className="bg-input border-border focus:border-primary resize-none"
+                                                className="bg-white dark:bg-card border-border focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
                                             />
                                         </div>
 
@@ -357,7 +358,7 @@ export default function ContactPage() {
                                         {faqs.map((faq, index) => (
                                             <div
                                                 key={index}
-                                                className="p-4 bg-muted rounded-xl border border-border"
+                                                className="p-4 bg-muted/50 rounded-xl border border-border"
                                             >
                                                 <h3 className="font-semibold text-foreground mb-2">
                                                     {faq.question}

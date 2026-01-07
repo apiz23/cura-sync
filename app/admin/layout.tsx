@@ -47,7 +47,7 @@ export default function AdminLayout({
                             <SidebarProvider
                                 style={
                                     {
-                                        "--sidebar-width": "20rem",
+                                        "--sidebar-width": "16rem",
                                         "--sidebar-width-mobile": "20rem",
                                     } as React.CSSProperties
                                 }

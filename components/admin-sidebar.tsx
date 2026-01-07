@@ -16,11 +16,13 @@ import {
     BarChart3,
     UserPlus,
     Hospital,
+    Stethoscope,
 } from "lucide-react";
 
 import {
     Sidebar,
     SidebarContent,
+    SidebarFooter,
     SidebarGroup,
     SidebarGroupContent,
     SidebarGroupLabel,
@@ -30,6 +32,7 @@ import {
     SidebarMenuItem,
     SidebarRail,
 } from "@/components/ui/sidebar";
+import { AdminProfileMenu } from "./admin-profile-menu";
 
 interface MenuItem {
     title: string;
@@ -48,6 +51,8 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
     const { staff } = useAuth();
     const role = staff?.role || "";
     const pathname = usePathname();
+
+    if (!staff) return null;
 
     const adminMenu: MenuGroup[] = [
         {
@@ -89,8 +94,8 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     icon: ClipboardList,
                 },
                 {
-                    title: "Add Staff",
-                    url: "/admin/add-staff",
+                    title: "Staff",
+                    url: "/admin/staff",
                     icon: UserPlus,
                     adminOnly: true,
                 },
@@ -121,14 +126,19 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
     ];
 
     return (
-        <Sidebar {...props}>
-            <SidebarHeader className="border-b p-4">
-                <div className="flex items-center gap-3">
-                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-red-600 text-white font-bold text-lg shadow-lg">
-                        A
+        <Sidebar collapsible="icon" {...props}>
+            <SidebarHeader>
+                <SidebarMenuButton
+                    size="lg"
+                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                >
+                    <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
+                        <Stethoscope className="size-4" />
                     </div>
-                    <h1 className="text-lg font-bold">CuraSync Admin</h1>
-                </div>
+                    <div className="grid flex-1 text-left text-sm leading-tight">
+                        <span className="truncate text-xs">CuraSync Admin</span>
+                    </div>
+                </SidebarMenuButton>
             </SidebarHeader>
 
             <SidebarContent>
@@ -176,7 +186,9 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
                     </SidebarGroup>
                 ))}
             </SidebarContent>
-
+            <SidebarFooter>
+                <AdminProfileMenu staff={staff} />
+            </SidebarFooter>
             <SidebarRail />
         </Sidebar>
     );

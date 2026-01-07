@@ -2,7 +2,11 @@ import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
     devIndicators: false,
-
+    experimental: {
+        turbo: {
+            root: "C:/Users/SCSM11/Desktop/Developer/cura-sync",
+        },
+    },
     images: {
         remotePatterns: [
             {

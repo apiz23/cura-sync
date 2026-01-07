@@ -29,6 +29,7 @@ import {
 import ViewPatientModal from "./viewModal";
 import EditPatientModal from "./editModal";
 import { Button } from "@/components/ui/button";
+import AddPatientSheet from "./addPatientSheet";
 
 interface Patient {
     id: string;
@@ -196,10 +197,12 @@ export default function PatientManagementPage() {
                                 />
                                 Refresh
                             </Button>
-                            <Button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2 transition-all duration-200 shadow-xs hover:shadow-sm">
-                                <UserPlus size={18} />
-                                Add Patient
-                            </Button>
+                            <AddPatientSheet onCreated={fetchPatients}>
+                                <Button className="px-4 py-2 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 flex items-center gap-2 transition-all duration-200 shadow-xs hover:shadow-sm">
+                                    <UserPlus size={18} />
+                                    Add Patient
+                                </Button>
+                            </AddPatientSheet>
                         </div>
                     </div>
 

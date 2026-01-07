@@ -1,28 +1,39 @@
-import supabase from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { auth } from "@clerk/nextjs/server";
+import supabase from "@/lib/supabase";
 
 export async function GET() {
-    try {
-        const { data, error } = await supabase
-            .from("cura_profiles")
-            .select("*")
-            .eq("role", "patient");
+    const { userId } = await auth();
 
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 400 });
-        }
+    if (!userId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-        return NextResponse.json(data);
-    } catch (error: unknown) {
-        console.error("Fetch patients error:", error);
+    const { data: me, error: meError } = await supabase
+        .from("cura_profiles")
+        .select("role")
+        .eq("id", userId)
+        .single();
 
-        if (error instanceof Error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
-        }
-
+    if (meError || !me) {
         return NextResponse.json(
-            { error: "Internal server error" },
-            { status: 500 }
+            { error: "Profile not found" },
+            { status: 404 }
         );
     }
+
+    if (me.role === "patient") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const { data, error } = await supabase
+        .from("cura_profiles")
+        .select("id, email, full_name, role")
+        .order("created_at", { ascending: false });
+
+    if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json(data);
 }

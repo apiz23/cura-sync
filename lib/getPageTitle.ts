@@ -7,7 +7,7 @@ export function getPageTitle(pathname: string): string {
         "/records/verify": "Record Verification",
         "/prescriptions": "Prescription Queue",
         "/admin/appointments": "Appointments",
-        "/admin/add-staff": "Add Staff",
+        "/admin/staff": "Staff",
         "/blockchain-status": "Blockchain Status",
         "/admin/profile": "Staff Accounts",
         "/settings": "System Settings",

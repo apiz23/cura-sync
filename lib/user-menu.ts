@@ -26,7 +26,7 @@ export const userMenu = [
         items: [
             {
                 title: "AI Symptom Check",
-                url: "/user/symptom-check",
+                url: "/user/symptom-analyzer",
                 icon: Brain,
             },
             {
