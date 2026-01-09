@@ -230,7 +230,7 @@ export default function Chatbot() {
     }
 
     return (
-        <div className="flex flex-col h-full bg-gradient-to-br from-background via-background to-muted/20">
+        <div className="flex flex-col h-full bg-linear-to-br from-background via-background to-muted/20">
             {/* Messages Area */}
             <div className="flex-1 overflow-y-auto p-6 space-y-6">
                 {messages.map((msg, index) => (
@@ -244,8 +244,8 @@ export default function Chatbot() {
                                 name={msg.name}
                                 className={
                                     msg.from === "assistant"
-                                        ? "bg-gradient-to-br from-primary to-primary/80 shadow-lg"
-                                        : "bg-gradient-to-br from-accent to-accent/80 shadow-lg"
+                                        ? "bg-linear-to-br from-primary to-primary/80 shadow-lg"
+                                        : "bg-linear-to-br from-accent to-accent/80 shadow-lg"
                                 }
                             />
                             <MessageContent
@@ -253,7 +253,7 @@ export default function Chatbot() {
                                 className={
                                     msg.from === "assistant"
                                         ? "bg-card/80 backdrop-blur-sm text-foreground border border-border/50 shadow-lg rounded-2xl"
-                                        : "bg-gradient-to-br from-primary to-primary/80 dark:text-black text-primary-foreground shadow-lg rounded-2xl"
+                                        : "bg-linear-to-br from-primary to-primary/80 dark:text-black text-primary-foreground shadow-lg rounded-2xl"
                                 }
                             >
                                 <div className="space-y-2">
@@ -279,7 +279,7 @@ export default function Chatbot() {
                         <MessageAvatar
                             src="/assistant-avatar.jpg"
                             name="AI Assistant"
-                            className="bg-gradient-to-br from-primary to-primary/80 shadow-lg"
+                            className="bg-linear-to-br from-primary to-primary/80 shadow-lg"
                         />
                         <MessageContent
                             variant="contained"
@@ -309,7 +309,7 @@ export default function Chatbot() {
             {error && (
                 <div className="mx-6 mb-4 p-4 bg-destructive/10 border border-destructive/20 rounded-2xl backdrop-blur-sm">
                     <div className="flex items-center gap-3">
-                        <div className="flex items-center justify-center w-8 h-8 bg-destructive/20 rounded-full flex-shrink-0">
+                        <div className="flex items-center justify-center w-8 h-8 bg-destructive/20 rounded-full shrink-0">
                             <AlertCircle className="h-4 w-4 text-destructive" />
                         </div>
                         <div className="flex-1 min-w-0">
@@ -324,7 +324,7 @@ export default function Chatbot() {
                             onClick={() => setError(null)}
                             variant="ghost"
                             size="sm"
-                            className="h-8 w-8 p-0 flex-shrink-0"
+                            className="h-8 w-8 p-0 shrink-0"
                         >
                             ×
                         </Button>
@@ -368,7 +368,7 @@ export default function Chatbot() {
                             onClick={sendMessage}
                             disabled={!input.trim() || loading}
                             size="icon"
-                            className="rounded-2xl h-14 w-14 bg-gradient-to-br from-primary to-primary/90 hover:from-primary hover:to-primary/80 text-primary-foreground shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-lg disabled:scale-100 disabled:hover:scale-100 flex-shrink-0 border-2 border-primary/20"
+                            className="rounded-2xl h-14 w-14 bg-linear-to-br from-primary to-primary/90 hover:from-primary hover:to-primary/80 text-primary-foreground shadow-xl hover:shadow-2xl hover:scale-105 active:scale-95 transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed disabled:shadow-lg disabled:scale-100 disabled:hover:scale-100 shrink-0 border-2 border-primary/20"
                         >
                             {loading ? (
                                 <Loader2 className="h-5 w-5 animate-spin" />

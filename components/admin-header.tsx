@@ -4,7 +4,7 @@ import { useAuth } from "@/components/authprovideradmin";
 import { usePathname } from "next/navigation";
 import { getPageTitle } from "@/lib/getPageTitle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
-import { ModeToggle } from "@/components/mode-toggle";
+import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
 
 export function AdminHeader() {
     const { staff, loading } = useAuth();
@@ -29,7 +29,7 @@ export function AdminHeader() {
             </div>
 
             <div className="flex items-center gap-3">
-                <ModeToggle />
+                <AnimatedThemeToggler />
             </div>
         </header>
     );

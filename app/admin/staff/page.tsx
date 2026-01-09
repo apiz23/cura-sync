@@ -1,11 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import { toast } from "sonner";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import { Field, FieldLabel, FieldDescription } from "@/components/ui/field";
+import { Input } from "@/components/ui/input";
 import {
     Select,
     SelectContent,
@@ -14,262 +12,442 @@ import {
     SelectValue,
 } from "@/components/ui/select";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
-} from "@/components/ui/card";
-import { Loader2, UserPlus } from "lucide-react";
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+    Users,
+    Trash2,
+    Search,
+    Filter,
+    Loader2,
+    Shield,
+    Stethoscope,
+    UserCog,
+    Mail,
+    Calendar,
+    MoreVertical,
+} from "lucide-react";
+import AddStaffSheet from "./add-staff-sheet";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
-type StaffRole = "doctor" | "nurse" | "admin";
+export type StaffRole = "doctor" | "nurse" | "admin";
 
-export default function AddStaffPage() {
-    const router = useRouter();
-    const [fullName, setFullName] = useState("");
-    const [email, setEmail] = useState("");
-    const [role, setRole] = useState<StaffRole | "">("");
-    const [specialization, setSpecialization] = useState("");
-    const [facilityId, setFacilityId] = useState<string | null>(null);
-    const [password, setPassword] = useState("");
-    const [loading, setLoading] = useState(false);
+export interface Staff {
+    id: string;
+    full_name: string;
+    email: string;
+    role: StaffRole;
+    specialization?: string;
+    created_at: string;
+}
 
-    useEffect(() => {
-        const fid = sessionStorage.getItem("facilityId");
+export default function StaffPage() {
+    const [staff, setStaff] = useState<Staff[]>([]);
+    const [loading, setLoading] = useState(true);
+    const [search, setSearch] = useState("");
+    const [roleFilter, setRoleFilter] = useState<StaffRole | "all">("all");
+    const [deletingId, setDeletingId] = useState<string | null>(null);
 
-        if (!fid) {
-            toast.error("No facility assigned to this admin");
-            router.push("/admin/login");
-            return;
-        }
-
-        setFacilityId(fid);
-    }, [router]);
-
-    async function handleSubmit(e: React.FormEvent) {
-        e.preventDefault();
+    async function fetchStaff() {
         setLoading(true);
-
-        if (!facilityId) {
-            toast.error("Facility not found in session");
-            return;
-        }
-
         try {
-            const res = await fetch("/api/staff/register", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    fullName,
-                    email,
-                    role,
-                    specialization,
-                    facilityId,
-                    password: password.trim() === "" ? null : password,
-                }),
-            });
-
+            const res = await fetch("/api/staff");
             const data = await res.json();
 
             if (!res.ok) {
-                toast.error(data.error || "Failed to create staff");
+                toast.error("Failed to load staff");
             } else {
-                toast.success("Staff created successfully!");
-                router.push("/admin/profile");
+                setStaff(data.staff);
             }
-        } catch (err) {
-            console.error(err);
-            toast.error("Something went wrong");
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                toast.error(err.message);
+            } else {
+                toast.error("Failed to load staff");
+            }
+        } finally {
+            setLoading(false);
         }
-
-        setLoading(false);
     }
 
+    async function removeStaff(id: string) {
+        if (!confirm("Are you sure you want to delete this staff member?"))
+            return;
+
+        setDeletingId(id);
+        try {
+            const res = await fetch(`/api/staff/${id}`, { method: "DELETE" });
+            if (!res.ok) {
+                toast.error("Failed to delete staff");
+            } else {
+                toast.success("Staff member removed successfully");
+                fetchStaff();
+            }
+        } catch (err: unknown) {
+            if (err instanceof Error) {
+                toast.error(err.message);
+            } else {
+                toast.error("Failed to delete staff");
+            }
+        } finally {
+            setDeletingId(null);
+        }
+    }
+
+    useEffect(() => {
+        fetchStaff();
+    }, []);
+
+    const filteredStaff = staff.filter((s) => {
+        const matchSearch =
+            s.full_name.toLowerCase().includes(search.toLowerCase()) ||
+            s.email.toLowerCase().includes(search.toLowerCase());
+
+        const matchRole = roleFilter === "all" || s.role === roleFilter;
+
+        return matchSearch && matchRole;
+    });
+
+    const getRoleIcon = (role: StaffRole) => {
+        switch (role) {
+            case "doctor":
+                return <Stethoscope className="w-3.5 h-3.5" />;
+            case "nurse":
+                return <Shield className="w-3.5 h-3.5" />;
+            case "admin":
+                return <UserCog className="w-3.5 h-3.5" />;
+        }
+    };
+
+    const getRoleColor = (role: StaffRole) => {
+        switch (role) {
+            case "doctor":
+                return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200";
+            case "nurse":
+                return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900 dark:text-emerald-200";
+            case "admin":
+                return "bg-purple-100 text-purple-800 hover:bg-purple-100 dark:bg-purple-900 dark:text-purple-200";
+        }
+    };
+
+    const formatDate = (dateString: string) => {
+        return new Date(dateString).toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    };
+
     return (
-        <div className="p-4 md:p-6">
-            <div className="max-w-3xl mx-auto">
-                {/* Header */}
-                <div className="mb-8">
-                    <div className="mb-2 flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-primary/10">
-                            <UserPlus className="w-6 h-6 text-primary" />
-                        </div>
-                        <h1 className="text-2xl font-semibold">
-                            Add New Staff
-                        </h1>
-                    </div>
-                    <p className="text-gray-600">
-                        Create a new staff account for your facility
+        <div className="container mx-auto p-6 space-y-6">
+            {/* Header */}
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                        Staff Management
+                    </h1>
+                    <p className="text-muted-foreground mt-2">
+                        Manage your hospital staff members and their roles
                     </p>
                 </div>
+                <AddStaffSheet onSuccess={fetchStaff} />
+            </div>
 
-                {/* Form Card */}
-                <Card className="border shadow-sm">
-                    <CardHeader className="pb-4">
-                        <CardTitle className="text-lg">Staff Details</CardTitle>
-                        <CardDescription>
-                            Fill in the information below
-                        </CardDescription>
-                    </CardHeader>
-
-                    <CardContent>
-                        <form onSubmit={handleSubmit} className="space-y-6">
-                            {/* Personal Information */}
+            {/* Stats Card */}
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-sm font-medium text-gray-700 mb-4">
-                                    Personal Information
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <Field>
-                                        <FieldLabel className="text-sm font-medium">
-                                            Full Name *
-                                        </FieldLabel>
-                                        <Input
-                                            value={fullName}
-                                            onChange={(e) =>
-                                                setFullName(e.target.value)
-                                            }
-                                            placeholder="John Doe"
-                                            required
-                                            className="mt-1"
-                                        />
-                                    </Field>
-
-                                    <Field>
-                                        <FieldLabel className="text-sm font-medium">
-                                            Email Address *
-                                        </FieldLabel>
-                                        <Input
-                                            type="email"
-                                            value={email}
-                                            onChange={(e) =>
-                                                setEmail(e.target.value)
-                                            }
-                                            placeholder="john@example.com"
-                                            required
-                                            className="mt-1"
-                                        />
-                                    </Field>
-                                </div>
+                                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                    Total Staff
+                                </p>
+                                <p className="text-3xl font-bold mt-2">
+                                    {staff.length}
+                                </p>
                             </div>
+                            <Users className="w-10 h-10 text-blue-500" />
+                        </div>
+                    </CardContent>
+                </Card>
 
-                            {/* Professional Information */}
+                <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
                             <div>
-                                <h3 className="text-sm font-medium text-gray-700 mb-4">
-                                    Professional Information
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                                    <Field>
-                                        <FieldLabel className="text-sm font-medium">
-                                            Role *
-                                        </FieldLabel>
-                                        <Select
-                                            value={role}
-                                            onValueChange={(val: StaffRole) =>
-                                                setRole(val)
-                                            }
-                                        >
-                                            <SelectTrigger className="mt-1">
-                                                <SelectValue placeholder="Select role" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="doctor">
-                                                    Doctor
-                                                </SelectItem>
-                                                <SelectItem value="nurse">
-                                                    Nurse
-                                                </SelectItem>
-                                                <SelectItem value="admin">
-                                                    Administrator
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </Field>
-
-                                    <Field>
-                                        <FieldLabel className="text-sm font-medium">
-                                            Specialization
-                                            <span className="text-gray-500 font-normal ml-1">
-                                                (Optional)
-                                            </span>
-                                        </FieldLabel>
-                                        <Input
-                                            value={specialization}
-                                            onChange={(e) =>
-                                                setSpecialization(
-                                                    e.target.value
-                                                )
-                                            }
-                                            placeholder="e.g., Cardiology"
-                                            className="mt-1"
-                                        />
-                                    </Field>
-                                </div>
-                            </div>
-
-                            {/* Account Information */}
-                            <div>
-                                <h3 className="text-sm font-medium text-gray-700 mb-4">
-                                    Account Information
-                                </h3>
-                                <Field>
-                                    <FieldLabel className="text-sm font-medium">
-                                        Password
-                                        <span className="text-gray-500 font-normal ml-1">
-                                            (Optional)
-                                        </span>
-                                    </FieldLabel>
-                                    <Input
-                                        type="password"
-                                        value={password}
-                                        onChange={(e) =>
-                                            setPassword(e.target.value)
-                                        }
-                                        placeholder="Leave empty for auto-generated password"
-                                        className="mt-1"
-                                    />
-                                    <FieldDescription className="mt-2 text-gray-500">
-                                        If left empty, a secure password will be
-                                        automatically generated and emailed
-                                    </FieldDescription>
-                                </Field>
-                            </div>
-
-                            {/* Action Buttons */}
-                            <div className="pt-6 border-t flex flex-col sm:flex-row gap-3">
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => router.back()}
-                                    className="flex-1"
-                                    disabled={loading}
-                                >
-                                    Cancel
-                                </Button>
-                                <Button
-                                    type="submit"
-                                    disabled={
-                                        loading || !role || !fullName || !email
+                                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                    Medical Staff
+                                </p>
+                                <p className="text-3xl font-bold mt-2">
+                                    {
+                                        staff.filter((s) =>
+                                            ["doctor", "nurse"].includes(s.role)
+                                        ).length
                                     }
-                                    className="flex-1"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                                            Creating...
-                                        </>
-                                    ) : (
-                                        <>
-                                            <UserPlus className="w-4 h-4 mr-2" />
-                                            Create Account
-                                        </>
-                                    )}
-                                </Button>
+                                </p>
                             </div>
-                        </form>
+                            <Stethoscope className="w-10 h-10 text-emerald-500" />
+                        </div>
+                    </CardContent>
+                </Card>
+
+                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20">
+                    <CardContent className="pt-6">
+                        <div className="flex items-center justify-between">
+                            <div>
+                                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                                    Administrators
+                                </p>
+                                <p className="text-3xl font-bold mt-2">
+                                    {
+                                        staff.filter((s) => s.role === "admin")
+                                            .length
+                                    }
+                                </p>
+                            </div>
+                            <UserCog className="w-10 h-10 text-purple-500" />
+                        </div>
                     </CardContent>
                 </Card>
             </div>
+
+            {/* Main Card */}
+            <Card className="border shadow-lg">
+                <CardHeader className="pb-3">
+                    <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <CardTitle className="flex items-center gap-2 text-xl">
+                            <Users className="w-5 h-5" />
+                            Staff Members
+                        </CardTitle>
+                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                            <Filter className="w-4 h-4" />
+                            <span>
+                                Showing {filteredStaff.length} of {staff.length}{" "}
+                                staff members
+                            </span>
+                        </div>
+                    </div>
+                </CardHeader>
+
+                <CardContent>
+                    {/* Filters */}
+                    <div className="flex flex-col md:flex-row gap-4 mb-6 p-4 bg-muted/30 rounded-lg">
+                        <div className="relative flex-1">
+                            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground w-4 h-4" />
+                            <Input
+                                placeholder="Search by name or email..."
+                                value={search}
+                                onChange={(e) => setSearch(e.target.value)}
+                                className="pl-9"
+                            />
+                        </div>
+                        <div className="flex items-center gap-3">
+                            <Select
+                                value={roleFilter}
+                                onValueChange={(v: StaffRole | "all") =>
+                                    setRoleFilter(v)
+                                }
+                            >
+                                <SelectTrigger className="w-[180px]">
+                                    <SelectValue placeholder="Filter by role" />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Roles
+                                    </SelectItem>
+                                    <SelectItem value="doctor">
+                                        Doctors
+                                    </SelectItem>
+                                    <SelectItem value="nurse">
+                                        Nurses
+                                    </SelectItem>
+                                    <SelectItem value="admin">
+                                        Administrators
+                                    </SelectItem>
+                                </SelectContent>
+                            </Select>
+                            {search || roleFilter !== "all" ? (
+                                <Button
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => {
+                                        setSearch("");
+                                        setRoleFilter("all");
+                                    }}
+                                >
+                                    Clear
+                                </Button>
+                            ) : null}
+                        </div>
+                    </div>
+
+                    {/* Table */}
+                    <div className="rounded-lg border overflow-hidden">
+                        {loading ? (
+                            <div className="space-y-3 p-6">
+                                {[...Array(5)].map((_, i) => (
+                                    <div
+                                        key={i}
+                                        className="flex items-center space-x-4"
+                                    >
+                                        <Skeleton className="h-12 w-12 rounded-full" />
+                                        <div className="space-y-2">
+                                            <Skeleton className="h-4 w-[250px]" />
+                                            <Skeleton className="h-4 w-[200px]" />
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : filteredStaff.length === 0 ? (
+                            <div className="text-center py-12">
+                                <Users className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                <h3 className="text-lg font-medium text-foreground mb-2">
+                                    No staff members found
+                                </h3>
+                                <p className="text-muted-foreground mb-6">
+                                    {search || roleFilter !== "all"
+                                        ? "Try adjusting your search or filters"
+                                        : "Get started by adding your first staff member"}
+                                </p>
+                                {!search && roleFilter === "all" && (
+                                    <AddStaffSheet onSuccess={fetchStaff} />
+                                )}
+                            </div>
+                        ) : (
+                            <Table>
+                                <TableHeader>
+                                    <TableRow className="bg-muted/50 hover:bg-muted/50">
+                                        <TableHead className="font-semibold">
+                                            Staff Member
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Role
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Specialization
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Joined
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-right">
+                                            Actions
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredStaff.map((s) => (
+                                        <TableRow
+                                            key={s.id}
+                                            className="group hover:bg-muted/30 transition-colors"
+                                        >
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-semibold">
+                                                        {s.full_name.charAt(0)}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-medium text-foreground">
+                                                            {s.full_name}
+                                                        </p>
+                                                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
+                                                            <Mail className="w-3.5 h-3.5" />
+                                                            {s.email}
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Badge
+                                                    className={`gap-1.5 ${getRoleColor(
+                                                        s.role
+                                                    )}`}
+                                                    variant="secondary"
+                                                >
+                                                    {getRoleIcon(s.role)}
+                                                    <span className="capitalize">
+                                                        {s.role}
+                                                    </span>
+                                                </Badge>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="max-w-[200px]">
+                                                    {s.specialization ? (
+                                                        <span className="text-sm">
+                                                            {s.specialization}
+                                                        </span>
+                                                    ) : (
+                                                        <span className="text-muted-foreground text-sm">
+                                                            Not specified
+                                                        </span>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell>
+                                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                                                    <Calendar className="w-3.5 h-3.5" />
+                                                    {formatDate(s.created_at)}
+                                                </div>
+                                            </TableCell>
+                                            <TableCell className="text-right">
+                                                <DropdownMenu>
+                                                    <DropdownMenuTrigger
+                                                        asChild
+                                                    >
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <MoreVertical className="w-4 h-4" />
+                                                        </Button>
+                                                    </DropdownMenuTrigger>
+                                                    <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            className="text-destructive focus:text-destructive"
+                                                            onClick={() =>
+                                                                removeStaff(
+                                                                    s.id
+                                                                )
+                                                            }
+                                                            disabled={
+                                                                deletingId ===
+                                                                s.id
+                                                            }
+                                                        >
+                                                            {deletingId ===
+                                                            s.id ? (
+                                                                <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
+                                                            ) : (
+                                                                <Trash2 className="w-3.5 h-3.5 mr-2" />
+                                                            )}
+                                                            {deletingId === s.id
+                                                                ? "Deleting..."
+                                                                : "Delete"}
+                                                        </DropdownMenuItem>
+                                                    </DropdownMenuContent>
+                                                </DropdownMenu>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        )}
+                    </div>
+                </CardContent>
+            </Card>
         </div>
     );
 }

@@ -6,19 +6,18 @@ import {
     BreadcrumbList,
     BreadcrumbPage,
 } from "@/components/ui/breadcrumb";
-import { ModeToggle } from "@/components/mode-toggle";
 import { useUser } from "@clerk/nextjs";
 import { useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import { getPageTitle } from "@/lib/getPageTitle";
+import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
 
 export function UserHeader() {
     const { isLoaded, isSignedIn } = useUser();
     const pathname = usePathname();
     const pageTitle = getPageTitle(pathname);
 
-    // Sync user once signed in
     useEffect(() => {
         if (!isLoaded || !isSignedIn) return;
 
@@ -27,7 +26,6 @@ export function UserHeader() {
         });
     }, [isLoaded, isSignedIn]);
 
-    // Loading skeleton
     if (!isLoaded) {
         return (
             <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur sticky top-0 z-50 px-6">
@@ -57,7 +55,7 @@ export function UserHeader() {
             </div>
 
             <div className="flex items-center gap-3">
-                <ModeToggle />
+                <AnimatedThemeToggler />
             </div>
         </header>
     );

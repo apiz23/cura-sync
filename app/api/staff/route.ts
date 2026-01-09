@@ -2,6 +2,17 @@ import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
 import bcrypt from "bcrypt";
 
+export async function GET() {
+    const { data, error } = await supabase
+        .from("cura_staff_profiles")
+        .select("*")
+        .order("created_at", { ascending: false });
+
+    if (error)
+        return NextResponse.json({ error: error.message }, { status: 400 });
+    return NextResponse.json({ staff: data });
+}
+
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json();

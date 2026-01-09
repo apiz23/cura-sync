@@ -288,7 +288,7 @@ export default function AppointmentBookingPage() {
 
     return (
         <div className="min-h-screen w-full overflow-x-hidden bg-linear-to-b from-background to-muted/10 p-4 md:p-6">
-            <div className="mx-auto w-full md:max-w-[80%]">
+            <div className="mx-auto w-full">
                 {/* Back Navigation */}
                 <div className="mb-6">
                     <Button
