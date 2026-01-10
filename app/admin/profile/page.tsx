@@ -28,7 +28,7 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
-import EditStaffProfileModal from "./editModal";
+import EditStaffProfileModal from "./edit-sheet";
 
 interface Availability {
     available?: boolean;
@@ -424,17 +424,15 @@ export default function StaffProfilePage() {
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                                     <Button
                                         variant="outline"
-                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-3 flex-col"
+                                        className="h-14 rounded-xl border-border hover:bg-muted/50 gap-2"
                                         onClick={() => setIsEditing(true)}
                                     >
                                         <Edit className="w-5 h-5" />
-                                        <span className="text-sm">
-                                            Edit Profile
-                                        </span>
+                                        <span>Edit Profile</span>
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-3 flex-col"
+                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4"
                                     >
                                         <Shield className="w-5 h-5" />
                                         <span className="text-sm">
@@ -443,7 +441,7 @@ export default function StaffProfilePage() {
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-3 flex-col"
+                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4"
                                     >
                                         <Bell className="w-5 h-5" />
                                         <span className="text-sm">
@@ -452,7 +450,7 @@ export default function StaffProfilePage() {
                                     </Button>
                                     <Button
                                         variant="outline"
-                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-3 flex-col"
+                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4"
                                     >
                                         <FileText className="w-5 h-5" />
                                         <span className="text-sm">

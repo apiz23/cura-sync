@@ -1,166 +1,235 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useUser } from "@clerk/nextjs";
+import {
+    Calendar,
+    FileText,
+    HeartPulse,
+    ShieldCheck,
+    Sparkles,
+} from "lucide-react";
+import type { LucideIcon } from "lucide-react";
+
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
+
+interface UserProfile {
+    full_name: string;
+}
 
 export default function UserDashboardPage() {
+    const { user, isLoaded } = useUser();
+    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [loading, setLoading] = useState(true);
+
+    useEffect(() => {
+        if (!isLoaded || !user) return;
+
+        const fetchProfile = async () => {
+            try {
+                const res = await fetch("/api/user/profile");
+                if (res.ok) {
+                    const data = await res.json();
+                    setProfile(data);
+                }
+            } catch (err) {
+                console.error("Failed to fetch profile", err);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchProfile();
+    }, [isLoaded, user]);
+
     return (
-        <div className="flex flex-1 flex-col gap-6 p-6">
-            {/* Header Section */}
-            <div>
-                <h1 className="text-3xl font-bold tracking-tight">
-                    Welcome Back, Hafiz 👋
-                </h1>
+        <div className="flex flex-1 flex-col gap-8 p-6">
+            {/* ================= HEADER ================= */}
+            <div className="space-y-1">
+                {loading ? (
+                    <Skeleton className="h-9 w-64" />
+                ) : (
+                    <h1 className="text-3xl font-bold tracking-tight">
+                        Welcome back, {profile?.full_name ?? "User"} 👋
+                    </h1>
+                )}
                 <p className="text-muted-foreground">
                     Here’s your health overview and recent updates.
                 </p>
             </div>
 
-            {/* Stats Section */}
+            {/* ================= STATS ================= */}
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">
-                            AI Predictions
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">5</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Last 7 days symptom checks
-                        </p>
-                    </CardContent>
-                </Card>
+                <StatCard
+                    title="AI Predictions"
+                    value="5"
+                    icon={Sparkles}
+                    description="Last 7 days symptom checks"
+                />
+                <StatCard
+                    title="Health Records"
+                    value="12"
+                    icon={FileText}
+                    description="Secured via blockchain"
+                />
+                <StatCard
+                    title="Appointments"
+                    value="2"
+                    icon={Calendar}
+                    description="Next: 18 Nov, 10:00 AM"
+                />
+                <StatCard
+                    title="Health Status"
+                    value="Stable"
+                    icon={HeartPulse}
+                    description="No alerts detected"
+                    highlight
+                />
+            </div>
+
+            {/* ================= RECENT ACTIVITY ================= */}
+            <div className="space-y-4">
+                <h2 className="text-2xl font-semibold">Recent Activity</h2>
 
                 <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">
-                            Saved Health Records
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">12</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Synced with blockchain vault
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">
-                            Upcoming Appointments
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold">2</div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            Next one: 18 Nov, 10:00 AM
-                        </p>
-                    </CardContent>
-                </Card>
-
-                <Card>
-                    <CardHeader className="pb-3">
-                        <CardTitle className="text-sm font-medium">
-                            Health Status
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-2xl font-bold text-green-600">
-                            Stable
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                            No alerts detected
-                        </p>
+                    <CardContent className="space-y-4 pt-6">
+                        <ActivityItem
+                            icon={Sparkles}
+                            text="AI analysis: Mild flu symptoms detected."
+                        />
+                        <ActivityItem
+                            icon={FileText}
+                            text="New prescription added by Dr. Aisyah."
+                        />
+                        <ActivityItem
+                            icon={Calendar}
+                            text="Appointment confirmed with Klinik Sehat."
+                        />
+                        <ActivityItem
+                            icon={ShieldCheck}
+                            text="Health data securely synced to blockchain."
+                        />
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Recent Activity */}
-            <div className="flex-1">
-                <h2 className="text-2xl font-semibold mb-4">Recent Activity</h2>
-                <div className="bg-muted/50 p-6 rounded-lg space-y-4 border">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-green-100 text-green-600">
-                            ✓
-                        </div>
-                        <p>AI analysis: “Mild flu symptoms detected.”</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-blue-100 text-blue-600">
-                            💊
-                        </div>
-                        <p>New prescription added by Dr. Aisyah.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-purple-100 text-purple-600">
-                            📅
-                        </div>
-                        <p>Upcoming appointment confirmed with Klinik Sehat.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-100 text-yellow-600">
-                            ⚠️
-                        </div>
-                        <p>Reminder: Update your blood pressure reading.</p>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-6 w-6 items-center justify-center rounded-full bg-teal-100 text-teal-600">
-                            ⛓️
-                        </div>
-                        <p>Health data securely synced to blockchain.</p>
-                    </div>
-                </div>
-            </div>
-
-            {/* Health Insights */}
+            {/* ================= INSIGHTS ================= */}
             <div className="space-y-6">
                 <h2 className="text-2xl font-semibold">Health Insights</h2>
+
                 <div className="grid gap-6 md:grid-cols-2">
                     <Card>
                         <CardHeader>
                             <CardTitle>Recent Health Metrics</CardTitle>
                         </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex justify-between">
-                                <span>Heart Rate</span>
-                                <span className="font-medium">76 bpm</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Blood Pressure</span>
-                                <span className="font-medium">
-                                    118 / 79 mmHg
-                                </span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Body Temperature</span>
-                                <span className="font-medium">36.7°C</span>
-                            </div>
-                            <div className="flex justify-between">
-                                <span>Sleep Hours</span>
-                                <span className="font-medium">7.2 hrs</span>
-                            </div>
+                        <CardContent className="space-y-3 text-sm">
+                            <Metric label="Heart Rate" value="76 bpm" />
+                            <Metric
+                                label="Blood Pressure"
+                                value="118 / 79 mmHg"
+                            />
+                            <Metric label="Body Temperature" value="36.7°C" />
+                            <Metric label="Sleep Duration" value="7.2 hrs" />
                         </CardContent>
                     </Card>
 
                     <Card>
-                        <CardHeader>
+                        <CardHeader className="flex-row items-center justify-between">
                             <CardTitle>Quick Actions</CardTitle>
+                            <Badge variant="secondary">Shortcuts</Badge>
                         </CardHeader>
                         <CardContent className="space-y-3">
-                            <button className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                            >
+                                <Sparkles className="mr-2 h-4 w-4" />
                                 Check New Symptoms
-                            </button>
-                            <button className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                            >
+                                <FileText className="mr-2 h-4 w-4" />
                                 View Medical Records
-                            </button>
-                            <button className="w-full text-left p-3 rounded-lg border hover:bg-muted/50 transition-colors">
+                            </Button>
+                            <Button
+                                variant="outline"
+                                className="w-full justify-start"
+                            >
+                                <Calendar className="mr-2 h-4 w-4" />
                                 Book Appointment
-                            </button>
+                            </Button>
                         </CardContent>
                     </Card>
                 </div>
             </div>
+        </div>
+    );
+}
+
+/* ================= SUB COMPONENTS ================= */
+
+function StatCard({
+    title,
+    value,
+    description,
+    icon: Icon,
+    highlight,
+}: {
+    title: string;
+    value: string;
+    description: string;
+    icon: LucideIcon;
+    highlight?: boolean;
+}) {
+    return (
+        <Card>
+            <CardHeader className="flex-row items-center justify-between pb-2">
+                <CardTitle className="text-sm font-medium">{title}</CardTitle>
+                <Icon className="h-4 w-4 text-muted-foreground" />
+            </CardHeader>
+            <CardContent>
+                <div
+                    className={`text-2xl font-bold ${
+                        highlight ? "text-green-600" : ""
+                    }`}
+                >
+                    {value}
+                </div>
+                <p className="text-xs text-muted-foreground mt-1">
+                    {description}
+                </p>
+            </CardContent>
+        </Card>
+    );
+}
+
+function ActivityItem({
+    icon: Icon,
+    text,
+}: {
+    icon: LucideIcon;
+    text: string;
+}) {
+    return (
+        <div className="flex items-center gap-3 text-sm">
+            <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
+                <Icon className="h-4 w-4 text-primary" />
+            </div>
+            <p>{text}</p>
+        </div>
+    );
+}
+
+function Metric({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex justify-between">
+            <span className="text-muted-foreground">{label}</span>
+            <span className="font-medium">{value}</span>
         </div>
     );
 }

@@ -13,7 +13,6 @@ export async function POST(req: Request) {
             );
         }
 
-        // Get staff profile
         const { data: user, error } = await supabase
             .from("cura_staff_profiles")
             .select("*")
@@ -27,7 +26,6 @@ export async function POST(req: Request) {
             );
         }
 
-        // Compare passwords
         const passwordMatch = await bcrypt.compare(password, user.password);
 
         if (!passwordMatch) {

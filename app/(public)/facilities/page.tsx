@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import {
     Map,
     useMap,
@@ -27,8 +27,8 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import PageTitle from "@/components/page-title";
 
-// --- Types ---
 type Facility = {
     id: string;
     name: string;
@@ -44,7 +44,6 @@ type Facility = {
     services?: string[];
 };
 
-// --- Custom Hook: User Location ---
 function useUserLocation() {
     const [location, setLocation] = useState<[number, number] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -64,7 +63,6 @@ function useUserLocation() {
             },
             (err) => {
                 setError(err.message);
-                // Default fallback location (e.g. Singapore center)
                 setLocation([103.8198, 1.3521]);
             },
             {
@@ -78,15 +76,14 @@ function useUserLocation() {
     return { location, error };
 }
 
-// --- Component: 3D Controller ---
 function Map3DController() {
     const { map, isLoaded } = useMap();
     const [is3D, setIs3D] = useState(false);
 
     const handle3DView = () => {
         map?.easeTo({
-            pitch: 60, // Tilt the map
-            bearing: -20, // Rotate slightly
+            pitch: 60,
+            bearing: -20,
             duration: 1500,
         });
         setIs3D(true);
@@ -94,8 +91,8 @@ function Map3DController() {
 
     const handleReset = () => {
         map?.easeTo({
-            pitch: 0, // Flat view
-            bearing: 0, // North up
+            pitch: 0,
+            bearing: 0,
             duration: 1000,
         });
         setIs3D(false);
@@ -131,9 +128,6 @@ function Map3DController() {
 
 export default function FacilitiesMapPage() {
     const [facilities, setFacilities] = useState<Facility[]>([]);
-    const [filteredFacilities, setFilteredFacilities] = useState<Facility[]>(
-        []
-    );
     const [loading, setLoading] = useState(true);
     const { location: userLocation } = useUserLocation();
 
@@ -143,30 +137,26 @@ export default function FacilitiesMapPage() {
                 const res = await fetch("/api/facilities");
                 if (!res.ok) throw new Error("Failed to fetch facilities");
 
-                const data = await res.json();
+                const data: Facility[] = await res.json();
 
-                const enhancedData = data.map(
-                    (facility: Facility, index: number) => ({
-                        ...facility,
-                        waitTime: [
-                            "15-30 min",
-                            "30-45 min",
-                            "1-2 hours",
-                            "Immediate",
-                        ][index % 4],
-                        services: ["Emergency", "OPD", "ICU", "Surgery"].slice(
-                            0,
-                            (index % 3) + 1
-                        ),
-                    })
-                );
+                const enhancedData = data.map((facility, index) => ({
+                    ...facility,
+                    waitTime: [
+                        "15-30 min",
+                        "30-45 min",
+                        "1-2 hours",
+                        "Immediate",
+                    ][index % 4],
+                    services: ["Emergency", "OPD", "ICU", "Surgery"].slice(
+                        0,
+                        (index % 3) + 1
+                    ),
+                }));
 
                 setFacilities(enhancedData);
-                setFilteredFacilities(enhancedData);
             } catch (err) {
                 console.error(err);
                 setFacilities([]);
-                setFilteredFacilities([]);
             } finally {
                 setLoading(false);
             }
@@ -175,25 +165,22 @@ export default function FacilitiesMapPage() {
         loadFacilities();
     }, []);
 
-    useEffect(() => {
-        if (!userLocation || facilities.length === 0) return;
+    const facilitiesWithDistance = useMemo(() => {
+        if (!userLocation) return facilities;
 
-        const facilitiesWithDistance = facilities.map((facility) => {
-            if (facility.latitude && facility.longitude) {
-                const distance = calculateDistance(
-                    userLocation[1],
-                    userLocation[0],
-                    parseFloat(facility.latitude),
-                    parseFloat(facility.longitude)
-                );
-                return { ...facility, distance };
-            }
-            return facility;
+        return facilities.map((facility) => {
+            if (!facility.latitude || !facility.longitude) return facility;
+
+            const distance = calculateDistance(
+                userLocation[1],
+                userLocation[0],
+                parseFloat(facility.latitude),
+                parseFloat(facility.longitude)
+            );
+
+            return { ...facility, distance };
         });
-
-        setFacilities(facilitiesWithDistance);
-        setFilteredFacilities(facilitiesWithDistance);
-    }, [facilities, userLocation, facilities.length]);
+    }, [facilities, userLocation]);
 
     function calculateDistance(
         lat1: number,
@@ -214,10 +201,11 @@ export default function FacilitiesMapPage() {
         return Math.round(R * c * 10) / 10;
     }
 
-    useEffect(() => {
-        let filtered = facilities;
+    const filteredFacilities = useMemo(() => {
+        const sorted = [...facilitiesWithDistance];
+
         if (userLocation) {
-            filtered = filtered.sort((a, b) => {
+            sorted.sort((a, b) => {
                 if (a.distance && b.distance) return a.distance - b.distance;
                 if (a.distance) return -1;
                 if (b.distance) return 1;
@@ -225,8 +213,8 @@ export default function FacilitiesMapPage() {
             });
         }
 
-        setFilteredFacilities(filtered);
-    }, [facilities, userLocation]);
+        return sorted;
+    }, [facilitiesWithDistance, userLocation]);
 
     function FacilityIcon({
         type,
@@ -292,6 +280,7 @@ export default function FacilitiesMapPage() {
 
     return (
         <div className="h-screen w-full bg-background flex flex-col">
+            <PageTitle title={"Facility"} />
             {/* Map View */}
             <div className="flex-1 relative">
                 <Map center={center} zoom={14}>

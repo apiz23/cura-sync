@@ -1,6 +1,8 @@
 "use client";
 
+import Link from "next/link";
 import { User, Settings, Shield, LogOut, ChevronsUpDown } from "lucide-react";
+
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import {
     DropdownMenu,
@@ -45,14 +47,22 @@ export function AdminProfileMenu({ staff }: AdminProfileMenuProps) {
                     <DropdownMenuTrigger asChild>
                         <SidebarMenuButton
                             size="lg"
-                            className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
+                            className="
+                gap-3
+                data-[state=open]:bg-sidebar-accent
+                data-[state=open]:text-sidebar-accent-foreground
+                group-data-[collapsible=icon]:justify-center
+              "
                         >
-                            <Avatar className="h-8 w-8 rounded-lg">
+                            {/* Avatar */}
+                            <Avatar className="h-8 w-8 rounded-lg shrink-0">
                                 <AvatarFallback className="rounded-lg bg-primary/10 text-primary">
                                     {initials}
                                 </AvatarFallback>
                             </Avatar>
-                            <div className="grid flex-1 text-left text-sm leading-tight">
+
+                            {/* Text (hidden when collapsed) */}
+                            <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                                 <span className="truncate font-medium">
                                     {staff.full_name}
                                 </span>
@@ -60,9 +70,12 @@ export function AdminProfileMenu({ staff }: AdminProfileMenuProps) {
                                     {staff.role || "Administrator"}
                                 </span>
                             </div>
-                            <ChevronsUpDown className="ml-auto size-4" />
+
+                            {/* Chevron (hidden when collapsed) */}
+                            <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
+
                     <DropdownMenuContent
                         className="w-(--radix-dropdown-menu-trigger-width) min-w-56 rounded-lg"
                         side={isMobile ? "bottom" : "right"}
@@ -86,37 +99,43 @@ export function AdminProfileMenu({ staff }: AdminProfileMenuProps) {
                                 </div>
                             </div>
                         </DropdownMenuLabel>
+
                         <DropdownMenuSeparator />
+
                         <DropdownMenuGroup>
-                            <DropdownMenuItem
-                                onClick={() =>
-                                    (window.location.href = "/admin/profile")
-                                }
-                                className="cursor-pointer"
-                            >
-                                <User className="mr-2 h-4 w-4" />
-                                <span>Profile</span>
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href="/admin/profile"
+                                    className="flex items-center gap-2"
+                                >
+                                    <User className="h-4 w-4" />
+                                    <span>Profile</span>
+                                </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onClick={() =>
-                                    (window.location.href = "/admin/settings")
-                                }
-                                className="cursor-pointer"
-                            >
-                                <Settings className="mr-2 h-4 w-4" />
-                                <span>Preferences</span>
+
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href="/admin/settings"
+                                    className="flex items-center gap-2"
+                                >
+                                    <Settings className="h-4 w-4" />
+                                    <span>Preferences</span>
+                                </Link>
                             </DropdownMenuItem>
-                            <DropdownMenuItem
-                                onClick={() =>
-                                    (window.location.href = "/admin/security")
-                                }
-                                className="cursor-pointer"
-                            >
-                                <Shield className="mr-2 h-4 w-4" />
-                                <span>Security</span>
+
+                            <DropdownMenuItem asChild>
+                                <Link
+                                    href="/admin/security"
+                                    className="flex items-center gap-2"
+                                >
+                                    <Shield className="h-4 w-4" />
+                                    <span>Security</span>
+                                </Link>
                             </DropdownMenuItem>
                         </DropdownMenuGroup>
+
                         <DropdownMenuSeparator />
+
                         <DropdownMenuItem
                             onClick={handleLogout}
                             className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"

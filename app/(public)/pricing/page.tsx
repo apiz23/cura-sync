@@ -21,6 +21,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { cn } from "@/lib/utils";
+import PageTitle from "@/components/page-title";
 
 export default function PricingPage() {
     const [isAnnual, setIsAnnual] = useState(true);
@@ -269,6 +270,7 @@ export default function PricingPage() {
 
     return (
         <div className="min-h-screen bg-background pt-20 pb-8 px-4">
+            <PageTitle title={"Pricing"} />
             <div className="max-w-7xl mx-auto space-y-16 pt-8">
                 {/* Header */}
                 <div className="text-center space-y-6">
@@ -408,7 +410,7 @@ export default function PricingPage() {
                                                     key={featureIndex}
                                                     className="flex items-start gap-3"
                                                 >
-                                                    <Check className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
+                                                    <Check className="h-5 w-5 text-primary mt-0.5 shrink-0" />
                                                     <span className="text-foreground">
                                                         {feature}
                                                     </span>

@@ -2,13 +2,13 @@
 
 import React from "react";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogTrigger,
-} from "@/components/ui/dialog";
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+    SheetTrigger,
+} from "@/components/ui/sheet";
 import Image from "next/image";
 import {
     User,
@@ -74,23 +74,22 @@ export default function ViewPatientModal({
     };
 
     return (
-        <Dialog>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-2 shadow-2xl">
+        <Sheet>
+            <SheetTrigger asChild>{children}</SheetTrigger>
+            <SheetContent className="sm:max-w-2xl p-0 overflow-hidden border-2 shadow-2xl">
                 {/* Header with linear */}
                 <div className="bg-linear-to-r from-primary/10 via-primary/5 to-primary/5 p-6">
-                    <DialogHeader className="space-y-2">
+                    <SheetHeader className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <DialogTitle className="text-2xl font-bold text-foreground serif">
+                            <SheetTitle className="text-2xl font-bold text-foreground serif">
                                 Patient Details
-                            </DialogTitle>
-                           
+                            </SheetTitle>
                         </div>
-                        <DialogDescription className="text-muted-foreground">
+                        <SheetDescription className="text-muted-foreground">
                             Comprehensive information for{" "}
                             {patient.full_name || "the patient"}
-                        </DialogDescription>
-                    </DialogHeader>
+                        </SheetDescription>
+                    </SheetHeader>
 
                     {/* Patient Profile Summary */}
                     <div className="flex items-start gap-6 mt-6">
@@ -347,7 +346,7 @@ export default function ViewPatientModal({
                         </div>
                     </div>
                 </div>
-            </DialogContent>
-        </Dialog>
+            </SheetContent>
+        </Sheet>
     );
 }

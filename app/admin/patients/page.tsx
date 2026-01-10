@@ -39,7 +39,8 @@ interface Patient {
     avatar_url: string | null;
     phone_number: string | null;
     created_at: string;
-    status?: "active" | "inactive" | "pending";
+    status?: "active" | "inactive" | "suspended";
+    registered_at?: string;
 }
 
 export default function PatientManagementPage() {
@@ -57,15 +58,22 @@ export default function PatientManagementPage() {
     const fetchPatients = useCallback(async () => {
         try {
             setLoading(true);
-            const res = await fetch("/api/user");
+
+            const facilityId = sessionStorage.getItem("facilityId");
+
+            if (!facilityId) {
+                console.error("No facilityId in sessionStorage");
+                return;
+            }
+
+            const res = await fetch(`/api/patients/facility/${facilityId}`);
+
+            if (!res.ok) {
+                throw new Error("Failed to fetch patients");
+            }
+
             const data = await res.json();
-            const patientsWithStatus = data.map((patient: Patient) => ({
-                ...patient,
-                status: ["active", "inactive", "pending"][
-                    Math.floor(Math.random() * 3)
-                ] as "active" | "inactive" | "pending",
-            }));
-            setPatients(patientsWithStatus);
+            setPatients(data);
         } catch (err) {
             console.error("Error fetching patients:", err);
         } finally {
@@ -91,7 +99,7 @@ export default function PatientManagementPage() {
                 return "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400 border-green-200 dark:border-green-800";
             case "inactive":
                 return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400 border-gray-200 dark:border-gray-700";
-            case "pending":
+            case "suspended":
                 return "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400 border-yellow-200 dark:border-yellow-800";
             default:
                 return "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-400";
@@ -178,7 +186,7 @@ export default function PatientManagementPage() {
                 <div className="mb-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
                         <div>
-                            <h1 className="text-3xl font-bold text-foreground serif">
+                            <h1 className="text-3xl font-bold text-foreground">
                                 Patient Management
                             </h1>
                             <p className="text-muted-foreground mt-2">
@@ -251,7 +259,7 @@ export default function PatientManagementPage() {
                                     <p className="text-3xl font-bold text-foreground">
                                         {
                                             patients.filter(
-                                                (p) => p.status === "pending"
+                                                (p) => p.status === "suspended"
                                             ).length
                                         }
                                     </p>
@@ -443,7 +451,7 @@ export default function PatientManagementPage() {
                                                                     "active"
                                                                         ? "bg-green-500"
                                                                         : patient.status ===
-                                                                          "pending"
+                                                                          "suspended"
                                                                         ? "bg-yellow-500"
                                                                         : "bg-gray-400"
                                                                 }`}

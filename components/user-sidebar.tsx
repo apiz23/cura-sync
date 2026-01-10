@@ -21,56 +21,79 @@ import UserProfileMenu from "./user-profile-menu";
 import { useUser } from "@clerk/nextjs";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export function UserSidebar({
-    ...props
-}: React.ComponentProps<typeof Sidebar>) {
+export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
     const { isLoaded } = useUser();
 
+    const isMenuActive = (itemUrl: string) => {
+        if (itemUrl === "/user") {
+            return pathname === "/user";
+        }
+
+        return pathname === itemUrl || pathname.startsWith(itemUrl + "/");
+    };
+
     return (
-        <Sidebar collapsible="icon" {...props}>
+        <Sidebar {...props}>
+            {/* ================= HEADER ================= */}
             <SidebarHeader>
-                <SidebarMenuButton
-                    size="lg"
-                    className="data-[state=open]:bg-sidebar-accent data-[state=open]:text-sidebar-accent-foreground"
-                >
-                    <div className="bg-sidebar-primary text-sidebar-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
-                        <Stethoscope className="size-4" />
-                    </div>
-                    <div className="grid flex-1 text-left text-sm leading-tight">
-                        <span className="truncate font-semibold">CuraSync</span>
-                        <span className="truncate text-xs text-muted-foreground">
-                            Patient Portal
-                        </span>
-                    </div>
-                </SidebarMenuButton>
+                <SidebarMenu>
+                    <SidebarMenuItem>
+                        <SidebarMenuButton
+                            size="lg"
+                            className="
+                                gap-3
+                                justify-start
+                                group-data-[collapsible=icon]:justify-center
+                                group-data-[collapsible=icon]:px-0
+                            "
+                        >
+                            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 items-center justify-center rounded-lg">
+                                <Stethoscope className="size-4" />
+                            </div>
+                            <div className="grid text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+                                <span className="truncate font-semibold">
+                                    CuraSync
+                                </span>
+                                <span className="truncate text-xs text-muted-foreground">
+                                    Patient Portal
+                                </span>
+                            </div>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                </SidebarMenu>
             </SidebarHeader>
 
+            {/* ================= CONTENT ================= */}
             <SidebarContent>
                 {userMenu.map((group) => (
                     <SidebarGroup key={group.title}>
                         <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2">
                             {group.title}
                         </SidebarGroupLabel>
+
                         <SidebarGroupContent>
                             <SidebarMenu>
                                 {group.items.map((item) => {
                                     const Icon = item.icon;
-                                    const isActive = pathname === item.url;
+                                    const active = isMenuActive(item.url);
 
                                     return (
                                         <SidebarMenuItem key={item.title}>
                                             <SidebarMenuButton
                                                 asChild
-                                                isActive={isActive}
-                                                className="data-[active=true]:bg-primary/10 data-[active=true]:text-primary"
+                                                isActive={active}
+                                                tooltip={item.title}
+                                                className="
+                                                    gap-3
+                                                    data-[active=true]:bg-primary/10
+                                                    data-[active=true]:text-primary
+                                                    group-data-[collapsible=icon]:justify-center
+                                                "
                                             >
-                                                <Link
-                                                    href={item.url}
-                                                    className="flex items-center gap-3"
-                                                >
-                                                    <Icon className="w-4 h-4" />
-                                                    <span className="text-sm font-medium">
+                                                <Link href={item.url}>
+                                                    <Icon className="size-4 shrink-0" />
+                                                    <span className="text-sm font-medium group-data-[collapsible=icon]:hidden">
                                                         {item.title}
                                                     </span>
                                                 </Link>
@@ -84,15 +107,16 @@ export function UserSidebar({
                 ))}
             </SidebarContent>
 
+            {/* ================= FOOTER ================= */}
             <SidebarFooter>
                 {!isLoaded ? (
                     <div className="flex items-center gap-3 p-2">
                         <Skeleton className="h-8 w-8 rounded-lg" />
-                        <div className="flex-1 space-y-1">
+                        <div className="flex-1 space-y-1 group-data-[collapsible=icon]:hidden">
                             <Skeleton className="h-3 w-24" />
                             <Skeleton className="h-2 w-16" />
                         </div>
-                        <Skeleton className="h-4 w-4" />
+                        <Skeleton className="h-4 w-4 group-data-[collapsible=icon]:hidden" />
                     </div>
                 ) : (
                     <UserProfileMenu />

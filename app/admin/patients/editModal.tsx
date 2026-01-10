@@ -2,16 +2,19 @@
 
 import React, { useState } from "react";
 import {
-    Dialog,
-    DialogContent,
-    DialogHeader,
-    DialogTitle,
-    DialogDescription,
-    DialogTrigger,
-    DialogFooter,
-} from "@/components/ui/dialog";
+    Sheet,
+    SheetContent,
+    SheetHeader,
+    SheetTitle,
+    SheetDescription,
+    SheetTrigger,
+    SheetFooter,
+} from "@/components/ui/sheet";
 import { User, Phone, Activity, Mail, Calendar, Shield } from "lucide-react";
 import Image from "next/image";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 
 interface Patient {
     id: string;
@@ -21,7 +24,7 @@ interface Patient {
     avatar_url: string | null;
     phone_number: string | null;
     created_at: string;
-    status?: "active" | "inactive" | "pending";
+    status?: "active" | "inactive" | "suspended";
 }
 
 interface EditPatientModalProps {
@@ -39,8 +42,9 @@ export default function EditPatientModal({
     const [phone, setPhone] = useState(patient.phone_number ?? "");
     const [role, setRole] = useState(patient.role ?? "");
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const PATIENT_STATUSES = ["active", "suspended", "inactive"] as const;
 
-    const [status, setStatus] = useState<"active" | "inactive" | "pending">(
+    const [status, setStatus] = useState<"active" | "inactive" | "suspended">(
         patient.status ?? "active"
     );
 
@@ -50,7 +54,7 @@ export default function EditPatientModal({
                 return "text-green-600 bg-green-50 border-green-200 dark:bg-green-900/20 dark:text-green-400 dark:border-green-800";
             case "inactive":
                 return "text-gray-600 bg-gray-50 border-gray-200 dark:bg-gray-800 dark:text-gray-400 dark:border-gray-700";
-            case "pending":
+            case "suspended":
                 return "text-yellow-600 bg-yellow-50 border-yellow-200 dark:bg-yellow-900/20 dark:text-yellow-400 dark:border-yellow-800";
             default:
                 return "text-gray-600 bg-gray-50 border-gray-200";
@@ -103,30 +107,32 @@ export default function EditPatientModal({
     };
 
     return (
-        <Dialog>
-            <DialogTrigger asChild>{children}</DialogTrigger>
-            <DialogContent className="sm:max-w-2xl p-0 overflow-hidden border-2 shadow-2xl">
+        <Sheet>
+            <SheetTrigger asChild>{children}</SheetTrigger>
+            <SheetContent className="sm:max-w-2xl p-0 overflow-hidden border-2 shadow-2xl">
                 <div className="bg-linear-to-r from-primary/5 to-primary/10 p-6">
-                    <DialogHeader className="space-y-2">
+                    <SheetHeader className="space-y-2">
                         <div className="flex items-center justify-between">
-                            <DialogTitle className="text-2xl font-bold text-foreground serif">
+                            <SheetTitle className="text-2xl font-bold text-foreground serif">
                                 Edit Patient
-                            </DialogTitle>
+                            </SheetTitle>
                         </div>
-                        <DialogDescription className="text-muted-foreground">
+                        <SheetDescription className="text-muted-foreground">
                             Update patient information and status
-                        </DialogDescription>
-                    </DialogHeader>
+                        </SheetDescription>
+                    </SheetHeader>
 
                     {/* Patient Info Summary */}
                     <div className="flex items-center gap-4 p-4 bg-card/50 rounded-lg mt-4">
                         <div className="relative">
                             {patient.avatar_url ? (
-                                <div className="w-16 h-16 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center overflow-hidden">
+                                <div className="relative w-16 h-16 rounded-full overflow-hidden bg-linear-to-br from-primary/20 to-primary/10">
                                     <Image
                                         src={patient.avatar_url}
                                         alt="Avatar"
-                                        className="w-full h-full object-cover"
+                                        fill
+                                        sizes="64px"
+                                        className="object-cover"
                                     />
                                 </div>
                             ) : (
@@ -138,7 +144,7 @@ export default function EditPatientModal({
                                 className={`absolute -bottom-1 -right-1 w-5 h-5 rounded-full border-2 border-background ${
                                     status === "active"
                                         ? "bg-green-500"
-                                        : status === "pending"
+                                        : status === "suspended"
                                         ? "bg-yellow-500"
                                         : "bg-gray-400"
                                 }`}
@@ -168,19 +174,19 @@ export default function EditPatientModal({
                     {/* Form Fields */}
                     <div className="space-y-6">
                         <div>
-                            <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
+                            <Label className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
                                 <User size={16} />
                                 Personal Information
-                            </label>
+                            </Label>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">
+                                    <Label className="block text-sm font-medium text-foreground mb-2">
                                         Full Name *
-                                    </label>
-                                    <input
+                                    </Label>
+                                    <Input
                                         type="text"
                                         required
-                                        className="w-full p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200"
+                                        className="w-full p-3 bg-background border border-Input rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200"
                                         value={name}
                                         onChange={(e) =>
                                             setName(e.target.value)
@@ -190,17 +196,17 @@ export default function EditPatientModal({
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">
+                                    <Label className="block text-sm font-medium text-foreground mb-2">
                                         Phone Number
-                                    </label>
+                                    </Label>
                                     <div className="relative">
                                         <Phone
                                             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground"
                                             size={18}
                                         />
-                                        <input
+                                        <Input
                                             type="tel"
-                                            className="w-full pl-10 p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200"
+                                            className="w-full pl-10 p-3 bg-background border border-Input rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200"
                                             value={phone}
                                             onChange={(e) =>
                                                 setPhone(e.target.value)
@@ -213,18 +219,18 @@ export default function EditPatientModal({
                         </div>
 
                         <div className="border-t pt-6">
-                            <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
+                            <Label className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
                                 <Shield size={16} />
                                 Account Settings
-                            </label>
+                            </Label>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-sm font-medium text-foreground mb-2">
+                                    <Label className="block text-sm font-medium text-foreground mb-2">
                                         Role
-                                    </label>
-                                    <input
+                                    </Label>
+                                    <Input
                                         type="text"
-                                        className="w-full p-3 bg-background border border-input rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200"
+                                        className="w-full p-3 bg-background border border-Input rounded-lg focus:ring-2 focus:ring-primary/50 focus:border-primary outline-none transition-all duration-200"
                                         value={role}
                                         onChange={(e) =>
                                             setRole(e.target.value)
@@ -234,33 +240,26 @@ export default function EditPatientModal({
                                 </div>
 
                                 <div>
-                                    <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
+                                    <Label className="flex items-center gap-2 text-sm font-medium text-foreground mb-2">
                                         <Activity size={16} />
                                         Status
-                                    </label>
+                                    </Label>
                                     <div className="grid grid-cols-3 gap-2">
-                                        {(
-                                            [
-                                                "active",
-                                                "pending",
-                                                "inactive",
-                                            ] as const
-                                        ).map((s) => (
-                                            <button
+                                        {PATIENT_STATUSES.map((s) => (
+                                            <Button
                                                 key={s}
-                                                type="button"
                                                 onClick={() => setStatus(s)}
                                                 className={`p-3 rounded-lg border transition-all duration-200 flex items-center justify-center gap-2 ${
                                                     status === s
                                                         ? "border-primary bg-primary/10 text-primary"
-                                                        : "border-input hover:bg-muted/30"
+                                                        : "border-Input hover:bg-muted/30"
                                                 }`}
                                             >
                                                 <div
                                                     className={`w-2 h-2 rounded-full ${
                                                         s === "active"
                                                             ? "bg-green-500"
-                                                            : s === "pending"
+                                                            : s === "suspended"
                                                             ? "bg-yellow-500"
                                                             : "bg-gray-400"
                                                     }`}
@@ -268,9 +267,10 @@ export default function EditPatientModal({
                                                 <span className="capitalize">
                                                     {s}
                                                 </span>
-                                            </button>
+                                            </Button>
                                         ))}
                                     </div>
+
                                     <div
                                         className={`mt-3 p-3 rounded-lg border ${getStatusColor(
                                             status
@@ -281,10 +281,10 @@ export default function EditPatientModal({
                                         </p>
                                         <p className="text-xs mt-1">
                                             {status === "active"
-                                                ? "Patient has full access to the system"
-                                                : status === "pending"
-                                                ? "Patient is awaiting approval or activation"
-                                                : "Patient account is currently inactive"}
+                                                ? "Patient is currently active and receiving care"
+                                                : status === "suspended"
+                                                ? "Patient access is temporarily suspended"
+                                                : "Patient account is inactive"}
                                         </p>
                                     </div>
                                 </div>
@@ -292,10 +292,10 @@ export default function EditPatientModal({
                         </div>
 
                         <div className="border-t pt-6">
-                            <label className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
+                            <Label className="flex items-center gap-2 text-sm font-medium text-foreground mb-3">
                                 <Calendar size={16} />
                                 Account Information
-                            </label>
+                            </Label>
                             <div className="bg-muted/30 p-4 rounded-lg space-y-2">
                                 <div className="flex justify-between text-sm">
                                     <span className="text-muted-foreground">
@@ -325,16 +325,13 @@ export default function EditPatientModal({
                         </div>
                     </div>
 
-                    <DialogFooter className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
-                        <DialogTrigger asChild>
-                            <button
-                                type="button"
-                                className="px-6 py-3 border border-input rounded-lg hover:bg-muted/30 transition-all duration-200 w-full sm:w-auto"
-                            >
+                    <SheetFooter className="flex flex-col sm:flex-row gap-3 border-t">
+                        <SheetTrigger asChild>
+                            <Button className="px-6 py-3 border border-Input rounded-lg hover:bg-muted/30 transition-all duration-200 w-full sm:w-auto">
                                 Cancel
-                            </button>
-                        </DialogTrigger>
-                        <button
+                            </Button>
+                        </SheetTrigger>
+                        <Button
                             type="submit"
                             disabled={isSubmitting || !name.trim()}
                             className="px-6 py-3 bg-primary text-primary-foreground rounded-lg hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-xs hover:shadow-sm w-full sm:w-auto flex items-center justify-center gap-2"
@@ -347,10 +344,10 @@ export default function EditPatientModal({
                             ) : (
                                 "Save Changes"
                             )}
-                        </button>
-                    </DialogFooter>
+                        </Button>
+                    </SheetFooter>
                 </form>
-            </DialogContent>
-        </Dialog>
+            </SheetContent>
+        </Sheet>
     );
 }

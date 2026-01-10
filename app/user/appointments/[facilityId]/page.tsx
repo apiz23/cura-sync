@@ -290,16 +290,14 @@ export default function AppointmentBookingPage() {
         <div className="min-h-screen w-full overflow-x-hidden bg-linear-to-b from-background to-muted/10 p-4 md:p-6">
             <div className="mx-auto w-full">
                 {/* Back Navigation */}
-                <div className="mb-6">
-                    <Button
-                        variant="ghost"
-                        onClick={() => router.push("/facilities")}
-                        className="group gap-2 transition-all duration-300 hover:bg-muted/50"
-                    >
-                        <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
-                        Back to Facilities
-                    </Button>
-                </div>
+                <Button
+                    variant="ghost"
+                    onClick={() => router.push("/user/appointment")}
+                    className="group gap-2 transition-all duration-300 hover:bg-muted/50 "
+                >
+                    <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />
+                    Back to Facilities
+                </Button>
 
                 {/* Main Content */}
                 <div className="grid w-full grid-cols-1 gap-6 lg:grid-cols-3">

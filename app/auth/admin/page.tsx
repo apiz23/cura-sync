@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { GalleryVerticalEnd, Shield } from "lucide-react";
+import { Shield, Stethoscope } from "lucide-react";
 import Link from "next/link";
 import { AdminLoginForm } from "./loginform";
 
@@ -20,7 +20,7 @@ export default function AdminLoginPage() {
                         className="flex items-center gap-2 font-semibold text-lg hover:opacity-80 transition-opacity group"
                     >
                         <div className="bg-linear-to-br from-primary to-primary/80 text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                            <GalleryVerticalEnd className="size-5" />
+                            <Stethoscope className="size-5" />
                         </div>
                         <div className="flex items-center gap-2">
                             <span className="text-foreground">CuraSync</span>

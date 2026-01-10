@@ -27,7 +27,6 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
-import { ScrollArea } from "@/components/ui/scroll-area";
 
 export interface Facility {
     id: string;
@@ -176,7 +175,7 @@ export default function AppointmentPage() {
 
     return (
         <div className="bg-linear-to-b from-background to-muted/20 p-4 md:p-6">
-            <div className="max-w-7xl mx-auto space-y-8">
+            <div className="mx-auto space-y-8">
                 {/* Search Section */}
                 <div className="mb-8 space-y-6">
                     <div>
@@ -281,260 +280,252 @@ export default function AppointmentPage() {
                     </div>
                 </div>
 
-                <ScrollArea className="h-[60vh] w-full rounded-2xl border-2 p-2">
-                    {/* Results */}
-                    {isLoading ? (
-                        <div
-                            className={`grid ${
-                                viewMode === "grid"
-                                    ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                                    : "grid-cols-1 gap-4"
-                            }`}
-                        >
-                            {[...Array(6)].map((_, i) => (
-                                <Card key={i} className="overflow-hidden">
-                                    <CardContent className="p-6">
-                                        <div className="space-y-4">
-                                            <Skeleton className="h-6 w-3/4" />
-                                            <Skeleton className="h-4 w-1/2" />
-                                            <div className="flex gap-2">
-                                                <Skeleton className="h-6 w-20 rounded-full" />
-                                                <Skeleton className="h-6 w-20 rounded-full" />
-                                            </div>
-                                            <Skeleton className="h-24 w-full" />
-                                            <div className="flex gap-2 pt-2">
-                                                <Skeleton className="h-10 flex-1 rounded-lg" />
-                                                <Skeleton className="h-10 w-10 rounded-lg" />
+                {/* Results */}
+                {isLoading ? (
+                    <div
+                        className={`grid ${
+                            viewMode === "grid"
+                                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
+                                : "grid-cols-1 gap-4"
+                        }`}
+                    >
+                        {[...Array(6)].map((_, i) => (
+                            <Card key={i} className="overflow-hidden">
+                                <CardContent className="p-6">
+                                    <div className="space-y-4">
+                                        <Skeleton className="h-6 w-3/4" />
+                                        <Skeleton className="h-4 w-1/2" />
+                                        <div className="flex gap-2">
+                                            <Skeleton className="h-6 w-20 rounded-full" />
+                                            <Skeleton className="h-6 w-20 rounded-full" />
+                                        </div>
+                                        <Skeleton className="h-24 w-full" />
+                                        <div className="flex gap-2 pt-2">
+                                            <Skeleton className="h-10 flex-1 rounded-lg" />
+                                            <Skeleton className="h-10 w-10 rounded-lg" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                ) : filteredFacilities.length === 0 ? (
+                    <Card className="border-dashed">
+                        <CardContent className="p-12 text-center">
+                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                                <Search className="w-10 h-10 text-muted-foreground" />
+                            </div>
+                            <h3 className="text-xl font-semibold mb-3">
+                                No facilities found
+                            </h3>
+                            <p className="text-muted-foreground mb-6">
+                                {searchQuery
+                                    ? `No results for "${searchQuery}". Try different keywords.`
+                                    : "No healthcare facilities available at the moment."}
+                            </p>
+                            {searchQuery && (
+                                <Button
+                                    variant="outline"
+                                    onClick={() => setSearchQuery("")}
+                                    className="gap-2"
+                                >
+                                    <X className="w-4 h-4" />
+                                    Clear Search
+                                </Button>
+                            )}
+                        </CardContent>
+                    </Card>
+                ) : viewMode === "grid" ? (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                        {filteredFacilities.map((facility) => (
+                            <Card
+                                key={facility.id}
+                                className="group hover:shadow-xl transition-all duration-300 border overflow-hidden"
+                            >
+                                <CardHeader className="pb-4">
+                                    <div className="flex justify-between items-start mb-2">
+                                        <Badge
+                                            variant="secondary"
+                                            className="font-normal"
+                                        >
+                                            {facility.type}
+                                        </Badge>
+                                        <div className="flex items-center gap-1 text-sm">
+                                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
+                                            <span className="font-medium">
+                                                {facility.rating?.toFixed(1)}
+                                            </span>
+                                        </div>
+                                    </div>
+                                    <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">
+                                        {facility.name}
+                                    </h3>
+                                    <p className="text-sm text-muted-foreground line-clamp-1">
+                                        {facility.specialty ||
+                                            "General Medicine"}
+                                    </p>
+                                </CardHeader>
+
+                                <CardContent className="space-y-4">
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
+                                        <span className="line-clamp-1">
+                                            {facility.address}
+                                        </span>
+                                    </div>
+
+                                    <div className="flex items-center gap-2 text-sm">
+                                        <span>{facility.distance} km away</span>
+                                    </div>
+
+                                    <div className="flex flex-wrap gap-2">
+                                        {facility.services
+                                            ?.slice(0, 3)
+                                            .map((service, i) => (
+                                                <Badge
+                                                    key={i}
+                                                    variant="outline"
+                                                    className="text-xs font-normal"
+                                                >
+                                                    {service}
+                                                </Badge>
+                                            ))}
+                                        {facility.services &&
+                                            facility.services.length > 3 && (
+                                                <Badge
+                                                    variant="outline"
+                                                    className="text-xs font-normal"
+                                                >
+                                                    +
+                                                    {facility.services.length -
+                                                        3}{" "}
+                                                    more
+                                                </Badge>
+                                            )}
+                                    </div>
+                                </CardContent>
+
+                                <CardFooter className="pt-4 border-t">
+                                    <div className="flex gap-3 w-full">
+                                        <Link
+                                            href={`/user/appointments/${facility.id}`}
+                                            className="flex-1"
+                                        >
+                                            <Button className="w-full rounded-lg">
+                                                <Calendar className="w-4 h-4 mr-2" />
+                                                Book
+                                            </Button>
+                                        </Link>
+
+                                        <Button
+                                            variant="outline"
+                                            size="icon"
+                                            className="rounded-lg"
+                                            onClick={() =>
+                                                openMaps(facility.address)
+                                            }
+                                            title="Get directions"
+                                        >
+                                            <Navigation className="w-4 h-4" />
+                                        </Button>
+                                    </div>
+                                </CardFooter>
+                            </Card>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="space-y-4">
+                        {filteredFacilities.map((facility) => (
+                            <Card
+                                key={facility.id}
+                                className="hover:shadow-md transition-shadow"
+                            >
+                                <div className="p-6">
+                                    <div className="flex flex-col md:flex-row md:items-center gap-6">
+                                        <div className="md:w-1/4">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center">
+                                                    <Building className="w-6 h-6 text-primary" />
+                                                </div>
+                                                <div>
+                                                    <h3 className="font-bold line-clamp-1">
+                                                        {facility.name}
+                                                    </h3>
+                                                    <p className="text-sm text-muted-foreground">
+                                                        {facility.type}
+                                                    </p>
+                                                </div>
                                             </div>
                                         </div>
-                                    </CardContent>
-                                </Card>
-                            ))}
-                        </div>
-                    ) : filteredFacilities.length === 0 ? (
-                        <Card className="border-dashed">
-                            <CardContent className="p-12 text-center">
-                                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
-                                    <Search className="w-10 h-10 text-muted-foreground" />
-                                </div>
-                                <h3 className="text-xl font-semibold mb-3">
-                                    No facilities found
-                                </h3>
-                                <p className="text-muted-foreground mb-6">
-                                    {searchQuery
-                                        ? `No results for "${searchQuery}". Try different keywords.`
-                                        : "No healthcare facilities available at the moment."}
-                                </p>
-                                {searchQuery && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setSearchQuery("")}
-                                        className="gap-2"
-                                    >
-                                        <X className="w-4 h-4" />
-                                        Clear Search
-                                    </Button>
-                                )}
-                            </CardContent>
-                        </Card>
-                    ) : viewMode === "grid" ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                            {filteredFacilities.map((facility) => (
-                                <Card
-                                    key={facility.id}
-                                    className="group hover:shadow-xl transition-all duration-300 border overflow-hidden"
-                                >
-                                    <CardHeader className="pb-4">
-                                        <div className="flex justify-between items-start mb-2">
-                                            <Badge
-                                                variant="secondary"
-                                                className="font-normal"
-                                            >
-                                                {facility.type}
-                                            </Badge>
-                                            <div className="flex items-center gap-1 text-sm">
-                                                <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                                <span className="font-medium">
+
+                                        <div className="md:w-1/4">
+                                            <div className="space-y-2">
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                                                    <span className="line-clamp-1">
+                                                        {facility.address}
+                                                    </span>
+                                                </div>
+                                                <div className="flex items-center gap-2 text-sm">
+                                                    <Clock className="w-4 h-4 text-muted-foreground" />
+                                                    <span className="font-medium text-amber-600">
+                                                        ~{facility.wait_time}{" "}
+                                                        min wait
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <div className="md:w-1/4">
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge
+                                                    variant="secondary"
+                                                    className="font-normal"
+                                                >
+                                                    <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
                                                     {facility.rating?.toFixed(
                                                         1
                                                     )}
-                                                </span>
+                                                </Badge>
+                                                <Badge
+                                                    variant="outline"
+                                                    className="font-normal"
+                                                >
+                                                    {facility.doctors_count}{" "}
+                                                    doctors
+                                                </Badge>
                                             </div>
                                         </div>
-                                        <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">
-                                            {facility.name}
-                                        </h3>
-                                        <p className="text-sm text-muted-foreground line-clamp-1">
-                                            {facility.specialty ||
-                                                "General Medicine"}
-                                        </p>
-                                    </CardHeader>
 
-                                    <CardContent className="space-y-4">
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                                            <span className="line-clamp-1">
-                                                {facility.address}
-                                            </span>
-                                        </div>
+                                        <div className="md:w-1/4">
+                                            <div className="flex gap-3">
+                                                <Link
+                                                    href={`/user/appointments/${facility.id}`}
+                                                    className="flex-1"
+                                                >
+                                                    <Button className="w-full rounded-lg">
+                                                        <Calendar className="w-4 h-4 mr-2" />
+                                                        Book
+                                                    </Button>
+                                                </Link>
 
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <span>
-                                                {facility.distance} km away
-                                            </span>
-                                        </div>
-
-                                        <div className="flex flex-wrap gap-2">
-                                            {facility.services
-                                                ?.slice(0, 3)
-                                                .map((service, i) => (
-                                                    <Badge
-                                                        key={i}
-                                                        variant="outline"
-                                                        className="text-xs font-normal"
-                                                    >
-                                                        {service}
-                                                    </Badge>
-                                                ))}
-                                            {facility.services &&
-                                                facility.services.length >
-                                                    3 && (
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="text-xs font-normal"
-                                                    >
-                                                        +
-                                                        {facility.services
-                                                            .length - 3}{" "}
-                                                        more
-                                                    </Badge>
-                                                )}
-                                        </div>
-                                    </CardContent>
-
-                                    <CardFooter className="pt-4 border-t">
-                                        <div className="flex gap-3 w-full">
-                                            <Link
-                                                href={`/user/appointments/${facility.id}`}
-                                                className="flex-1"
-                                            >
-                                                <Button className="w-full rounded-lg">
-                                                    <Calendar className="w-4 h-4 mr-2" />
-                                                    Book
-                                                </Button>
-                                            </Link>
-
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="rounded-lg"
-                                                onClick={() =>
-                                                    openMaps(facility.address)
-                                                }
-                                                title="Get directions"
-                                            >
-                                                <Navigation className="w-4 h-4" />
-                                            </Button>
-                                        </div>
-                                    </CardFooter>
-                                </Card>
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="space-y-4">
-                            {filteredFacilities.map((facility) => (
-                                <Card
-                                    key={facility.id}
-                                    className="hover:shadow-md transition-shadow"
-                                >
-                                    <div className="p-6">
-                                        <div className="flex flex-col md:flex-row md:items-center gap-6">
-                                            <div className="md:w-1/4">
-                                                <div className="flex items-center gap-3">
-                                                    <div className="w-12 h-12 rounded-xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                                                        <Building className="w-6 h-6 text-primary" />
-                                                    </div>
-                                                    <div>
-                                                        <h3 className="font-bold line-clamp-1">
-                                                            {facility.name}
-                                                        </h3>
-                                                        <p className="text-sm text-muted-foreground">
-                                                            {facility.type}
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="md:w-1/4">
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <MapPin className="w-4 h-4 text-muted-foreground" />
-                                                        <span className="line-clamp-1">
-                                                            {facility.address}
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <Clock className="w-4 h-4 text-muted-foreground" />
-                                                        <span className="font-medium text-amber-600">
-                                                            ~
-                                                            {facility.wait_time}{" "}
-                                                            min wait
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            <div className="md:w-1/4">
-                                                <div className="flex flex-wrap gap-2">
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="font-normal"
-                                                    >
-                                                        <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
-                                                        {facility.rating?.toFixed(
-                                                            1
-                                                        )}
-                                                    </Badge>
-                                                    <Badge
-                                                        variant="outline"
-                                                        className="font-normal"
-                                                    >
-                                                        {facility.doctors_count}{" "}
-                                                        doctors
-                                                    </Badge>
-                                                </div>
-                                            </div>
-
-                                            <div className="md:w-1/4">
-                                                <div className="flex gap-3">
-                                                    <Link
-                                                        href={`/user/appointments/${facility.id}`}
-                                                        className="flex-1"
-                                                    >
-                                                        <Button className="w-full rounded-lg">
-                                                            <Calendar className="w-4 h-4 mr-2" />
-                                                            Book
-                                                        </Button>
-                                                    </Link>
-
-                                                    <Link
-                                                        href={`/user/appointments/${facility.id}`}
-                                                        className="flex-1"
-                                                    >
-                                                        <Button className="w-full rounded-lg font-medium">
-                                                            <Calendar className="w-4 h-4 mr-2" />
-                                                            Book Now
-                                                        </Button>
-                                                    </Link>
-                                                </div>
+                                                <Link
+                                                    href={`/user/appointments/${facility.id}`}
+                                                    className="flex-1"
+                                                >
+                                                    <Button className="w-full rounded-lg font-medium">
+                                                        <Calendar className="w-4 h-4 mr-2" />
+                                                        Book Now
+                                                    </Button>
+                                                </Link>
                                             </div>
                                         </div>
                                     </div>
-                                </Card>
-                            ))}
-                        </div>
-                    )}
-                </ScrollArea>
+                                </div>
+                            </Card>
+                        ))}
+                    </div>
+                )}
             </div>
         </div>
     );

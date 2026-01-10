@@ -1,30 +1,41 @@
 export function getPageTitle(pathname: string): string {
-    const map: Record<string, string> = {
-        // Admin Paths
-        "/admin/dashboard": "Dashboard Home",
-        "/analytics": "Analytics & Reports",
-        "/admin/patients": "Patient Management",
-        "/records/verify": "Record Verification",
-        "/prescriptions": "Prescription Queue",
-        "/admin/appointments": "Appointments",
-        "/admin/staff": "Staff",
-        "/blockchain-status": "Blockchain Status",
-        "/admin/profile": "Staff Accounts",
-        "/settings": "System Settings",
-        "/admin/health-center": "Edit Health Center",
+    // Remove query params
+    const cleanPath = pathname.split("?")[0];
 
-        // User Paths
-        "/user/dashboard": "Dashboard",
-        "/user/symptom-check": "AI Symptom Check",
-        "/user/appointments": "Appointments",
-        "/user/doctors": "Find Doctors",
-        "/user/medications": "Medication Manager",
-        "/user/records": "Medical History",
-        "/user/blockchain": "Blockchain Security",
-        "/user/profile": "Profile Settings",
-        "/user/settings": "App Settings",
-        "/user/security": "Security & Privacy",
-    };
+    // Break into segments
+    const segments = cleanPath.split("/").filter(Boolean);
 
-    return map[pathname];
+    // Remove "admin" prefix
+    const adminIndex = segments.indexOf("admin");
+    const relevant =
+        adminIndex !== -1 ? segments.slice(adminIndex + 1) : segments;
+
+    if (relevant.length === 0) {
+        return "Dashboard";
+    }
+
+    /**
+     * If last segment looks like an ID (uuid, cuid, nanoid, number),
+     * use the previous segment as title
+     */
+    const last = relevant[relevant.length - 1];
+    const prev = relevant[relevant.length - 2];
+
+    const isId =
+        /^[a-zA-Z0-9_-]{6,}$/.test(last) || // uuid / nanoid / cuid
+        /^\d+$/.test(last); // numeric id
+
+    let titleSegment = isId ? prev : last;
+
+    if (!titleSegment) {
+        titleSegment = last;
+    }
+
+    return formatTitle(titleSegment);
+}
+
+function formatTitle(value: string): string {
+    return value
+        .replace(/-/g, " ")
+        .replace(/\b\w/g, (char) => char.toUpperCase());
 }

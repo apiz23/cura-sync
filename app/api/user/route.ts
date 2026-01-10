@@ -22,10 +22,6 @@ export async function GET() {
         );
     }
 
-    if (me.role === "patient") {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
-
     const { data, error } = await supabase
         .from("cura_profiles")
         .select("id, email, full_name, role")

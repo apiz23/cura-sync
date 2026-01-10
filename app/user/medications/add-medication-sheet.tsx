@@ -257,7 +257,7 @@ export default function AddMedicationSheet({
                                     handleInputChange("frequency", value)
                                 }
                             >
-                                <SelectTrigger className="h-11">
+                                <SelectTrigger className="h-11 w-full">
                                     <SelectValue placeholder="Select frequency" />
                                 </SelectTrigger>
                                 <SelectContent>
@@ -286,7 +286,7 @@ export default function AddMedicationSheet({
                                     handleInputChange("duration", value)
                                 }
                             >
-                                <SelectTrigger className="h-11">
+                                <SelectTrigger className="h-11 w-full">
                                     <SelectValue placeholder="Select duration" />
                                 </SelectTrigger>
                                 <SelectContent>
