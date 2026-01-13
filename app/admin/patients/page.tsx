@@ -4,16 +4,15 @@ import { useState, useMemo, useEffect } from "react";
 import supabase from "@/lib/supabase";
 import {
     Search,
-    MapPin,
     Filter,
-    Star,
-    Clock,
     Calendar,
     Users,
     X,
-    Building,
-    Navigation,
-    ClipboardCheck,
+    Phone,
+    Mail,
+    Eye,
+    Edit,
+    UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -25,148 +24,352 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import PageTitle from "@/components/page-title";
-
-export interface Facility {
+import EditPatientModal from "./edit-sheet";
+import AddPatientSheet from "./addPatientSheet";
+export interface Patient {
     id: string;
-    name: string;
-    type?: string;
-    specialty?: string;
-    address: string;
-    phone?: string;
-    rating?: number;
-    wait_time?: number;
-    slots?: string[];
-    coordinates?: [number, number];
-    is_active?: boolean;
-    description?: string;
-    capacity?: number;
-    distance?: number;
-    services?: string[];
-    doctors_count?: number;
+    profile_id: string;
+    email: string;
+    full_name: string;
+    phone_number?: string;
+    avatar_url?: string;
+    date_of_birth?: string;
+    gender?: string;
+    blood_type?: string;
+    height_cm?: number;
+    weight_kg?: number;
+    allergies?: string;
+    chronic_conditions?: string;
+    emergency_contact?: string;
+    age?: number;
+    created_at?: string;
 }
 
-export default function AppointmentPage() {
-    const { user } = useUser();
-    const [facilities, setFacilities] = useState<Facility[]>([]);
+interface CuraPatientProfile {
+    date_of_birth?: string;
+    gender?: string;
+    blood_type?: string;
+    height_cm?: number;
+    weight_kg?: number;
+    allergies?: string;
+    chronic_conditions?: string;
+    emergency_contact?: string;
+}
+
+interface CuraProfileRow {
+    id: string;
+    email: string;
+    full_name?: string;
+    phone_number?: string;
+    avatar_url?: string;
+    created_at?: string;
+    cura_patient_profiles?: CuraPatientProfile[];
+}
+
+export default function PatientListPage() {
+    const [patients, setPatients] = useState<Patient[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeFilter, setActiveFilter] = useState("all");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [facilityId, setFacilityId] = useState<string | null>(null);
+    const [authData, setAuthData] = useState<Record<string, unknown> | null>(
+        null
+    );
+
+    // Fetch patients function
+    const fetchPatients = async () => {
+        if (!facilityId) {
+            setIsLoading(false);
+            return;
+        }
+
+        try {
+            setIsLoading(true);
+
+            // Fetch patients registered to this facility
+            const {
+                data: patientFacilitiesData,
+                error: patientFacilitiesError,
+            } = await supabase
+                .from("cura_patient_facilities")
+                .select("profile_id, status, registered_at")
+                .eq("facility_id", facilityId)
+                .eq("status", "active");
+
+            if (patientFacilitiesError) throw patientFacilitiesError;
+
+            // Get patient IDs
+            const patientIds =
+                patientFacilitiesData?.map((pf) => pf.profile_id) || [];
+
+            if (patientIds.length === 0) {
+                setPatients([]);
+                setIsLoading(false);
+                return;
+            }
+
+            // Fetch patient profiles and their details
+            const { data: profilesData, error: profilesError } = await supabase
+                .from("cura_profiles")
+                .select(
+                    `
+                    id,
+                    email,
+                    full_name,
+                    phone_number,
+                    avatar_url,
+                    created_at,
+                    cura_patient_profiles (
+                        date_of_birth,
+                        gender,
+                        blood_type,
+                        height_cm,
+                        weight_kg,
+                        allergies,
+                        chronic_conditions,
+                        emergency_contact
+                    )
+                `
+                )
+                .in("id", patientIds)
+                .eq("role", "patient");
+
+            if (profilesError) throw profilesError;
+
+            // Format the data
+            const formattedPatients = (profilesData || []).map(
+                (profile: CuraProfileRow) => {
+                    const patientProfile =
+                        profile.cura_patient_profiles?.[0] || {};
+
+                    // Calculate age if date of birth exists
+                    let age;
+                    if (patientProfile.date_of_birth) {
+                        const birthDate = new Date(
+                            patientProfile.date_of_birth
+                        );
+                        const today = new Date();
+                        age = today.getFullYear() - birthDate.getFullYear();
+                        const monthDiff =
+                            today.getMonth() - birthDate.getMonth();
+                        if (
+                            monthDiff < 0 ||
+                            (monthDiff === 0 &&
+                                today.getDate() < birthDate.getDate())
+                        ) {
+                            age--;
+                        }
+                    }
+
+                    return {
+                        id: profile.id,
+                        profile_id: profile.id,
+                        email: profile.email,
+                        full_name: profile.full_name || "Unknown Patient",
+                        phone_number: profile.phone_number,
+                        avatar_url: profile.avatar_url,
+                        date_of_birth: patientProfile.date_of_birth,
+                        gender: patientProfile.gender,
+                        blood_type: patientProfile.blood_type,
+                        height_cm: patientProfile.height_cm,
+                        weight_kg: patientProfile.weight_kg,
+                        allergies: patientProfile.allergies,
+                        chronic_conditions: patientProfile.chronic_conditions,
+                        emergency_contact: patientProfile.emergency_contact,
+                        age,
+                        created_at: profile.created_at,
+                    };
+                }
+            );
+
+            setPatients(formattedPatients);
+        } catch (error) {
+            console.error("Error fetching patients:", error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const handlePatientUpdate = (
+        updatedPatient: Partial<Patient> & { id: string }
+    ) => {
+        setPatients((prev) =>
+            prev.map((p) =>
+                p.id === updatedPatient.id ? { ...p, ...updatedPatient } : p
+            )
+        );
+    };
 
     useEffect(() => {
-        const fetchFacilities = async () => {
+        // Get facility ID and auth data from session storage
+        const storedFacilityId = sessionStorage.getItem("facilityId");
+        const storedAuthData = sessionStorage.getItem("cura-auth");
+
+        if (storedFacilityId) {
+            setFacilityId(storedFacilityId);
+        }
+
+        if (storedAuthData) {
+            try {
+                setAuthData(JSON.parse(storedAuthData));
+            } catch (e) {
+                console.error("Error parsing auth data:", e);
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        const fetchPatients = async () => {
+            if (!facilityId) {
+                setIsLoading(false);
+                return;
+            }
+
             try {
                 setIsLoading(true);
-                const { data, error } = await supabase
-                    .from("cura_facilities")
-                    .select("*")
-                    .eq("is_active", true);
+
+                const { data: patientFacilitiesData, error } = await supabase
+                    .from("cura_patient_facilities")
+                    .select("profile_id")
+                    .eq("facility_id", facilityId)
+                    .eq("status", "active");
 
                 if (error) throw error;
 
-                const formattedData = (data || []).map((f) => ({
-                    ...f,
-                    phone: f.phone || "+1 (555) 123-4567",
-                    rating: f.rating || Math.random() * 2 + 3,
-                    wait_time:
-                        f.wait_time || Math.floor(Math.random() * 30) + 5,
-                    slots: [
-                        "09:00 AM",
-                        "10:00 AM",
-                        "11:00 AM",
-                        "02:00 PM",
-                        "03:00 PM",
-                        "04:00 PM",
-                    ],
-                    coordinates:
-                        f.latitude && f.longitude
-                            ? [parseFloat(f.latitude), parseFloat(f.longitude)]
-                            : [3.139, 101.6869],
-                    description:
-                        f.description ||
-                        "Modern healthcare facility providing comprehensive medical services with state-of-the-art equipment.",
-                    type: f.type || "Medical Center",
-                    distance: Math.floor(Math.random() * 15) + 1,
-                    services: [
-                        "Consultation",
-                        "Lab Tests",
-                        "Imaging",
-                        "Pharmacy",
-                        "Emergency",
-                    ],
-                    doctors_count: Math.floor(Math.random() * 20) + 5,
-                }));
+                const patientIds =
+                    patientFacilitiesData?.map((pf) => pf.profile_id) || [];
 
-                setFacilities(formattedData);
-            } catch (error) {
-                console.error("Error fetching facilities:", error);
+                if (patientIds.length === 0) {
+                    setPatients([]);
+                    return;
+                }
+
+                const { data: profilesData, error: profilesError } =
+                    await supabase
+                        .from("cura_profiles")
+                        .select(
+                            `
+                        id,
+                        email,
+                        full_name,
+                        phone_number,
+                        avatar_url,
+                        created_at,
+                        cura_patient_profiles (
+                            date_of_birth,
+                            gender,
+                            blood_type,
+                            height_cm,
+                            weight_kg,
+                            allergies,
+                            chronic_conditions,
+                            emergency_contact
+                        )
+                    `
+                        )
+                        .in("id", patientIds)
+                        .eq("role", "patient");
+
+                if (profilesError) throw profilesError;
+
+                const formattedPatients: Patient[] = (profilesData || []).map(
+                    (profile: CuraProfileRow) => {
+                        const patientProfile =
+                            profile.cura_patient_profiles?.[0] || {};
+
+                        let age: number | undefined;
+                        if (patientProfile.date_of_birth) {
+                            const birthDate = new Date(
+                                patientProfile.date_of_birth
+                            );
+                            const today = new Date();
+                            age = today.getFullYear() - birthDate.getFullYear();
+                            if (
+                                today.getMonth() < birthDate.getMonth() ||
+                                (today.getMonth() === birthDate.getMonth() &&
+                                    today.getDate() < birthDate.getDate())
+                            ) {
+                                age--;
+                            }
+                        }
+
+                        return {
+                            id: profile.id,
+                            profile_id: profile.id,
+                            email: profile.email,
+                            full_name: profile.full_name || "Unknown Patient",
+                            phone_number: profile.phone_number,
+                            avatar_url: profile.avatar_url,
+                            date_of_birth: patientProfile.date_of_birth,
+                            gender: patientProfile.gender,
+                            blood_type: patientProfile.blood_type,
+                            height_cm: patientProfile.height_cm,
+                            weight_kg: patientProfile.weight_kg,
+                            allergies: patientProfile.allergies,
+                            chronic_conditions:
+                                patientProfile.chronic_conditions,
+                            emergency_contact: patientProfile.emergency_contact,
+                            age,
+                            created_at: profile.created_at,
+                        };
+                    }
+                );
+
+                setPatients(formattedPatients);
+            } catch (err) {
+                console.error("Error fetching patients:", err);
             } finally {
                 setIsLoading(false);
             }
         };
 
-        fetchFacilities();
-    }, []);
+        fetchPatients();
+    }, [facilityId]);
 
-    const filteredFacilities = useMemo(() => {
-        let filtered = facilities.filter(
-            (f) =>
-                (f.name || "")
+    const filteredPatients = useMemo(() => {
+        return patients.filter(
+            (p) =>
+                (p.full_name || "")
                     .toLowerCase()
                     .includes(searchQuery.toLowerCase()) ||
-                (f.specialty || "")
+                (p.email || "")
                     .toLowerCase()
                     .includes(searchQuery.toLowerCase()) ||
-                (f.type || "")
+                (p.phone_number || "")
                     .toLowerCase()
                     .includes(searchQuery.toLowerCase()) ||
-                (f.address || "")
+                (p.blood_type || "")
                     .toLowerCase()
                     .includes(searchQuery.toLowerCase())
         );
+    }, [searchQuery, patients]);
 
-        if (activeFilter !== "all") {
-            filtered = filtered.filter(
-                (f) => f.type?.toLowerCase() === activeFilter.toLowerCase()
-            );
-        }
-
-        return filtered;
-    }, [searchQuery, facilities, activeFilter]);
-
-    const openMaps = (address: string) => {
-        window.open(
-            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                address
-            )}`,
-            "_blank"
-        );
+    const calculateBMI = (height_cm?: number, weight_kg?: number) => {
+        if (!height_cm || !weight_kg) return null;
+        const heightM = height_cm / 100;
+        return (weight_kg / (heightM * heightM)).toFixed(1);
     };
 
-    if (!user) {
+    if (!facilityId || !authData) {
         return (
             <div className="min-h-screen flex items-center justify-center">
                 <Card className="w-full max-w-md border-none shadow-2xl">
                     <CardContent className="p-8">
                         <div className="text-center space-y-6">
-                            <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center mx-auto">
+                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mx-auto">
                                 <Users className="w-10 h-10 text-primary" />
                             </div>
                             <div className="space-y-3">
                                 <h3 className="text-2xl font-bold">
-                                    Welcome to Cura Health
+                                    Access Denied
                                 </h3>
                                 <p className="text-muted-foreground">
-                                    Please sign in to book appointments with
-                                    trusted healthcare providers
+                                    Please sign in as a facility staff member to
+                                    view patients
                                 </p>
                             </div>
-                            <Button className="w-full h-12 rounded-xl bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary shadow-lg">
-                                Sign In to Continue
-                            </Button>
                         </div>
                     </CardContent>
                 </Card>
@@ -182,11 +385,11 @@ export default function AppointmentPage() {
                 <div className="mb-8 space-y-6">
                     <div>
                         <h2 className="text-3xl font-bold mb-3">
-                            Find Healthcare Providers
+                            Patient Records
                         </h2>
                         <p className="text-muted-foreground">
-                            Book appointments with trusted medical facilities in
-                            your area
+                            Manage and view patient information for your
+                            facility
                         </p>
                     </div>
 
@@ -195,7 +398,7 @@ export default function AppointmentPage() {
                             <div className="relative">
                                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
                                 <Input
-                                    placeholder="Search facilities, specialties, or locations..."
+                                    placeholder="Search patients by name, email, phone, or blood type..."
                                     className="pl-12 h-14 text-base rounded-xl border-border/60 focus:border-primary"
                                     value={searchQuery}
                                     onChange={(e) =>
@@ -233,48 +436,48 @@ export default function AppointmentPage() {
                     </div>
                 </div>
 
-                {/* Filters & Stats */}
+                {/* Stats */}
                 <div className="mb-8">
                     <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
                         <div className="space-y-1">
                             <h3 className="text-lg font-semibold">
-                                Available Facilities
+                                Registered Patients
                             </h3>
                             <p className="text-sm text-muted-foreground">
-                                {filteredFacilities.length}{" "}
-                                {filteredFacilities.length === 1
-                                    ? "facility"
-                                    : "facilities"}{" "}
+                                {filteredPatients.length}{" "}
+                                {filteredPatients.length === 1
+                                    ? "patient"
+                                    : "patients"}{" "}
                                 found
                                 {searchQuery && ` for "${searchQuery}"`}
                             </p>
                         </div>
+
+                        {/* ADD PATIENT */}
+                        <AddPatientSheet onCreated={fetchPatients}>
+                            <Button className="rounded-xl gap-2">
+                                <UserPlus className="w-4 h-4" />
+                                Add Patient
+                            </Button>
+                        </AddPatientSheet>
                     </div>
 
                     {/* Quick Stats */}
-                    {filteredFacilities.length > 0 && (
+                    {filteredPatients.length > 0 && (
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
                             <Card className="bg-gradient-to-br from-blue-500/5 to-blue-500/10 border-blue-200/50">
                                 <CardContent className="p-4">
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm text-muted-foreground">
-                                                Avg. Rating
+                                                Total Patients
                                             </p>
                                             <p className="text-2xl font-bold">
-                                                {(
-                                                    filteredFacilities.reduce(
-                                                        (acc, f) =>
-                                                            acc +
-                                                            (f.rating || 0),
-                                                        0
-                                                    ) /
-                                                    filteredFacilities.length
-                                                ).toFixed(1)}
+                                                {filteredPatients.length}
                                             </p>
                                         </div>
                                         <div className="p-2 bg-blue-500/10 rounded-lg">
-                                            <Star className="h-4 w-4 text-blue-600" />
+                                            <Users className="h-4 w-4 text-blue-600" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -285,23 +488,44 @@ export default function AppointmentPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm text-muted-foreground">
-                                                Avg. Wait Time
+                                                Male Patients
                                             </p>
                                             <p className="text-2xl font-bold">
-                                                {Math.round(
-                                                    filteredFacilities.reduce(
-                                                        (acc, f) =>
-                                                            acc +
-                                                            (f.wait_time || 0),
-                                                        0
-                                                    ) /
-                                                        filteredFacilities.length
-                                                )}
-                                                min
+                                                {
+                                                    filteredPatients.filter(
+                                                        (p) =>
+                                                            p.gender?.toLowerCase() ===
+                                                            "male"
+                                                    ).length
+                                                }
                                             </p>
                                         </div>
                                         <div className="p-2 bg-green-500/10 rounded-lg">
-                                            <Clock className="h-4 w-4 text-green-600" />
+                                            <Users className="h-4 w-4 text-green-600" />
+                                        </div>
+                                    </div>
+                                </CardContent>
+                            </Card>
+
+                            <Card className="bg-gradient-to-br from-pink-500/5 to-pink-500/10 border-pink-200/50">
+                                <CardContent className="p-4">
+                                    <div className="flex items-center justify-between">
+                                        <div>
+                                            <p className="text-sm text-muted-foreground">
+                                                Female Patients
+                                            </p>
+                                            <p className="text-2xl font-bold">
+                                                {
+                                                    filteredPatients.filter(
+                                                        (p) =>
+                                                            p.gender?.toLowerCase() ===
+                                                            "female"
+                                                    ).length
+                                                }
+                                            </p>
+                                        </div>
+                                        <div className="p-2 bg-pink-500/10 rounded-lg">
+                                            <Users className="h-4 w-4 text-pink-600" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -312,37 +536,33 @@ export default function AppointmentPage() {
                                     <div className="flex items-center justify-between">
                                         <div>
                                             <p className="text-sm text-muted-foreground">
-                                                Total Doctors
+                                                Avg. Age
                                             </p>
                                             <p className="text-2xl font-bold">
-                                                {filteredFacilities.reduce(
-                                                    (acc, f) =>
-                                                        acc +
-                                                        (f.doctors_count || 0),
-                                                    0
-                                                )}
+                                                {filteredPatients.filter(
+                                                    (p) => p.age
+                                                ).length > 0
+                                                    ? Math.round(
+                                                          filteredPatients
+                                                              .filter(
+                                                                  (p) => p.age
+                                                              )
+                                                              .reduce(
+                                                                  (acc, p) =>
+                                                                      acc +
+                                                                      (p.age ||
+                                                                          0),
+                                                                  0
+                                                              ) /
+                                                              filteredPatients.filter(
+                                                                  (p) => p.age
+                                                              ).length
+                                                      )
+                                                    : "N/A"}
                                             </p>
                                         </div>
                                         <div className="p-2 bg-amber-500/10 rounded-lg">
-                                            <Users className="h-4 w-4 text-amber-600" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="bg-gradient-to-br from-primary/5 to-primary/10 border-primary/50">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Available Today
-                                            </p>
-                                            <p className="text-2xl font-bold">
-                                                {filteredFacilities.length}
-                                            </p>
-                                        </div>
-                                        <div className="p-2 bg-primary/10 rounded-lg">
-                                            <ClipboardCheck className="h-4 w-4 text-primary" />
+                                            <Calendar className="h-4 w-4 text-amber-600" />
                                         </div>
                                     </div>
                                 </CardContent>
@@ -374,155 +594,197 @@ export default function AppointmentPage() {
                                             <Skeleton className="h-6 w-20 rounded-full" />
                                         </div>
                                         <Skeleton className="h-24 w-full rounded-lg" />
-                                        <div className="flex gap-2 pt-2">
-                                            <Skeleton className="h-10 flex-1 rounded-lg" />
-                                            <Skeleton className="h-10 w-10 rounded-lg" />
-                                        </div>
                                     </div>
                                 </CardContent>
                             </Card>
                         ))}
                     </div>
-                ) : filteredFacilities.length === 0 ? (
+                ) : filteredPatients.length === 0 ? (
                     <Card className="border-dashed border-border/60 bg-gradient-to-br from-background to-muted/10">
                         <CardContent className="p-12 text-center">
                             <div className="w-20 h-20 rounded-full bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center mx-auto mb-6">
                                 <Search className="w-10 h-10 text-muted-foreground" />
                             </div>
                             <h3 className="text-xl font-semibold mb-3">
-                                No facilities found
+                                No patients found
                             </h3>
                             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                                 {searchQuery
-                                    ? `No results for "${searchQuery}". Try different keywords or browse all facilities.`
-                                    : "No healthcare facilities available at the moment. Please check back later."}
+                                    ? `No results for "${searchQuery}". Try different keywords.`
+                                    : "No patients have booked appointments at your facility yet."}
                             </p>
-                            <div className="flex flex-col sm:flex-row gap-3 justify-center">
-                                {searchQuery && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={() => setSearchQuery("")}
-                                        className="gap-2 rounded-xl"
-                                    >
-                                        <X className="w-4 h-4" />
-                                        Clear Search
-                                    </Button>
-                                )}
+                            {searchQuery && (
                                 <Button
                                     variant="outline"
-                                    onClick={() => setActiveFilter("all")}
+                                    onClick={() => setSearchQuery("")}
                                     className="gap-2 rounded-xl"
                                 >
-                                    <Building className="w-4 h-4" />
-                                    View All Facilities
+                                    <X className="w-4 h-4" />
+                                    Clear Search
                                 </Button>
-                            </div>
+                            )}
+                            <AddPatientSheet onCreated={fetchPatients}>
+                                <Button className="gap-2 rounded-xl">
+                                    <UserPlus className="w-4 h-4" />
+                                    Add First Patient
+                                </Button>
+                            </AddPatientSheet>
                         </CardContent>
                     </Card>
                 ) : viewMode === "grid" ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {filteredFacilities.map((facility) => (
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {filteredPatients.map((patient) => (
                             <Card
-                                key={facility.id}
+                                key={patient.id}
                                 className="group hover:shadow-xl transition-all duration-300 border-border/40 bg-gradient-to-br from-card to-muted/5 overflow-hidden"
                             >
                                 <CardHeader className="pb-4">
-                                    <div className="flex justify-between items-start mb-3">
-                                        <Badge
-                                            variant="outline"
-                                            className="font-normal rounded-lg border-primary/20 bg-primary/5"
-                                        >
-                                            {facility.type}
-                                        </Badge>
-                                        <div className="flex items-center gap-1 px-2 py-1 bg-gradient-to-br from-amber-500/10 to-amber-500/5 rounded-lg">
-                                            <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                                            <span className="text-sm font-medium">
-                                                {facility.rating?.toFixed(1)}
-                                            </span>
+                                    <div className="flex items-start gap-4 mb-3">
+                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-xl font-bold">
+                                            {patient.full_name
+                                                ?.charAt(0)
+                                                .toUpperCase()}
+                                        </div>
+                                        <div className="flex-1">
+                                            <h3 className="font-bold text-lg line-clamp-1">
+                                                {patient.full_name}
+                                            </h3>
+                                            <p className="text-sm text-muted-foreground">
+                                                {patient.age
+                                                    ? `${patient.age} years old`
+                                                    : "Age not set"}
+                                            </p>
                                         </div>
                                     </div>
-                                    <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">
-                                        {facility.name}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground line-clamp-1">
-                                        {facility.specialty ||
-                                            "General Medicine"}
-                                    </p>
+                                    <div className="flex gap-2">
+                                        {patient.gender && (
+                                            <Badge
+                                                variant="outline"
+                                                className="text-xs"
+                                            >
+                                                {patient.gender}
+                                            </Badge>
+                                        )}
+                                        {patient.blood_type && (
+                                            <Badge
+                                                variant="secondary"
+                                                className="text-xs bg-red-500/10 text-red-700"
+                                            >
+                                                {patient.blood_type}
+                                            </Badge>
+                                        )}
+                                    </div>
                                 </CardHeader>
 
-                                <CardContent className="space-y-4">
-                                    <div className="flex items-start gap-2 text-sm">
-                                        <MapPin className="w-4 h-4 text-muted-foreground shrink-0 mt-0.5" />
-                                        <span className="line-clamp-2">
-                                            {facility.address}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-4 text-sm">
-                                        <div className="flex items-center gap-1">
-                                            <Clock className="w-3.5 h-3.5 text-amber-600" />
-                                            <span className="font-medium text-amber-700">
-                                                ~{facility.wait_time} min
+                                <CardContent className="space-y-3">
+                                    {patient.email && (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
+                                            <span className="line-clamp-1">
+                                                {patient.email}
                                             </span>
                                         </div>
-                                        <div className="flex items-center gap-1">
-                                            <Users className="w-3.5 h-3.5 text-blue-600" />
-                                            <span className="font-medium text-blue-700">
-                                                {facility.distance} km
-                                            </span>
-                                        </div>
-                                    </div>
+                                    )}
 
-                                    <div className="flex flex-wrap gap-2">
-                                        {facility.services
-                                            ?.slice(0, 3)
-                                            .map((service, i) => (
-                                                <Badge
-                                                    key={i}
-                                                    variant="secondary"
-                                                    className="text-xs font-normal rounded-md bg-muted/50"
-                                                >
-                                                    {service}
-                                                </Badge>
-                                            ))}
-                                        {facility.services &&
-                                            facility.services.length > 3 && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-xs font-normal rounded-md"
-                                                >
-                                                    +
-                                                    {facility.services.length -
-                                                        3}{" "}
-                                                    more
-                                                </Badge>
+                                    {patient.phone_number && (
+                                        <div className="flex items-center gap-2 text-sm">
+                                            <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
+                                            <span>{patient.phone_number}</span>
+                                        </div>
+                                    )}
+
+                                    {(patient.height_cm ||
+                                        patient.weight_kg) && (
+                                        <div className="flex gap-4 text-sm">
+                                            {patient.height_cm && (
+                                                <div>
+                                                    <span className="text-muted-foreground">
+                                                        Height:{" "}
+                                                    </span>
+                                                    <span className="font-medium">
+                                                        {patient.height_cm} cm
+                                                    </span>
+                                                </div>
                                             )}
-                                    </div>
+                                            {patient.weight_kg && (
+                                                <div>
+                                                    <span className="text-muted-foreground">
+                                                        Weight:{" "}
+                                                    </span>
+                                                    <span className="font-medium">
+                                                        {patient.weight_kg} kg
+                                                    </span>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {patient.allergies && (
+                                        <div className="text-sm">
+                                            <span className="text-red-600 font-medium">
+                                                ⚠️ Allergies:{" "}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                {patient.allergies}
+                                            </span>
+                                        </div>
+                                    )}
+
+                                    {patient.chronic_conditions && (
+                                        <div className="text-sm">
+                                            <span className="text-amber-600 font-medium">
+                                                Conditions:{" "}
+                                            </span>
+                                            <span className="text-muted-foreground">
+                                                {patient.chronic_conditions}
+                                            </span>
+                                        </div>
+                                    )}
                                 </CardContent>
 
                                 <CardFooter className="pt-4 border-t border-border/30">
                                     <div className="flex gap-3 w-full">
+                                        {/* View */}
                                         <Link
-                                            href={`/user/appointments/${facility.id}`}
+                                            href={`/admin/patients/${patient.id}`}
                                             className="flex-1"
                                         >
-                                            <Button className="w-full rounded-lg gap-2">
-                                                <Calendar className="w-4 h-4" />
-                                                Book Now
+                                            <Button
+                                                className="w-full rounded-lg gap-2"
+                                                variant="outline"
+                                            >
+                                                <Eye className="w-4 h-4" />
+                                                View
                                             </Button>
                                         </Link>
 
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="rounded-lg border-border/60 hover:bg-muted/50"
-                                            onClick={() =>
-                                                openMaps(facility.address)
-                                            }
-                                            title="Get directions"
+                                        {/* Edit */}
+                                        <EditPatientModal
+                                            patient={{
+                                                id: patient.id,
+                                                email: patient.email,
+                                                full_name: patient.full_name,
+                                                role: "patient",
+                                                avatar_url:
+                                                    patient.avatar_url ??
+                                                    undefined,
+                                                phone_number:
+                                                    patient.phone_number ??
+                                                    undefined,
+                                                created_at: patient.created_at!,
+                                                status: "active",
+                                            }}
+                                            onSave={handlePatientUpdate}
                                         >
-                                            <Navigation className="w-4 h-4" />
-                                        </Button>
+                                            <Button
+                                                variant="outline"
+                                                size="icon"
+                                                className="rounded-lg"
+                                                title="Edit patient"
+                                            >
+                                                <Edit className="w-4 h-4" />
+                                            </Button>
+                                        </EditPatientModal>
                                     </div>
                                 </CardFooter>
                             </Card>
@@ -530,85 +792,119 @@ export default function AppointmentPage() {
                     </div>
                 ) : (
                     <div className="space-y-4">
-                        {filteredFacilities.map((facility) => (
+                        {filteredPatients.map((patient) => (
                             <Card
-                                key={facility.id}
+                                key={patient.id}
                                 className="hover:shadow-md transition-shadow border-border/40 bg-gradient-to-br from-card to-muted/5"
                             >
                                 <div className="p-6">
                                     <div className="flex flex-col md:flex-row md:items-center gap-6">
                                         <div className="md:w-1/4">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/10 flex items-center justify-center">
-                                                    <Building className="w-6 h-6 text-primary" />
+                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-lg font-bold">
+                                                    {patient.full_name
+                                                        ?.charAt(0)
+                                                        .toUpperCase()}
                                                 </div>
                                                 <div>
                                                     <h3 className="font-bold line-clamp-1">
-                                                        {facility.name}
+                                                        {patient.full_name}
                                                     </h3>
                                                     <p className="text-sm text-muted-foreground">
-                                                        {facility.type}
+                                                        {patient.age
+                                                            ? `${patient.age} yrs`
+                                                            : "N/A"}{" "}
+                                                        •{" "}
+                                                        {patient.gender ||
+                                                            "N/A"}
                                                     </p>
                                                 </div>
                                             </div>
                                         </div>
 
                                         <div className="md:w-1/4">
-                                            <div className="space-y-2">
+                                            <div className="space-y-1">
                                                 <div className="flex items-center gap-2 text-sm">
-                                                    <MapPin className="w-4 h-4 text-muted-foreground" />
+                                                    <Mail className="w-4 h-4 text-muted-foreground" />
                                                     <span className="line-clamp-1">
-                                                        {facility.address}
+                                                        {patient.email}
                                                     </span>
                                                 </div>
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Clock className="w-4 h-4 text-amber-600" />
-                                                    <span className="font-medium text-amber-700">
-                                                        ~{facility.wait_time}{" "}
-                                                        min wait
-                                                    </span>
-                                                </div>
+                                                {patient.phone_number && (
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <Phone className="w-4 h-4 text-muted-foreground" />
+                                                        <span>
+                                                            {
+                                                                patient.phone_number
+                                                            }
+                                                        </span>
+                                                    </div>
+                                                )}
                                             </div>
                                         </div>
 
                                         <div className="md:w-1/4">
                                             <div className="flex flex-wrap gap-2">
-                                                <Badge
-                                                    variant="outline"
-                                                    className="font-normal rounded-lg border-amber-200 bg-amber-500/10"
-                                                >
-                                                    <div className="flex items-center gap-1">
-                                                        <Star className="w-3 h-3 fill-amber-500 text-amber-500" />
-                                                        {facility.rating?.toFixed(
-                                                            1
-                                                        )}
-                                                    </div>
-                                                </Badge>
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="font-normal rounded-lg bg-blue-500/10 text-blue-700 border-blue-200"
-                                                >
-                                                    <div className="flex items-center gap-1">
-                                                        <Users className="w-3 h-3" />
-                                                        {facility.doctors_count}{" "}
-                                                        doctors
-                                                    </div>
-                                                </Badge>
+                                                {patient.blood_type && (
+                                                    <Badge
+                                                        variant="secondary"
+                                                        className="bg-red-500/10 text-red-700"
+                                                    >
+                                                        {patient.blood_type}
+                                                    </Badge>
+                                                )}
+                                                {patient.height_cm &&
+                                                    patient.weight_kg && (
+                                                        <Badge variant="outline">
+                                                            BMI:{" "}
+                                                            {calculateBMI(
+                                                                patient.height_cm,
+                                                                patient.weight_kg
+                                                            )}
+                                                        </Badge>
+                                                    )}
                                             </div>
                                         </div>
 
                                         <div className="md:w-1/4">
-                                            <div className="flex gap-3">
-                                                <Link
-                                                    href={`/user/appointments/${facility.id}`}
-                                                    className="flex-1"
+                                            <Link
+                                                href={`/admin/patients/${patient.id}`}
+                                            >
+                                                <Button
+                                                    className="w-full rounded-lg gap-2"
+                                                    variant="outline"
                                                 >
-                                                    <Button className="w-full rounded-lg gap-2">
-                                                        <Calendar className="w-4 h-4" />
-                                                        Book Appointment
-                                                    </Button>
-                                                </Link>
-                                            </div>
+                                                    <Eye className="w-4 h-4" />
+                                                    View Details
+                                                </Button>
+                                            </Link>
+                                            <EditPatientModal
+                                                patient={{
+                                                    id: patient.id,
+                                                    email: patient.email,
+                                                    full_name:
+                                                        patient.full_name,
+                                                    role: "patient",
+                                                    avatar_url:
+                                                        patient.avatar_url ??
+                                                        undefined,
+                                                    phone_number:
+                                                        patient.phone_number ??
+                                                        undefined,
+                                                    created_at:
+                                                        patient.created_at!,
+                                                    status: "active",
+                                                }}
+                                                onSave={handlePatientUpdate}
+                                            >
+                                                <Button
+                                                    variant="outline"
+                                                    size="icon"
+                                                    title="Edit patient"
+                                                >
+                                                    <Edit className="w-4 h-4" />
+                                                </Button>
+                                            </EditPatientModal>
                                         </div>
                                     </div>
                                 </div>

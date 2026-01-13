@@ -39,30 +39,11 @@ import {
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-
-interface Availability {
-    available?: boolean;
-    schedule?: string;
-    notes?: string;
-    updated_at?: string;
-}
-
-interface StaffProfile {
-    id: string;
-    full_name: string;
-    email: string;
-    role: "doctor" | "nurse" | "admin";
-    specialization: string | null;
-    license_number: string | null;
-    facility_id: string | null;
-    years_of_experience: number | null;
-    availability: Availability | null;
-    created_at: string;
-}
+import { StaffProfile } from "@/app/types";
 
 interface EditStaffProfileModalProps {
     staff: StaffProfile;
-    onSave: (updatedData: Partial<StaffProfile>) => void;
+    onSave: (updatedData: Partial<StaffProfile>) => Promise<void>;
     onClose: () => void;
 }
 
@@ -166,7 +147,7 @@ export default function EditStaffProfileModal({
     const currentTab = tabs.find((tab) => tab.id === activeTab);
 
     return (
-        <Sheet open={true} onOpenChange={onClose}>
+        <Sheet open onOpenChange={(open) => !open && onClose()}>
             <SheetContent className="sm:max-w-xl overflow-y-auto p-0 border-l">
                 {/* Header */}
                 <SheetHeader className="p-6 border-b bg-gradient-to-r from-background to-muted/20">
@@ -330,12 +311,13 @@ export default function EditStaffProfileModal({
                                                         Doctor
                                                     </div>
                                                 </SelectItem>
-                                                <SelectItem value="nurse">
+                                                <SelectItem value="staff">
                                                     <div className="flex items-center gap-2">
                                                         <User className="w-4 h-4" />
-                                                        Nurse
+                                                        Staff
                                                     </div>
                                                 </SelectItem>
+
                                                 <SelectItem value="admin">
                                                     <div className="flex items-center gap-2">
                                                         <Key className="w-4 h-4" />

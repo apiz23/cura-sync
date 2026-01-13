@@ -75,16 +75,19 @@ export default function StaffProfilePage() {
                     ? JSON.parse(staff.availability)
                     : staff.availability;
 
+            if (availability?.limited === true) {
+                return { status: "Limited", color: "bg-yellow-500" };
+            }
             if (availability?.available === true) {
                 return { status: "Available", color: "bg-green-500" };
-            } else if (availability?.available === false) {
+            }
+            if (availability?.available === false) {
                 return { status: "Unavailable", color: "bg-red-500" };
-            } else if (availability?.limited === true) {
-                return { status: "Limited", color: "bg-yellow-500" };
             }
         } catch {
             return { status: "Not Set", color: "bg-gray-500" };
         }
+
         return { status: "Not Set", color: "bg-gray-500" };
     };
 
@@ -92,7 +95,7 @@ export default function StaffProfilePage() {
         switch (role?.toLowerCase()) {
             case "doctor":
                 return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800";
-            case "nurse":
+            case "staff":
                 return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800";
             case "admin":
                 return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800";

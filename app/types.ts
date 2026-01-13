@@ -112,3 +112,14 @@ interface Availability {
     notes?: string;
     updated_at?: string;
 }
+
+export interface Patient {
+    id: string;
+    email: string;
+    full_name?: string; 
+    role?: string;
+    avatar_url?: string;
+    phone_number?: string;
+    created_at: string;
+    status?: "active" | "inactive" | "suspended";
+}

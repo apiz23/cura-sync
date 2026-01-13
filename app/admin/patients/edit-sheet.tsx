@@ -16,21 +16,10 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
-
-interface Patient {
-    id: string;
-    email: string;
-    full_name: string | null;
-    role: string;
-    avatar_url: string | null;
-    phone_number: string | null;
-    created_at: string;
-    status?: "active" | "inactive" | "suspended";
-}
-
+import { Patient } from "@/app/types";
 interface EditPatientModalProps {
     patient: Patient;
-    onSave: (updated: Patient) => void;
+    onSave: (updated: Partial<Patient> & { id: string }) => void;
     children: React.ReactNode;
 }
 
@@ -96,9 +85,9 @@ export default function EditPatientModal({
             }
 
             onSave({
-                ...patient,
-                full_name: name,
-                phone_number: phone,
+                id: patient.id,
+                full_name: name || undefined,
+                phone_number: phone || undefined,
                 status,
             });
         } catch (error) {
