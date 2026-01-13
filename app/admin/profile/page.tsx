@@ -29,26 +29,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import EditStaffProfileModal from "./edit-sheet";
-
-interface Availability {
-    available?: boolean;
-    schedule?: string;
-    notes?: string;
-    updated_at?: string;
-}
-
-interface StaffProfile {
-    id: string;
-    full_name: string;
-    email: string;
-    role: "doctor" | "nurse" | "admin";
-    specialization: string | null;
-    license_number: string | null;
-    facility_id: string | null;
-    years_of_experience: number | null;
-    availability: Availability | null;
-    created_at: string;
-}
+import { StaffProfile } from "@/app/types";
 
 export default function StaffProfilePage() {
     const { staff: initialStaff, loading } = useAuth();

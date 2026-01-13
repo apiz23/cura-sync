@@ -19,6 +19,7 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import PageTitle from "@/components/page-title";
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({
@@ -97,6 +98,7 @@ export default function ContactPage() {
 
     return (
         <div className="min-h-screen bg-background pt-20 pb-8 px-4">
+            <PageTitle title={"Contact"} />
             <div className="max-w-6xl mx-auto space-y-12 pt-8">
                 {/* Header */}
                 <div className="text-center space-y-6">

@@ -29,25 +29,16 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
         if (itemUrl === "/user") {
             return pathname === "/user";
         }
-
         return pathname === itemUrl || pathname.startsWith(itemUrl + "/");
     };
 
     return (
-        <Sidebar {...props}>
+        <Sidebar variant="inset" className="overflow-x-hidden" {...props}>
             {/* ================= HEADER ================= */}
             <SidebarHeader>
                 <SidebarMenu>
                     <SidebarMenuItem>
-                        <SidebarMenuButton
-                            size="lg"
-                            className="
-                                gap-3
-                                justify-start
-                                group-data-[collapsible=icon]:justify-center
-                                group-data-[collapsible=icon]:px-0
-                            "
-                        >
+                        <SidebarMenuButton size="lg">
                             <div className="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 items-center justify-center rounded-lg">
                                 <Stethoscope className="size-4" />
                             </div>
@@ -65,10 +56,10 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
             </SidebarHeader>
 
             {/* ================= CONTENT ================= */}
-            <SidebarContent>
+            <SidebarContent className="overflow-x-hidden">
                 {userMenu.map((group) => (
                     <SidebarGroup key={group.title}>
-                        <SidebarGroupLabel className="text-xs font-semibold uppercase tracking-wider text-muted-foreground px-2">
+                        <SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                             {group.title}
                         </SidebarGroupLabel>
 
@@ -91,9 +82,12 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                                     group-data-[collapsible=icon]:justify-center
                                                 "
                                             >
-                                                <Link href={item.url}>
+                                                <Link
+                                                    href={item.url}
+                                                    className="flex w-full items-center gap-3 overflow-hidden"
+                                                >
                                                     <Icon className="size-4 shrink-0" />
-                                                    <span className="text-sm font-medium group-data-[collapsible=icon]:hidden">
+                                                    <span className="truncate text-sm font-medium group-data-[collapsible=icon]:hidden">
                                                         {item.title}
                                                     </span>
                                                 </Link>

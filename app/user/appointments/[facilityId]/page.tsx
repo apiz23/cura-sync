@@ -292,7 +292,7 @@ export default function AppointmentBookingPage() {
                 {/* Back Navigation */}
                 <Button
                     variant="ghost"
-                    onClick={() => router.push("/user/appointment")}
+                    onClick={() => router.push("/user/appointments")}
                     className="group gap-2 transition-all duration-300 hover:bg-muted/50 "
                 >
                     <ChevronLeft className="h-4 w-4 transition-transform group-hover:-translate-x-1" />

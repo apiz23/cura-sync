@@ -39,7 +39,7 @@ export function UserHeader() {
     }
 
     return (
-        <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur sticky top-0 z-50 px-4">
+        <header className="flex h-16 items-center justify-between gap-4 bg-background/95 backdrop-blur sticky top-0 z-50 px-4">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="h-9 w-9 data-[state=open]:bg-accent transition-all duration-200 hover:scale-105" />
 

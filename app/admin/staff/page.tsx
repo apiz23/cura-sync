@@ -43,7 +43,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 
-export type StaffRole = "doctor" | "nurse" | "admin";
+export type StaffRole = "doctor" | "staff" | "admin";
 
 export interface Staff {
     id: string;
@@ -125,7 +125,7 @@ export default function StaffPage() {
         switch (role) {
             case "doctor":
                 return <Stethoscope className="w-3.5 h-3.5" />;
-            case "nurse":
+            case "staff":
                 return <Shield className="w-3.5 h-3.5" />;
             case "admin":
                 return <UserCog className="w-3.5 h-3.5" />;
@@ -136,7 +136,7 @@ export default function StaffPage() {
         switch (role) {
             case "doctor":
                 return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200";
-            case "nurse":
+            case "staff":
                 return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900 dark:text-emerald-200";
             case "admin":
                 return "bg-purple-100 text-purple-800 hover:bg-purple-100 dark:bg-purple-900 dark:text-purple-200";
@@ -194,7 +194,7 @@ export default function StaffPage() {
                                 <p className="text-3xl font-bold mt-2">
                                     {
                                         staff.filter((s) =>
-                                            ["doctor", "nurse"].includes(s.role)
+                                            ["doctor", "staff"].includes(s.role)
                                         ).length
                                     }
                                 </p>
@@ -271,8 +271,8 @@ export default function StaffPage() {
                                     <SelectItem value="doctor">
                                         Doctors
                                     </SelectItem>
-                                    <SelectItem value="nurse">
-                                        Nurses
+                                    <SelectItem value="staff">
+                                        Staff
                                     </SelectItem>
                                     <SelectItem value="admin">
                                         Administrators

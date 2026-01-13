@@ -11,6 +11,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { Medication } from "@/app/types";
+import EditMedicationSheet from "./edit-medication-sheet";
 
 interface MedicationCardProps {
     medication: Medication;
@@ -23,7 +24,7 @@ export default function MedicationCard({
 }: MedicationCardProps) {
     const [isTaking, setIsTaking] = useState(false);
     const [showDetails, setShowDetails] = useState(false);
-
+    const [editOpen, setEditOpen] = useState(false);
     const getStatusColor = (status: string) => {
         switch (status) {
             case "COMPLETED":
@@ -66,11 +67,14 @@ export default function MedicationCard({
     async function markAsTaken() {
         setIsTaking(true);
         try {
-            await fetch(`/api/medications/${medication.id}`, {
-                method: "PATCH",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ status: "COMPLETED" }),
+            const res = await fetch(`/api/medications/${medication.id}`, {
+                method: "POST",
             });
+
+            if (!res.ok) {
+                throw new Error("Failed to log intake");
+            }
+
             onUpdate();
         } catch (error) {
             console.error("Failed to mark as taken:", error);
@@ -320,11 +324,18 @@ export default function MedicationCard({
                             variant="ghost"
                             size="sm"
                             className="h-8 gap-1 text-muted-foreground hover:text-foreground"
-                            onClick={() => console.log("Edit", medication.id)}
+                            onClick={() => setEditOpen(true)}
                         >
                             <Edit className="h-3.5 w-3.5" />
                             Edit
                         </Button>
+
+                        <EditMedicationSheet
+                            open={editOpen}
+                            onOpenChange={setEditOpen}
+                            medication={medication}
+                            onUpdated={onUpdate}
+                        />
                     </div>
                 </div>
             </CardContent>

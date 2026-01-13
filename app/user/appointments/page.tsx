@@ -24,7 +24,6 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 
@@ -52,7 +51,6 @@ export default function AppointmentPage() {
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [activeFilter, setActiveFilter] = useState("all");
     const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
 
     useEffect(() => {
@@ -111,7 +109,7 @@ export default function AppointmentPage() {
     }, []);
 
     const filteredFacilities = useMemo(() => {
-        let filtered = facilities.filter(
+        const filtered = facilities.filter(
             (f) =>
                 (f.name || "")
                     .toLowerCase()
@@ -127,14 +125,8 @@ export default function AppointmentPage() {
                     .includes(searchQuery.toLowerCase())
         );
 
-        if (activeFilter !== "all") {
-            filtered = filtered.filter(
-                (f) => f.type?.toLowerCase() === activeFilter.toLowerCase()
-            );
-        }
-
         return filtered;
-    }, [searchQuery, facilities, activeFilter]);
+    }, [searchQuery, facilities]);
 
     const openMaps = (address: string) => {
         window.open(
@@ -242,40 +234,6 @@ export default function AppointmentPage() {
                                 {filteredFacilities.length} facilities found
                                 {searchQuery && ` for "${searchQuery}"`}
                             </p>
-                        </div>
-                        <div className="flex items-center gap-4">
-                            <Tabs
-                                defaultValue="all"
-                                value={activeFilter}
-                                onValueChange={setActiveFilter}
-                            >
-                                <TabsList className="bg-muted/50">
-                                    <TabsTrigger
-                                        value="all"
-                                        className="rounded-lg"
-                                    >
-                                        All
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="hospital"
-                                        className="rounded-lg"
-                                    >
-                                        Hospitals
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="clinic"
-                                        className="rounded-lg"
-                                    >
-                                        Clinics
-                                    </TabsTrigger>
-                                    <TabsTrigger
-                                        value="center"
-                                        className="rounded-lg"
-                                    >
-                                        Centers
-                                    </TabsTrigger>
-                                </TabsList>
-                            </Tabs>
                         </div>
                     </div>
                 </div>

@@ -15,9 +15,22 @@ export async function PATCH(
 
     const body = await req.json();
 
+    const allowed = {
+        name: body.name,
+        dosage: body.dosage,
+        frequency: body.frequency,
+        schedule: body.schedule,
+        start_date: body.start_date,
+        end_date: body.end_date,
+        notes: body.notes,
+        prescribed_by: body.prescribed_by,
+        status: body.status,
+        updated_at: body.updated_at,
+    };
+
     const { data, error } = await supabase
         .from("cura_medications")
-        .update(body)
+        .update(allowed)
         .eq("id", id)
         .eq("profile_id", userId)
         .select()
@@ -77,4 +90,29 @@ export async function GET(
     }
 
     return NextResponse.json(data);
+}
+
+export async function POST(
+    req: NextRequest,
+    { params }: { params: Promise<{ id: string }> }
+) {
+    const { userId } = await auth();
+    const { id } = await params;
+
+    if (!userId) {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { error } = await supabase.from("cura_medication_logs").insert({
+        medication_id: id,
+        profile_id: userId,
+        status: "TAKEN",
+        taken_at: new Date().toISOString(),
+    });
+
+    if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ success: true });
 }

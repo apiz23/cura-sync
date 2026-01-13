@@ -92,3 +92,23 @@ export type FacilityEdit = {
     created_at: string;
     updated_at: string | null;
 };
+
+export interface StaffProfile {
+    id: string;
+    full_name: string;
+    email: string;
+    role: "doctor" | "nurse" | "admin";
+    specialization: string | null;
+    license_number: string | null;
+    facility_id: string | null;
+    years_of_experience: number | null;
+    availability: Availability | null;
+    created_at: string;
+}
+
+interface Availability {
+    available?: boolean;
+    schedule?: string;
+    notes?: string;
+    updated_at?: string;
+}

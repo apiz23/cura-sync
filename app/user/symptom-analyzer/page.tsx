@@ -9,14 +9,33 @@ import {
     Activity,
     RefreshCcw,
     X,
+    Search,
+    Brain,
+    Stethoscope,
+    HeartPulse,
+    ChevronRight,
+    AlertTriangle,
+    Info,
+    Clock,
+    Thermometer,
+    FileText,
+    ArrowRight,
 } from "lucide-react";
 import { useState, useCallback, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
+import {
+    Card,
+    CardContent,
+    CardHeader,
+    CardTitle,
+    CardDescription,
+} from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
 import AnimatedTags from "@/components/smoothui/animated-tags";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 interface AnalysisResult {
     possible_disease: string;
@@ -30,6 +49,7 @@ export default function SymptomsCheckPage() {
     const [result, setResult] = useState<AnalysisResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+    const [activeTab, setActiveTab] = useState("symptoms");
 
     const commonSymptoms = useMemo(
         () => [
@@ -66,6 +86,7 @@ export default function SymptomsCheckPage() {
         setTextInput("");
         setResult(null);
         setError(null);
+        setActiveTab("symptoms");
     }, []);
 
     const allSymptoms = useMemo(() => {
@@ -85,7 +106,7 @@ export default function SymptomsCheckPage() {
 
     const handleAnalyze = async () => {
         if (allSymptoms.length === 0) {
-            setError("Please select or describe your symptoms first.");
+            setError("Please select or describe at least one symptom.");
             return;
         }
 
@@ -103,6 +124,7 @@ export default function SymptomsCheckPage() {
 
             const data = await res.json();
             setResult(data);
+            setActiveTab("results");
         } catch (err) {
             console.error(err);
             setError("Something went wrong. Please try again.");
@@ -111,327 +133,533 @@ export default function SymptomsCheckPage() {
         }
     };
 
-    const truncateSymptom = (symptom: string, maxLength: number = 30) => {
-        if (symptom.length <= maxLength) return symptom;
-        return symptom.substring(0, maxLength) + "...";
+    const getConfidencePercentage = (level: string) => {
+        const levels: Record<string, number> = {
+            High: 85,
+            Moderate: 60,
+            Low: 40,
+            "Very Low": 20,
+        };
+        return levels[level] || 50;
     };
 
     return (
-        <div className="pt-8 pb-8 px-4">
-            <div className="max-w-4xl mx-auto space-y-8 pt-4">
+        <div className="min-h-screen bg-linear-to-b from-background via-background to-primary/5 p-4 md:p-6">
+            <div className="max-w-5xl mx-auto">
                 {/* Header */}
-                <div className="text-center space-y-4">
-                    <div className="flex flex-col items-center space-y-3">
-                        <div className="p-4 border-2 border-primary bg-primary/10 neo-shadow">
-                            <Activity className="h-10 w-10 text-primary" />
-                        </div>
-                        <div className="space-y-2">
-                            <h1 className="text-3xl font-black text-foreground font-sans uppercase tracking-tight">
-                                Symptom Checker
-                            </h1>
-                            <p className="text-muted-foreground font-sans">
-                                AI-powered preliminary health assessment
-                            </p>
+                <div className="text-center mb-8">
+                    <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-linear-to-br from-primary/10 to-primary/5 mb-4">
+                        <div className="p-3 rounded-xl bg-primary/20">
+                            <Brain className="h-8 w-8 text-primary" />
                         </div>
                     </div>
+                    <h1 className="text-4xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-3">
+                        AI Symptom Analyzer
+                    </h1>
+                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
+                        Get instant AI-powered insights about your symptoms and
+                        recommended next steps
+                    </p>
                 </div>
 
-                {/* Error Alert - Neo-brutalism style */}
-                {error && (
-                    <div className="p-4 border-2 border-destructive bg-destructive/10 flex items-start gap-3 animate-in fade-in">
-                        <div className="p-2 border-2 border-destructive bg-destructive/20 shrink-0">
-                            <AlertCircle className="h-5 w-5 text-destructive" />
-                        </div>
-                        <div className="flex-1">
-                            <p className="font-bold text-foreground text-sm font-sans">
-                                Attention Required
-                            </p>
-                            <p className="text-muted-foreground text-sm mt-0.5 font-sans">
-                                {error}
-                            </p>
-                        </div>
-                        <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setError(null)}
-                            className="border-2 border-border hover:border-destructive"
-                        >
-                            <X className="h-4 w-4" />
-                        </Button>
-                    </div>
-                )}
-
-                {/* Results Card - Neo-brutalism style */}
-                {result && (
-                    <Card className="border-2 border-border shadow-lg animate-in fade-in slide-in-from-bottom-4">
-                        <CardContent className="p-6 space-y-6">
-                            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-start gap-4">
-                                <div className="space-y-4 flex-1">
-                                    <div className="flex items-center gap-3">
-                                        <div className="p-3 border-2 border-primary bg-primary/10">
-                                            <Sparkles className="h-6 w-6 text-primary" />
-                                        </div>
-                                        <div>
-                                            <h2 className="text-xl font-bold text-foreground font-sans">
-                                                Analysis Result
-                                            </h2>
-                                            <p className="text-sm text-muted-foreground font-sans">
-                                                Based on your provided symptoms
-                                            </p>
-                                        </div>
+                {/* Main Content */}
+                <div className="grid lg:grid-cols-3 gap-6">
+                    {/* Left Panel - Progress & Info */}
+                    <div className="space-y-6">
+                        <Card className="border-2">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Activity className="h-5 w-5 text-primary" />
+                                    Analysis Progress
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-4">
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-medium">
+                                            Symptom Input
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                "font-bold",
+                                                allSymptoms.length > 0
+                                                    ? "text-green-600"
+                                                    : "text-muted-foreground"
+                                            )}
+                                        >
+                                            {allSymptoms.length} symptoms added
+                                        </span>
                                     </div>
+                                    <Progress
+                                        value={Math.min(
+                                            allSymptoms.length * 20,
+                                            100
+                                        )}
+                                    />
+                                </div>
+                                <div className="space-y-2">
+                                    <div className="flex justify-between text-sm">
+                                        <span className="font-medium">
+                                            AI Analysis
+                                        </span>
+                                        <span
+                                            className={cn(
+                                                "font-bold",
+                                                result
+                                                    ? "text-green-600"
+                                                    : "text-muted-foreground"
+                                            )}
+                                        >
+                                            {result ? "Complete" : "Pending"}
+                                        </span>
+                                    </div>
+                                    <Progress value={result ? 100 : 0} />
+                                </div>
+                            </CardContent>
+                        </Card>
 
-                                    {/* Symptoms Display */}
-                                    <div className="space-y-2">
-                                        <p className="text-sm font-bold text-muted-foreground font-sans uppercase tracking-wide">
-                                            Selected Symptoms (
-                                            {allSymptoms.length}):
-                                        </p>
-                                        <div className="flex flex-wrap gap-2 max-h-32 overflow-y-auto p-1">
-                                            {allSymptoms.map(
-                                                (symptom, index) => (
-                                                    <Badge
-                                                        key={index}
-                                                        variant="secondary"
-                                                        className="bg-secondary text-secondary-foreground px-3 py-1.5 border-2 border-border text-sm font-sans"
-                                                        title={symptom}
+                        <Card className="border-2">
+                            <CardHeader>
+                                <CardTitle className="flex items-center gap-2">
+                                    <Shield className="h-5 w-5 text-primary" />
+                                    Safety Information
+                                </CardTitle>
+                            </CardHeader>
+                            <CardContent className="space-y-3">
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200">
+                                    <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
+                                    <p className="text-sm text-amber-800 dark:text-amber-300">
+                                        <span className="font-bold">
+                                            Emergency Warning:
+                                        </span>{" "}
+                                        If experiencing chest pain, difficulty
+                                        breathing, or severe bleeding, seek
+                                        immediate medical attention.
+                                    </p>
+                                </div>
+                                <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
+                                    <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
+                                    <p className="text-sm text-blue-800 dark:text-blue-300">
+                                        This AI tool is for informational
+                                        purposes only and does not replace
+                                        professional medical advice.
+                                    </p>
+                                </div>
+                            </CardContent>
+                        </Card>
+                    </div>
+
+                    {/* Center Panel - Main Content */}
+                    <div className="lg:col-span-2">
+                        <Card className="border-2 shadow-lg">
+                            <CardHeader className="border-b">
+                                <div className="flex items-center justify-between">
+                                    <div>
+                                        <CardTitle className="text-2xl">
+                                            Symptom Analysis
+                                        </CardTitle>
+                                        <CardDescription>
+                                            Select your symptoms and get
+                                            AI-powered insights
+                                        </CardDescription>
+                                    </div>
+                                    {allSymptoms.length > 0 && (
+                                        <Badge
+                                            variant="secondary"
+                                            className="gap-2"
+                                        >
+                                            <span className="font-bold">
+                                                {allSymptoms.length}
+                                            </span>
+                                            Symptoms
+                                        </Badge>
+                                    )}
+                                </div>
+                            </CardHeader>
+
+                            <Tabs
+                                value={activeTab}
+                                onValueChange={setActiveTab}
+                                className="w-full"
+                            >
+                                <CardContent className="pt-6">
+                                    <TabsList className="grid grid-cols-2 mb-6">
+                                        <TabsTrigger
+                                            value="symptoms"
+                                            className="gap-2"
+                                        >
+                                            <Search className="h-4 w-4" />
+                                            Enter Symptoms
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="results"
+                                            disabled={!result}
+                                            className="gap-2"
+                                        >
+                                            <FileText className="h-4 w-4" />
+                                            Analysis Results
+                                        </TabsTrigger>
+                                    </TabsList>
+
+                                    <TabsContent
+                                        value="symptoms"
+                                        className="space-y-6"
+                                    >
+                                        {/* Error Alert */}
+                                        {error && (
+                                            <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
+                                                <div className="flex items-center gap-3">
+                                                    <AlertCircle className="h-5 w-5 text-destructive" />
+                                                    <div>
+                                                        <p className="font-medium text-destructive">
+                                                            {error}
+                                                        </p>
+                                                    </div>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={() =>
+                                                            setError(null)
+                                                        }
+                                                        className="ml-auto h-8 w-8 p-0"
                                                     >
-                                                        <span className="truncate">
-                                                            {truncateSymptom(
-                                                                symptom,
-                                                                25
-                                                            )}
-                                                        </span>
-                                                    </Badge>
-                                                )
+                                                        <X className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        {/* Symptoms Selection */}
+                                        <div className="space-y-4">
+                                            <div className="flex items-center justify-between">
+                                                <h3 className="text-lg font-semibold">
+                                                    Select Symptoms
+                                                </h3>
+                                                <span className="text-sm text-muted-foreground">
+                                                    {selectedSymptoms.length} of{" "}
+                                                    {commonSymptoms.length}{" "}
+                                                    selected
+                                                </span>
+                                            </div>
+                                            <AnimatedTags
+                                                initialTags={commonSymptoms}
+                                                onChange={handleTagChange}
+                                                selectedTags={selectedSymptoms}
+                                                className="w-full"
+                                            />
+                                        </div>
+
+                                        {/* Additional Details */}
+                                        <div className="space-y-3">
+                                            <label className="text-sm font-semibold flex items-center gap-2">
+                                                <Stethoscope className="h-4 w-4" />
+                                                Additional Details
+                                            </label>
+                                            <Textarea
+                                                value={textInput}
+                                                onChange={(e) =>
+                                                    setTextInput(e.target.value)
+                                                }
+                                                placeholder="Describe specific pains, duration, severity, or any other relevant information..."
+                                                rows={4}
+                                                className="min-h-[120px] resize-none border-2"
+                                            />
+                                            {textInput && (
+                                                <p className="text-xs text-muted-foreground text-right">
+                                                    {textInput.length}{" "}
+                                                    characters
+                                                </p>
                                             )}
                                         </div>
-                                    </div>
-                                </div>
-                            </div>
 
-                            <div className="grid gap-4">
-                                <div className="grid md:grid-cols-2 gap-4">
-                                    <div className="bg-card border-2 border-border p-5">
-                                        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 font-sans">
-                                            Possible Condition
-                                        </h3>
-                                        <p className="text-xl font-black text-foreground font-sans">
-                                            {result.possible_disease}
-                                        </p>
-                                    </div>
-                                    <div className="bg-card border-2 border-border p-5">
-                                        <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-3 font-sans">
-                                            Confidence
-                                        </h3>
-                                        <Badge
-                                            variant="outline"
-                                            className="border-2 border-primary bg-primary/10 text-primary px-4 py-2 text-base font-bold font-sans"
-                                        >
-                                            {result.confidence_level}
-                                        </Badge>
-                                    </div>
-                                </div>
-
-                                <div className="bg-card border-2 border-border p-5">
-                                    <h3 className="text-sm font-bold text-muted-foreground uppercase tracking-wider mb-4 font-sans">
-                                        Recommended Actions
-                                    </h3>
-                                    <div className="space-y-3">
-                                        {result.suggested_action
-                                            .split("\n")
-                                            .filter((line) =>
-                                                line.trim().startsWith("-")
-                                            )
-                                            .map((line, index) => (
-                                                <div
-                                                    key={index}
-                                                    className="flex items-start gap-4 p-4 border-2 border-border bg-muted/30"
-                                                >
-                                                    <div className="p-2 border-2 border-primary bg-primary mt-0.5 shrink-0">
-                                                        <Check className="h-4 w-4 text-primary-foreground" />
-                                                    </div>
-                                                    <span className="text-foreground text-sm leading-relaxed font-sans">
-                                                        {line
-                                                            .replace(/^-/, "")
-                                                            .trim()}
-                                                    </span>
+                                        {/* Selected Symptoms Preview */}
+                                        {allSymptoms.length > 0 && (
+                                            <div className="space-y-3">
+                                                <div className="flex items-center justify-between">
+                                                    <h4 className="text-sm font-semibold">
+                                                        Selected Symptoms
+                                                    </h4>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="sm"
+                                                        onClick={clearAll}
+                                                        className="h-8 text-xs"
+                                                    >
+                                                        Clear All
+                                                    </Button>
                                                 </div>
-                                            ))}
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div className="space-y-4">
-                                <Button
-                                    onClick={clearAll}
-                                    variant="outline"
-                                    className="w-full gap-2 border-2 border-border py-4 font-bold font-sans neo-button"
-                                >
-                                    <RefreshCcw className="w-5 h-5" />
-                                    Check Another Condition
-                                </Button>
-
-                                {/* Disclaimer */}
-                                <div className="p-5 border-2 border-border bg-muted/30">
-                                    <div className="flex items-start gap-4">
-                                        <div className="p-2 border-2 border-accent bg-accent shrink-0 mt-0.5">
-                                            <Shield className="h-5 w-5 text-accent-foreground" />
-                                        </div>
-                                        <div className="space-y-2">
-                                            <p className="font-bold text-foreground text-sm font-sans">
-                                                Important Medical Disclaimer
-                                            </p>
-                                            <p className="text-xs text-muted-foreground leading-relaxed font-sans">
-                                                This AI analysis is for
-                                                informational purposes only and
-                                                is not a substitute for
-                                                professional medical advice.
-                                                Always consult with a qualified
-                                                healthcare provider for proper
-                                                diagnosis and treatment.
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
-
-                {/* Input Section - Only show when no result */}
-                {!result && (
-                    <Card className="border-2 border-border shadow-lg">
-                        <CardContent className="p-6 space-y-6">
-                            {/* Common Symptoms */}
-                            <div className="space-y-4">
-                                <div className="space-y-2">
-                                    <label className="text-sm font-bold text-foreground font-sans uppercase tracking-wide">
-                                        Common Symptoms
-                                    </label>
-                                    <div className="w-full">
-                                        <AnimatedTags
-                                            initialTags={commonSymptoms}
-                                            onChange={handleTagChange}
-                                            selectedTags={selectedSymptoms}
-                                            className="w-full"
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Additional Details */}
-                            <div className="space-y-3">
-                                <label className="text-sm font-bold text-foreground font-sans uppercase tracking-wide">
-                                    Other Details
-                                </label>
-                                <div className="space-y-2">
-                                    <Textarea
-                                        value={textInput}
-                                        onChange={(e) =>
-                                            setTextInput(e.target.value)
-                                        }
-                                        placeholder="Describe specific pains, duration, or other symptoms..."
-                                        rows={3}
-                                        className="resize-none border-2 border-border focus:border-primary p-4 text-sm transition-colors bg-input min-h-[100px] font-sans neo-input"
-                                    />
-                                    {textInput.length > 50 && (
-                                        <p className="text-xs text-muted-foreground font-sans">
-                                            {textInput.length} characters
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            {/* Selected Symptoms Preview */}
-                            {allSymptoms.length > 0 && (
-                                <div className="p-4 border-2 border-border bg-primary/5">
-                                    <p className="text-sm font-bold text-foreground mb-3 font-sans uppercase tracking-wide">
-                                        Symptoms to analyze (
-                                        {allSymptoms.length}):
-                                    </p>
-                                    <div className="flex flex-wrap gap-2 max-h-20 overflow-y-auto">
-                                        {allSymptoms.map((symptom, index) => (
-                                            <Badge
-                                                key={index}
-                                                variant="secondary"
-                                                className="bg-background text-foreground px-3 py-1.5 border-2 border-border text-xs font-sans"
-                                            >
-                                                <span className="truncate">
-                                                    {truncateSymptom(
-                                                        symptom,
-                                                        20
+                                                <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-muted/50">
+                                                    {allSymptoms.map(
+                                                        (symptom, index) => (
+                                                            <Badge
+                                                                key={index}
+                                                                variant="secondary"
+                                                                className="gap-1.5 px-3 py-1.5"
+                                                            >
+                                                                <Check className="h-3 w-3" />
+                                                                {symptom}
+                                                            </Badge>
+                                                        )
                                                     )}
-                                                </span>
-                                            </Badge>
-                                        ))}
-                                    </div>
-                                </div>
-                            )}
+                                                </div>
+                                            </div>
+                                        )}
 
-                            {/* Action Button */}
-                            <div className="space-y-3">
-                                <Button
-                                    onClick={handleAnalyze}
-                                    disabled={
-                                        loading || allSymptoms.length === 0
-                                    }
-                                    className={cn(
-                                        "w-full py-6 text-lg gap-2 border-2 border-border font-bold font-sans neo-button",
-                                        allSymptoms.length > 0
-                                            ? "bg-primary hover:bg-primary/90"
-                                            : "bg-muted text-muted-foreground cursor-not-allowed"
-                                    )}
-                                    size="lg"
-                                >
-                                    {loading ? (
-                                        <>
-                                            <Loader2 className="h-5 w-5 animate-spin" />
-                                            <span className="font-sans">
-                                                Analyzing Symptoms...
-                                            </span>
-                                        </>
-                                    ) : (
-                                        <>
-                                            <Sparkles className="h-5 w-5" />
-                                            <span className="font-sans">
-                                                Analyze Symptoms
-                                                {allSymptoms.length > 0 &&
-                                                    ` (${allSymptoms.length})`}
-                                            </span>
-                                        </>
-                                    )}
-                                </Button>
+                                        {/* Analyze Button */}
+                                        <div className="space-y-3 pt-4">
+                                            <Button
+                                                onClick={handleAnalyze}
+                                                disabled={
+                                                    loading ||
+                                                    allSymptoms.length === 0
+                                                }
+                                                size="lg"
+                                                className="w-full h-14 text-base gap-3"
+                                            >
+                                                {loading ? (
+                                                    <>
+                                                        <Loader2 className="h-5 w-5 animate-spin" />
+                                                        Analyzing with AI...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Sparkles className="h-5 w-5" />
+                                                        {allSymptoms.length >
+                                                        0 ? (
+                                                            <>
+                                                                Analyze{" "}
+                                                                {
+                                                                    allSymptoms.length
+                                                                }{" "}
+                                                                Symptoms
+                                                                <ArrowRight className="h-4 w-4 ml-2" />
+                                                            </>
+                                                        ) : (
+                                                            "Select Symptoms to Begin"
+                                                        )}
+                                                    </>
+                                                )}
+                                            </Button>
+                                            {allSymptoms.length === 0 && (
+                                                <p className="text-sm text-muted-foreground text-center">
+                                                    Select at least one symptom
+                                                    to begin analysis
+                                                </p>
+                                            )}
+                                        </div>
+                                    </TabsContent>
 
-                                {allSymptoms.length > 0 && (
-                                    <Button
-                                        variant="outline"
-                                        onClick={clearAll}
-                                        className="w-full text-sm border-2 border-border font-bold font-sans neo-button"
+                                    <TabsContent
+                                        value="results"
+                                        className="space-y-6 animate-in fade-in"
                                     >
-                                        Clear All Symptoms
-                                    </Button>
-                                )}
-                            </div>
-                        </CardContent>
-                    </Card>
-                )}
+                                        {result && (
+                                            <>
+                                                {/* Result Header */}
+                                                <div className="p-6 rounded-xl bg-linear-to-r from-primary/5 to-primary/10 border border-primary/20">
+                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                                                        <div className="p-3 rounded-lg bg-primary/20">
+                                                            <Sparkles className="h-8 w-8 text-primary" />
+                                                        </div>
+                                                        <div className="flex-1">
+                                                            <h3 className="text-2xl font-bold">
+                                                                Analysis
+                                                                Complete
+                                                            </h3>
+                                                            <p className="text-muted-foreground">
+                                                                Based on your{" "}
+                                                                {
+                                                                    allSymptoms.length
+                                                                }{" "}
+                                                                reported
+                                                                symptoms
+                                                            </p>
+                                                        </div>
+                                                        <Badge
+                                                            variant="outline"
+                                                            className="text-base px-4 py-2"
+                                                        >
+                                                            {new Date().toLocaleDateString()}
+                                                        </Badge>
+                                                    </div>
+                                                </div>
 
-                {/* Footer */}
-                <div className="text-center space-y-3 pt-4">
-                    <div className="flex items-center justify-center gap-2 text-muted-foreground">
-                        <div className="p-2 border-2 border-primary bg-primary/10">
-                            <Shield className="h-4 w-4 text-primary" />
-                        </div>
-                        <span className="text-xs font-bold uppercase tracking-wider font-sans">
-                            Your privacy is protected • HIPAA compliant
-                        </span>
+                                                {/* Diagnosis Section */}
+                                                <div className="grid gap-6 md:grid-cols-2">
+                                                    <Card>
+                                                        <CardHeader>
+                                                            <CardTitle className="flex items-center gap-2">
+                                                                <HeartPulse className="h-5 w-5 text-primary" />
+                                                                Possible
+                                                                Condition
+                                                            </CardTitle>
+                                                        </CardHeader>
+                                                        <CardContent>
+                                                            <p className="text-3xl font-bold text-primary mb-2">
+                                                                {
+                                                                    result.possible_disease
+                                                                }
+                                                            </p>
+                                                            <p className="text-sm text-muted-foreground">
+                                                                AI-powered
+                                                                preliminary
+                                                                diagnosis
+                                                            </p>
+                                                        </CardContent>
+                                                    </Card>
+
+                                                    <Card>
+                                                        <CardHeader>
+                                                            <CardTitle className="flex items-center gap-2">
+                                                                <Thermometer className="h-5 w-5 text-primary" />
+                                                                Confidence Level
+                                                            </CardTitle>
+                                                        </CardHeader>
+                                                        <CardContent className="space-y-4">
+                                                            <div className="space-y-2">
+                                                                <div className="flex justify-between text-sm">
+                                                                    <span>
+                                                                        AI
+                                                                        Confidence
+                                                                    </span>
+                                                                    <span className="font-bold">
+                                                                        {
+                                                                            result.confidence_level
+                                                                        }
+                                                                    </span>
+                                                                </div>
+                                                                <Progress
+                                                                    value={getConfidencePercentage(
+                                                                        result.confidence_level
+                                                                    )}
+                                                                />
+                                                            </div>
+                                                            <Badge
+                                                                variant={
+                                                                    result.confidence_level ===
+                                                                    "High"
+                                                                        ? "default"
+                                                                        : "secondary"
+                                                                }
+                                                                className="w-fit"
+                                                            >
+                                                                {result.confidence_level ===
+                                                                "High"
+                                                                    ? "High Reliability"
+                                                                    : "Seek Professional Advice"}
+                                                            </Badge>
+                                                        </CardContent>
+                                                    </Card>
+                                                </div>
+
+                                                {/* Recommended Actions */}
+                                                <Card>
+                                                    <CardHeader>
+                                                        <CardTitle className="flex items-center gap-2">
+                                                            <Check className="h-5 w-5 text-primary" />
+                                                            Recommended Actions
+                                                        </CardTitle>
+                                                    </CardHeader>
+                                                    <CardContent>
+                                                        <div className="space-y-3">
+                                                            {result.suggested_action
+                                                                .split("\n")
+                                                                .filter(
+                                                                    (line) =>
+                                                                        line
+                                                                            .trim()
+                                                                            .startsWith(
+                                                                                "-"
+                                                                            )
+                                                                )
+                                                                .map(
+                                                                    (
+                                                                        line,
+                                                                        index
+                                                                    ) => (
+                                                                        <div
+                                                                            key={
+                                                                                index
+                                                                            }
+                                                                            className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
+                                                                        >
+                                                                            <div className="p-1.5 rounded-md bg-primary/10 mt-0.5">
+                                                                                <ChevronRight className="h-4 w-4 text-primary" />
+                                                                            </div>
+                                                                            <span className="text-sm">
+                                                                                {line
+                                                                                    .replace(
+                                                                                        /^-/,
+                                                                                        ""
+                                                                                    )
+                                                                                    .trim()}
+                                                                            </span>
+                                                                        </div>
+                                                                    )
+                                                                )}
+                                                        </div>
+                                                    </CardContent>
+                                                </Card>
+
+                                                {/* Action Buttons */}
+                                                <div className="flex flex-col sm:flex-row gap-3">
+                                                    <Button
+                                                        onClick={clearAll}
+                                                        variant="outline"
+                                                        className="flex-1 gap-2"
+                                                    >
+                                                        <RefreshCcw className="h-4 w-4" />
+                                                        Analyze New Symptoms
+                                                    </Button>
+                                                    <Button className="flex-1 gap-2">
+                                                        <Clock className="h-4 w-4" />
+                                                        Schedule Doctor Visit
+                                                    </Button>
+                                                </div>
+
+                                                {/* Disclaimer */}
+                                                <div className="p-4 rounded-lg bg-muted/50 border">
+                                                    <div className="flex items-start gap-3">
+                                                        <Shield className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                                                        <div>
+                                                            <p className="text-sm font-medium mb-1">
+                                                                Important
+                                                                Disclaimer
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                This analysis is
+                                                                generated by AI
+                                                                and is for
+                                                                informational
+                                                                purposes only.
+                                                                It is not a
+                                                                substitute for
+                                                                professional
+                                                                medical advice,
+                                                                diagnosis, or
+                                                                treatment.
+                                                                Always seek the
+                                                                advice of your
+                                                                physician or
+                                                                other qualified
+                                                                health provider
+                                                                with any
+                                                                questions you
+                                                                may have
+                                                                regarding a
+                                                                medical
+                                                                condition.
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </>
+                                        )}
+                                    </TabsContent>
+                                </CardContent>
+                            </Tabs>
+                        </Card>
                     </div>
-                    <p className="text-xs text-muted-foreground max-w-md mx-auto leading-relaxed font-sans">
-                        Always consult a healthcare professional for medical
-                        diagnosis. In case of emergency, contact emergency
-                        services immediately.
-                    </p>
                 </div>
             </div>
         </div>

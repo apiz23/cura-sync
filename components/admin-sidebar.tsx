@@ -22,7 +22,7 @@ import {
 import { AdminProfileMenu } from "./admin-profile-menu";
 import { adminMenu } from "@/lib/admin-menu";
 
-export function AdminSidebar() {
+export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
     const { staff } = useAuth();
     const role = staff?.role || "";
     const pathname = usePathname();
@@ -38,7 +38,7 @@ export function AdminSidebar() {
     };
 
     return (
-        <Sidebar>
+        <Sidebar variant="inset" className="overflow-x-hidden" {...props}>
             {/* ================= HEADER ================= */}
             <SidebarHeader>
                 <SidebarMenu>

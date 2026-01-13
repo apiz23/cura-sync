@@ -1,41 +1,51 @@
 export function getPageTitle(pathname: string): string {
-    // Remove query params
     const cleanPath = pathname.split("?")[0];
-
-    // Break into segments
     const segments = cleanPath.split("/").filter(Boolean);
 
-    // Remove "admin" prefix
-    const adminIndex = segments.indexOf("admin");
-    const relevant =
-        adminIndex !== -1 ? segments.slice(adminIndex + 1) : segments;
-
-    if (relevant.length === 0) {
-        return "Dashboard";
-    }
+    if (segments.length === 0) return "Dashboard";
 
     /**
-     * If last segment looks like an ID (uuid, cuid, nanoid, number),
-     * use the previous segment as title
+     * Common layout / group routes to ignore
+     * (add more if needed, no logic changes required)
      */
+    const LAYOUT_SEGMENTS = new Set([
+        "user",
+        "admin",
+        "app",
+        "(auth)",
+        "(dashboard)",
+    ]);
+
+    const relevant = segments.filter((seg) => !LAYOUT_SEGMENTS.has(seg));
+
+    if (relevant.length === 0) return "Dashboard";
+
     const last = relevant[relevant.length - 1];
     const prev = relevant[relevant.length - 2];
 
+    /**
+     * Detect dynamic route segments (ids)
+     */
     const isId =
-        /^[a-zA-Z0-9_-]{6,}$/.test(last) || // uuid / nanoid / cuid
-        /^\d+$/.test(last); // numeric id
+        /^[a-f0-9-]{36}$/.test(last) || // uuid
+        /^[a-zA-Z0-9_-]{10,}$/.test(last) || // nanoid / cuid
+        /^\d+$/.test(last); // numeric
 
-    let titleSegment = isId ? prev : last;
+    const baseSegment = isId && prev ? prev : last;
 
-    if (!titleSegment) {
-        titleSegment = last;
-    }
+    /**
+     * Optional human-friendly overrides
+     * (purely additive, still dynamic)
+     */
+    const OVERRIDES: Record<string, string> = {
+        medications: "Medications",
+        profile: "My Profile",
+        settings: "Settings",
+    };
 
-    return formatTitle(titleSegment);
+    return OVERRIDES[baseSegment] ?? formatTitle(baseSegment);
 }
 
 function formatTitle(value: string): string {
-    return value
-        .replace(/-/g, " ")
-        .replace(/\b\w/g, (char) => char.toUpperCase());
+    return value.replace(/[-_]/g, " ").replace(/\b\w/g, (c) => c.toUpperCase());
 }

@@ -118,7 +118,7 @@ export default function EditFacilityPage() {
         }
 
         fetchFacilityData();
-    }, [authLoading, staff?.facility_id, fetchFacilityData]);
+    }, [authLoading, staff, fetchFacilityData]);
 
     const handleSave = async () => {
         if (!facility) return;
