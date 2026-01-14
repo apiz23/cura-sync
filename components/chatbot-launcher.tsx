@@ -26,7 +26,7 @@ export default function ChatbotLauncher() {
                         </div>
                     </Button>
                 </DialogTrigger>
-                <DialogContent className="max-h-[70vh] p-0 overflow-hidden w-full sm:max-w-xl border-l border-border">
+                <DialogContent className="max-h-[70vh] p-0 overflow-y-auto w-full sm:max-w-xl border-l border-border">
                     <div className="flex flex-col h-full">
                         <DialogHeader className="px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
                             <div className="flex items-center justify-between">
