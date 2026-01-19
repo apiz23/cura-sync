@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { DM_Sans, Space_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
-import { Toaster } from "sonner";
 import "../globals.css";
+import { Toaster } from "@/components/ui/sonner";
 
 const dmSans = DM_Sans({
     subsets: ["latin"],
@@ -41,10 +41,7 @@ export default function RootLayout({
                     >
                       {children}
                         <Toaster
-                            position="bottom-right"
-                            theme="dark"
                             richColors
-                            closeButton
                         />
                     </ThemeProvider>
                 </body>

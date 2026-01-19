@@ -134,7 +134,7 @@ export default function FacilitiesMapPage() {
     useEffect(() => {
         async function loadFacilities() {
             try {
-                const res = await fetch("/api/facilities");
+                const res = await fetch("/api/facility");
                 if (!res.ok) throw new Error("Failed to fetch facilities");
 
                 const data: Facility[] = await res.json();

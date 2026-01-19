@@ -49,10 +49,8 @@ import { format } from "date-fns";
 import supabase from "@/lib/supabase";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
-import { Facility } from "@/app/types";
 import dynamic from "next/dynamic";
 
-// Dynamically import the map
 const MapComponent = dynamic(
     () => import("@/components/ui/map").then((mod) => mod.Map),
     {
@@ -71,14 +69,35 @@ const MarkerContent = dynamic(
     { ssr: false }
 );
 
+const startOfToday = new Date();
+startOfToday.setHours(0, 0, 0, 0);
+
+const minBookingDate = new Date(startOfToday);
+minBookingDate.setDate(minBookingDate.getDate() + 1);
+
+type BookingFacility = {
+    id: string;
+    name: string;
+    type: string | null;
+    specialty: string | null;
+    address: string;
+
+    phone?: string | null;
+    rating?: number | null;
+    wait_time?: string | null;
+
+    coordinates?: [number, number];
+    slots: string[];
+};
+
 export default function AppointmentBookingPage() {
     const { facilityId } = useParams<{ facilityId: string }>();
     const router = useRouter();
     const { user } = useUser();
 
-    const [facility, setFacility] = useState<Facility | null>(null);
+    const [facility, setFacility] = useState<BookingFacility | null>(null);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(
-        new Date()
+        minBookingDate
     );
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
     const [reason, setReason] = useState("");
@@ -92,7 +111,6 @@ export default function AppointmentBookingPage() {
 
     const normalizeTime = (t: string) => t?.slice(0, 5);
 
-    // Get user location
     useEffect(() => {
         if (!("geolocation" in navigator)) return;
 
@@ -104,13 +122,14 @@ export default function AppointmentBookingPage() {
                 ]);
             },
             () => {
-                console.log("Geolocation permission denied");
+                toast.warning("Location access denied", {
+                    description: "Directions and distance may be limited",
+                });
             },
             { enableHighAccuracy: true, timeout: 5000 }
         );
     }, []);
 
-    // Fetch facility
     useEffect(() => {
         async function loadFacility() {
             setIsLoading(true);
@@ -127,7 +146,7 @@ export default function AppointmentBookingPage() {
                     return;
                 }
 
-                const transformedFacility: Facility = {
+                const transformedFacility: BookingFacility = {
                     id: data.id,
                     name: data.name,
                     type: data.type,
@@ -202,42 +221,41 @@ export default function AppointmentBookingPage() {
             return;
         }
 
-        setIsBooking(true);
-
         const [start_time, end_time] = selectedSlot.split(" - ");
         const dateStr = format(selectedDate, "yyyy-MM-dd");
 
-        try {
-            const res = await fetch("/api/appointments", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    profile_id: user.id,
-                    facility_id: facility.id,
-                    appointment_date: dateStr,
-                    start_time,
-                    end_time,
-                    reason_for_visit: reason,
-                }),
-            });
+        setIsBooking(true);
+
+        const bookingPromise = fetch("/api/appointments", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+                profile_id: user.id,
+                facility_id: facility.id,
+                appointment_date: dateStr,
+                start_time,
+                end_time,
+                reason_for_visit: reason,
+            }),
+        }).then(async (res) => {
+            const json = await res.json();
 
             if (!res.ok) {
-                throw new Error("Booking failed");
+                throw new Error(json.error || "Booking failed");
             }
 
-            toast.success("Appointment booked successfully!", {
-                description: `Confirmation sent to ${user.primaryEmailAddress?.emailAddress}`,
-                action: {
-                    label: "View Appointments",
-                    onClick: () => router.push("/user/appointments"),
-                },
-            });
+            return json;
+        });
 
-            setTimeout(() => {
-                router.push("/user/appointments");
-            }, 2000);
-        } catch {
-            toast.error("Booking failed. Please try again.");
+        toast.promise(bookingPromise, {
+            loading: "Booking appointment...",
+            success: "Appointment confirmed!",
+            error: (err) => err.message,
+        });
+
+        try {
+            await bookingPromise;
+            router.push("/user/appointments");
         } finally {
             setIsBooking(false);
         }
@@ -245,10 +263,13 @@ export default function AppointmentBookingPage() {
 
     const handleGetDirections = () => {
         if (!facility?.coordinates) {
-            toast.error("Location information not available");
+            toast.error("Directions unavailable", {
+                description: "This facility has no location data",
+            });
             return;
         }
 
+        toast.message("Opening Google Maps...");
         const url = `https://www.google.com/maps/dir/?api=1&destination=${facility.coordinates[0]},${facility.coordinates[1]}`;
         window.open(url, "_blank");
     };
@@ -536,9 +557,22 @@ export default function AppointmentBookingPage() {
                                                 onSelect={(date) => {
                                                     setSelectedDate(date);
                                                     setSelectedSlot(null);
+
+                                                    if (date) {
+                                                        toast.message(
+                                                            "Date selected",
+                                                            {
+                                                                description:
+                                                                    format(
+                                                                        date,
+                                                                        "EEEE, MMMM d, yyyy"
+                                                                    ),
+                                                            }
+                                                        );
+                                                    }
                                                 }}
                                                 disabled={(date) =>
-                                                    date < new Date()
+                                                    date < minBookingDate
                                                 }
                                                 initialFocus
                                                 className="rounded-md border"
@@ -605,11 +639,20 @@ export default function AppointmentBookingPage() {
                                                                 disabled={
                                                                     booked
                                                                 }
-                                                                onClick={() =>
+                                                                onClick={() => {
                                                                     setSelectedSlot(
                                                                         slot
-                                                                    )
-                                                                }
+                                                                    );
+                                                                    toast.success(
+                                                                        "Time slot selected",
+                                                                        {
+                                                                            description: `${slot} on ${format(
+                                                                                selectedDate!,
+                                                                                "MMM d, yyyy"
+                                                                            )}`,
+                                                                        }
+                                                                    );
+                                                                }}
                                                                 className={cn(
                                                                     "group rounded-xl border p-3 text-center transition-all duration-200 sm:p-4",
                                                                     booked

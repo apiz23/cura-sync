@@ -21,7 +21,6 @@ import {
     Calendar,
     Shield,
     Briefcase,
-    Clock,
     Edit,
     Bell,
     FileText,
@@ -29,22 +28,20 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import EditStaffProfileModal from "./edit-sheet";
-import { StaffProfile } from "@/app/types";
+import { AuthUser } from "@/app/types";
 
-export default function StaffProfilePage() {
-    const { staff: initialStaff, loading } = useAuth();
-    const [staff, setStaff] = useState<StaffProfile | null>(
-        initialStaff as StaffProfile | null
-    );
+export default function ProfessionalProfilePage() {
+    const { user, loading } = useAuth();
+    const [profile, setProfile] = useState<AuthUser | null>(null);
     const [isEditing, setIsEditing] = useState(false);
 
     const initials =
-        (staff?.full_name?.split(" ")[0]?.[0] || "") +
-        (staff?.full_name?.split(" ")[1]?.[0] || "");
+        (profile?.full_name?.split(" ")[0]?.[0] || "") +
+        (profile?.full_name?.split(" ")[1]?.[0] || "");
 
-    const handleUpdateProfile = async (updatedData: Partial<StaffProfile>) => {
+    const handleUpdateProfile = async (updatedData: Partial<AuthUser>) => {
         try {
-            const res = await fetch(`/api/staff/${updatedData.id}`, {
+            const res = await fetch(`/api/user/${updatedData.id}`, {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updatedData),
@@ -53,49 +50,23 @@ export default function StaffProfilePage() {
             const result = await res.json();
 
             if (!res.ok) {
-                toast.error(result.error || "Failed to update staff profile");
+                toast.error(result.error || "Failed to update user profile");
                 return;
             }
 
             toast.success("Profile updated successfully");
-            setStaff({ ...staff, ...updatedData } as StaffProfile);
+            setProfile({ ...user, ...updatedData } as AuthUser);
         } catch (error) {
             console.error(error);
             toast.error("Something went wrong");
         }
     };
 
-    const getAvailabilityStatus = () => {
-        if (!staff?.availability)
-            return { status: "Not Set", color: "bg-gray-500" };
-
-        try {
-            const availability =
-                typeof staff.availability === "string"
-                    ? JSON.parse(staff.availability)
-                    : staff.availability;
-
-            if (availability?.limited === true) {
-                return { status: "Limited", color: "bg-yellow-500" };
-            }
-            if (availability?.available === true) {
-                return { status: "Available", color: "bg-green-500" };
-            }
-            if (availability?.available === false) {
-                return { status: "Unavailable", color: "bg-red-500" };
-            }
-        } catch {
-            return { status: "Not Set", color: "bg-gray-500" };
-        }
-
-        return { status: "Not Set", color: "bg-gray-500" };
-    };
-
     const getRoleColor = (role: string) => {
         switch (role?.toLowerCase()) {
             case "doctor":
                 return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800";
-            case "staff":
+            case "user":
                 return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800";
             case "admin":
                 return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800";
@@ -103,8 +74,6 @@ export default function StaffProfilePage() {
                 return "bg-primary/10 text-primary border-primary/20";
         }
     };
-
-    const availabilityStatus = getAvailabilityStatus();
 
     if (loading) {
         return (
@@ -124,7 +93,7 @@ export default function StaffProfilePage() {
         );
     }
 
-    if (!staff) {
+    if (!user) {
         return (
             <div className="min-h-screen flex items-center justify-center p-6">
                 <Card className="max-w-md mx-auto border-2 border-border/50 shadow-xl">
@@ -163,14 +132,14 @@ export default function StaffProfilePage() {
 
                                     <div className="space-y-2">
                                         <h2 className="text-2xl font-bold text-foreground">
-                                            {staff.full_name}
+                                            {user.full_name}
                                         </h2>
                                         <Badge
                                             className={`px-3 py-1.5 ${getRoleColor(
-                                                staff.role
+                                                user.role
                                             )}`}
                                         >
-                                            {staff.role}
+                                            {user.role}
                                         </Badge>
                                     </div>
 
@@ -185,7 +154,7 @@ export default function StaffProfilePage() {
                                                     Email
                                                 </p>
                                                 <p className="text-foreground truncate">
-                                                    {staff.email}
+                                                    {user.email}
                                                 </p>
                                             </div>
                                         </div>
@@ -195,7 +164,7 @@ export default function StaffProfilePage() {
                                     <div className="grid grid-cols-3 gap-4 w-full pt-4 border-t">
                                         <div className="text-center">
                                             <p className="text-2xl font-bold text-foreground">
-                                                {staff.years_of_experience ||
+                                                {user.years_of_experience ||
                                                     "0"}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
@@ -204,7 +173,7 @@ export default function StaffProfilePage() {
                                         </div>
                                         <div className="text-center">
                                             <p className="text-2xl font-bold text-foreground">
-                                                {staff.license_number
+                                                {user.license_number
                                                     ? "✓"
                                                     : "—"}
                                             </p>
@@ -214,7 +183,7 @@ export default function StaffProfilePage() {
                                         </div>
                                         <div className="text-center">
                                             <p className="text-2xl font-bold text-foreground">
-                                                {staff.facility_id ? "✓" : "—"}
+                                                {user.facility_id ? "✓" : "—"}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 Facility
@@ -222,64 +191,6 @@ export default function StaffProfilePage() {
                                         </div>
                                     </div>
                                 </div>
-                            </CardContent>
-                        </Card>
-
-                        {/* Availability Card */}
-                        <Card className="border-2 border-border/50 shadow-sm">
-                            <CardContent className="p-6">
-                                <div className="flex items-center justify-between mb-4">
-                                    <h3 className="font-semibold text-foreground">
-                                        Availability
-                                    </h3>
-                                    <div className="flex items-center gap-2">
-                                        <div
-                                            className={`w-2 h-2 rounded-full ${availabilityStatus.color}`}
-                                        />
-                                        <span className="text-sm font-medium">
-                                            {availabilityStatus.status}
-                                        </span>
-                                    </div>
-                                </div>
-                                {staff.availability &&
-                                    typeof staff.availability === "object" && (
-                                        <div className="space-y-3">
-                                            {staff.availability.schedule && (
-                                                <div className="text-sm">
-                                                    <p className="text-muted-foreground mb-1">
-                                                        Schedule
-                                                    </p>
-                                                    <p className="text-foreground font-medium">
-                                                        {
-                                                            staff.availability
-                                                                .schedule
-                                                        }
-                                                    </p>
-                                                </div>
-                                            )}
-                                            {staff.availability.notes && (
-                                                <div className="text-sm">
-                                                    <p className="text-muted-foreground mb-1">
-                                                        Notes
-                                                    </p>
-                                                    <p className="text-foreground">
-                                                        {
-                                                            staff.availability
-                                                                .notes
-                                                        }
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-                                <Button
-                                    variant="outline"
-                                    className="w-full mt-4 rounded-lg gap-2"
-                                    onClick={() => setIsEditing(true)}
-                                >
-                                    <Clock className="w-4 h-4" />
-                                    Update Availability
-                                </Button>
                             </CardContent>
                         </Card>
                     </div>
@@ -307,7 +218,7 @@ export default function StaffProfilePage() {
                                             </h4>
                                         </div>
                                         <p className="text-foreground text-lg font-medium">
-                                            {staff.specialization ||
+                                            {user.specialization ||
                                                 "Not specified"}
                                         </p>
                                     </div>
@@ -321,7 +232,7 @@ export default function StaffProfilePage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <p className="text-foreground text-lg font-medium">
-                                                {staff.years_of_experience ||
+                                                {user.years_of_experience ||
                                                     "0"}
                                             </p>
                                             <span className="text-muted-foreground">
@@ -338,7 +249,7 @@ export default function StaffProfilePage() {
                                             </h4>
                                         </div>
                                         <p className="text-foreground text-lg font-medium">
-                                            {staff.license_number ||
+                                            {user.license_number ||
                                                 "Not specified"}
                                         </p>
                                     </div>
@@ -362,8 +273,7 @@ export default function StaffProfilePage() {
                                             Facility ID
                                         </p>
                                         <p className="font-medium text-foreground">
-                                            {staff.facility_id ||
-                                                "Not assigned"}
+                                            {user.facility_id || "Not assigned"}
                                         </p>
                                     </div>
 
@@ -373,7 +283,7 @@ export default function StaffProfilePage() {
                                         </p>
                                         <p className="font-medium text-foreground">
                                             {new Date(
-                                                staff.created_at
+                                                user.created_at
                                             ).toLocaleDateString("en-US", {
                                                 year: "numeric",
                                                 month: "long",
@@ -387,7 +297,7 @@ export default function StaffProfilePage() {
                                             Profile ID
                                         </p>
                                         <code className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                                            {staff.id}
+                                            {user.id}
                                         </code>
                                     </div>
                                 </div>
@@ -451,7 +361,7 @@ export default function StaffProfilePage() {
             {/* Edit Profile Modal */}
             {isEditing && (
                 <EditStaffProfileModal
-                    staff={staff}
+                    user={user}
                     onSave={handleUpdateProfile}
                     onClose={() => setIsEditing(false)}
                 />

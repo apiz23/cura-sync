@@ -8,6 +8,7 @@ import { FcGoogle } from "react-icons/fc";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { toast } from "sonner";
 
 export function LoginForm({
     className,
@@ -23,7 +24,13 @@ export function LoginForm({
 
     useEffect(() => {
         if (userLoaded && isSignedIn) {
-            router.replace("/user/dashboard");
+            toast.success("Signed in successfully 🎉", {
+                description: "Redirecting to your dashboard...",
+            });
+
+            setTimeout(() => {
+                router.replace("/user/dashboard");
+            }, 800);
         }
     }, [userLoaded, isSignedIn, router]);
 
@@ -32,6 +39,10 @@ export function LoginForm({
 
         setError("");
         setIsLoading(true);
+
+        toast.loading("Connecting to Google...", {
+            id: "google-auth",
+        });
 
         try {
             await signUp.authenticateWithRedirect({
@@ -42,6 +53,8 @@ export function LoginForm({
         } catch (err: unknown) {
             console.error("Google Auth Error:", err);
 
+            let message = "Failed to connect with Google";
+
             if (
                 typeof err === "object" &&
                 err !== null &&
@@ -50,15 +63,18 @@ export function LoginForm({
                     (err as { errors?: { message?: string }[] }).errors
                 )
             ) {
-                setError(
+                message =
                     (err as { errors: { message?: string }[] }).errors[0]
-                        ?.message || "Failed to connect with Google"
-                );
+                        ?.message || message;
             } else if (err instanceof Error) {
-                setError(err.message);
-            } else {
-                setError("Failed to connect with Google");
+                message = err.message;
             }
+
+            setError(message);
+
+            toast.error(message, {
+                id: "google-auth",
+            });
         } finally {
             setIsLoading(false);
         }

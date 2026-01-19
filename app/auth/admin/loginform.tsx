@@ -1,7 +1,6 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import { Shield, Lock, Eye, EyeOff, Loader2, Key } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -20,7 +19,6 @@ export function AdminLoginForm({
     className,
     ...props
 }: React.ComponentProps<"div">) {
-    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
@@ -34,19 +32,22 @@ export function AdminLoginForm({
             return;
         }
 
+        if (loading) return;
         setLoading(true);
 
-        try {
-            const res = await fetch("/api/auth/admin-login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-            });
+        toast.promise(
+            (async () => {
+                const res = await fetch("/api/auth/admin-login", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ email, password }),
+                });
 
-            const data = await res.json();
+                const data = await res.json();
 
-            if (res.ok) {
-                toast.success("Admin login successful!");
+                if (!res.ok) {
+                    throw new Error(data.error || "Invalid credentials");
+                }
 
                 sessionStorage.setItem(
                     "cura-auth",
@@ -63,19 +64,21 @@ export function AdminLoginForm({
                     sessionStorage.setItem("facilityId", data.facilityId);
                 }
 
-                setTimeout(() => {
-                    router.refresh();
-                    router.push("/admin/dashboard");
-                }, 500);
-            } else {
-                toast.error(data.error || "Invalid credentials");
+                return data;
+            })(),
+            {
+                loading: "Authenticating admin...",
+                success: () => {
+                    setTimeout(() => {
+                        window.location.href = "/admin/dashboard";
+                    }, 800);
+
+                    return "Admin login successful!";
+                },
+                error: (err) => err.message || "Login failed",
+                finally: () => setLoading(false),
             }
-        } catch (error) {
-            console.error("Login error:", error);
-            toast.error("Network error. Please try again.");
-        } finally {
-            setLoading(false);
-        }
+        );
     }
 
     return (

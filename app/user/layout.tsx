@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { DM_Sans, Space_Mono } from "next/font/google";
 import "../globals.css";
-import { Toaster } from "sonner";
+import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { UserSidebar } from "@/components/user-sidebar";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
@@ -55,11 +55,10 @@ export default function UserLayout({
                                 <UserHeader />
                                 <main className="flex-1 overflow-auto bg-linear-to-b from-background to-muted/20">
                                     {children}
+                                    <Toaster richColors />
                                 </main>
                             </SidebarInset>
                         </SidebarProvider>
-
-                        <Toaster theme="dark" richColors closeButton />
                     </ThemeProvider>
                 </body>
             </html>

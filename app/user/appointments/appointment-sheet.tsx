@@ -37,10 +37,15 @@ import {
 import { cn } from "@/lib/utils";
 import { Textarea } from "@/components/ui/textarea";
 
+type BookingFacility = Facility & {
+    phone?: string | null;
+    slots: string[];
+};
+
 interface AppointmentModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
-    facility: Facility | null;
+    facility: BookingFacility | null;
     profileId: string;
 }
 

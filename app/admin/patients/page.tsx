@@ -1,33 +1,58 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
-import supabase from "@/lib/supabase";
+import { useState, useMemo, useEffect, useCallback } from "react";
 import {
     Search,
     Filter,
-    Calendar,
-    Users,
+    User,
     X,
     Phone,
     Mail,
     Eye,
-    Edit,
     UserPlus,
+    Calendar,
+    MoreVertical,
+    RefreshCw,
+    Activity,
+    AlertCircle,
+    Edit,
+    Trash2,
+    FileText,
+    Heart,
+    Bell,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import Link from "next/link";
-import PageTitle from "@/components/page-title";
-import EditPatientModal from "./edit-sheet";
 import AddPatientSheet from "./addPatientSheet";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuSeparator,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+
 export interface Patient {
     id: string;
     profile_id: string;
@@ -45,331 +70,216 @@ export interface Patient {
     emergency_contact?: string;
     age?: number;
     created_at?: string;
-}
-
-interface CuraPatientProfile {
-    date_of_birth?: string;
-    gender?: string;
-    blood_type?: string;
-    height_cm?: number;
-    weight_kg?: number;
-    allergies?: string;
-    chronic_conditions?: string;
-    emergency_contact?: string;
-}
-
-interface CuraProfileRow {
-    id: string;
-    email: string;
-    full_name?: string;
-    phone_number?: string;
-    avatar_url?: string;
-    created_at?: string;
-    cura_patient_profiles?: CuraPatientProfile[];
+    last_visit?: string;
 }
 
 export default function PatientListPage() {
     const [patients, setPatients] = useState<Patient[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
     const [facilityId, setFacilityId] = useState<string | null>(null);
-    const [authData, setAuthData] = useState<Record<string, unknown> | null>(
-        null
-    );
+    const [statusFilter, setStatusFilter] = useState("all");
+    const [genderFilter, setGenderFilter] = useState("all");
 
-    // Fetch patients function
-    const fetchPatients = async () => {
-        if (!facilityId) {
-            setIsLoading(false);
-            return;
-        }
+    const fetchPatients = useCallback(async () => {
+        if (!facilityId) return;
 
         try {
             setIsLoading(true);
-
-            // Fetch patients registered to this facility
-            const {
-                data: patientFacilitiesData,
-                error: patientFacilitiesError,
-            } = await supabase
-                .from("cura_patient_facilities")
-                .select("profile_id, status, registered_at")
-                .eq("facility_id", facilityId)
-                .eq("status", "active");
-
-            if (patientFacilitiesError) throw patientFacilitiesError;
-
-            // Get patient IDs
-            const patientIds =
-                patientFacilitiesData?.map((pf) => pf.profile_id) || [];
-
-            if (patientIds.length === 0) {
-                setPatients([]);
-                setIsLoading(false);
-                return;
-            }
-
-            // Fetch patient profiles and their details
-            const { data: profilesData, error: profilesError } = await supabase
-                .from("cura_profiles")
-                .select(
-                    `
-                    id,
-                    email,
-                    full_name,
-                    phone_number,
-                    avatar_url,
-                    created_at,
-                    cura_patient_profiles (
-                        date_of_birth,
-                        gender,
-                        blood_type,
-                        height_cm,
-                        weight_kg,
-                        allergies,
-                        chronic_conditions,
-                        emergency_contact
-                    )
-                `
-                )
-                .in("id", patientIds)
-                .eq("role", "patient");
-
-            if (profilesError) throw profilesError;
-
-            // Format the data
-            const formattedPatients = (profilesData || []).map(
-                (profile: CuraProfileRow) => {
-                    const patientProfile =
-                        profile.cura_patient_profiles?.[0] || {};
-
-                    // Calculate age if date of birth exists
-                    let age;
-                    if (patientProfile.date_of_birth) {
-                        const birthDate = new Date(
-                            patientProfile.date_of_birth
-                        );
-                        const today = new Date();
-                        age = today.getFullYear() - birthDate.getFullYear();
-                        const monthDiff =
-                            today.getMonth() - birthDate.getMonth();
-                        if (
-                            monthDiff < 0 ||
-                            (monthDiff === 0 &&
-                                today.getDate() < birthDate.getDate())
-                        ) {
-                            age--;
-                        }
-                    }
-
-                    return {
-                        id: profile.id,
-                        profile_id: profile.id,
-                        email: profile.email,
-                        full_name: profile.full_name || "Unknown Patient",
-                        phone_number: profile.phone_number,
-                        avatar_url: profile.avatar_url,
-                        date_of_birth: patientProfile.date_of_birth,
-                        gender: patientProfile.gender,
-                        blood_type: patientProfile.blood_type,
-                        height_cm: patientProfile.height_cm,
-                        weight_kg: patientProfile.weight_kg,
-                        allergies: patientProfile.allergies,
-                        chronic_conditions: patientProfile.chronic_conditions,
-                        emergency_contact: patientProfile.emergency_contact,
-                        age,
-                        created_at: profile.created_at,
-                    };
-                }
+            const res = await fetch(
+                `/api/patients/by-facility?facilityId=${facilityId}`
             );
-
-            setPatients(formattedPatients);
-        } catch (error) {
-            console.error("Error fetching patients:", error);
+            if (!res.ok) throw new Error("Failed to fetch patients");
+            const data = await res.json();
+            setPatients(data);
+        } catch (err) {
+            console.error(err);
         } finally {
             setIsLoading(false);
         }
-    };
-
-    const handlePatientUpdate = (
-        updatedPatient: Partial<Patient> & { id: string }
-    ) => {
-        setPatients((prev) =>
-            prev.map((p) =>
-                p.id === updatedPatient.id ? { ...p, ...updatedPatient } : p
-            )
-        );
-    };
+    }, [facilityId]);
 
     useEffect(() => {
-        // Get facility ID and auth data from session storage
         const storedFacilityId = sessionStorage.getItem("facilityId");
-        const storedAuthData = sessionStorage.getItem("cura-auth");
-
-        if (storedFacilityId) {
-            setFacilityId(storedFacilityId);
-        }
-
-        if (storedAuthData) {
-            try {
-                setAuthData(JSON.parse(storedAuthData));
-            } catch (e) {
-                console.error("Error parsing auth data:", e);
-            }
-        }
+        if (storedFacilityId) setFacilityId(storedFacilityId);
     }, []);
 
     useEffect(() => {
-        const fetchPatients = async () => {
-            if (!facilityId) {
-                setIsLoading(false);
-                return;
-            }
-
-            try {
-                setIsLoading(true);
-
-                const { data: patientFacilitiesData, error } = await supabase
-                    .from("cura_patient_facilities")
-                    .select("profile_id")
-                    .eq("facility_id", facilityId)
-                    .eq("status", "active");
-
-                if (error) throw error;
-
-                const patientIds =
-                    patientFacilitiesData?.map((pf) => pf.profile_id) || [];
-
-                if (patientIds.length === 0) {
-                    setPatients([]);
-                    return;
-                }
-
-                const { data: profilesData, error: profilesError } =
-                    await supabase
-                        .from("cura_profiles")
-                        .select(
-                            `
-                        id,
-                        email,
-                        full_name,
-                        phone_number,
-                        avatar_url,
-                        created_at,
-                        cura_patient_profiles (
-                            date_of_birth,
-                            gender,
-                            blood_type,
-                            height_cm,
-                            weight_kg,
-                            allergies,
-                            chronic_conditions,
-                            emergency_contact
-                        )
-                    `
-                        )
-                        .in("id", patientIds)
-                        .eq("role", "patient");
-
-                if (profilesError) throw profilesError;
-
-                const formattedPatients: Patient[] = (profilesData || []).map(
-                    (profile: CuraProfileRow) => {
-                        const patientProfile =
-                            profile.cura_patient_profiles?.[0] || {};
-
-                        let age: number | undefined;
-                        if (patientProfile.date_of_birth) {
-                            const birthDate = new Date(
-                                patientProfile.date_of_birth
-                            );
-                            const today = new Date();
-                            age = today.getFullYear() - birthDate.getFullYear();
-                            if (
-                                today.getMonth() < birthDate.getMonth() ||
-                                (today.getMonth() === birthDate.getMonth() &&
-                                    today.getDate() < birthDate.getDate())
-                            ) {
-                                age--;
-                            }
-                        }
-
-                        return {
-                            id: profile.id,
-                            profile_id: profile.id,
-                            email: profile.email,
-                            full_name: profile.full_name || "Unknown Patient",
-                            phone_number: profile.phone_number,
-                            avatar_url: profile.avatar_url,
-                            date_of_birth: patientProfile.date_of_birth,
-                            gender: patientProfile.gender,
-                            blood_type: patientProfile.blood_type,
-                            height_cm: patientProfile.height_cm,
-                            weight_kg: patientProfile.weight_kg,
-                            allergies: patientProfile.allergies,
-                            chronic_conditions:
-                                patientProfile.chronic_conditions,
-                            emergency_contact: patientProfile.emergency_contact,
-                            age,
-                            created_at: profile.created_at,
-                        };
-                    }
-                );
-
-                setPatients(formattedPatients);
-            } catch (err) {
-                console.error("Error fetching patients:", err);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchPatients();
-    }, [facilityId]);
+    }, [fetchPatients]);
 
     const filteredPatients = useMemo(() => {
-        return patients.filter(
+        let result = patients.filter(
             (p) =>
-                (p.full_name || "")
-                    .toLowerCase()
+                p.full_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                p.phone_number
+                    ?.toLowerCase()
                     .includes(searchQuery.toLowerCase()) ||
-                (p.email || "")
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                (p.phone_number || "")
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                (p.blood_type || "")
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())
+                p.blood_type?.toLowerCase().includes(searchQuery.toLowerCase())
         );
-    }, [searchQuery, patients]);
 
-    const calculateBMI = (height_cm?: number, weight_kg?: number) => {
-        if (!height_cm || !weight_kg) return null;
-        const heightM = height_cm / 100;
-        return (weight_kg / (heightM * heightM)).toFixed(1);
+        // Apply status filter
+        if (statusFilter === "active") {
+            result = result.filter((p) => {
+                const lastVisit = p.last_visit ? new Date(p.last_visit) : null;
+                const now = new Date();
+                const daysSince = lastVisit
+                    ? Math.floor(
+                          (now.getTime() - lastVisit.getTime()) /
+                              (1000 * 60 * 60 * 24)
+                      )
+                    : 365;
+                return daysSince < 90;
+            });
+        } else if (statusFilter === "inactive") {
+            result = result.filter((p) => {
+                const lastVisit = p.last_visit ? new Date(p.last_visit) : null;
+                const now = new Date();
+                const daysSince = lastVisit
+                    ? Math.floor(
+                          (now.getTime() - lastVisit.getTime()) /
+                              (1000 * 60 * 60 * 24)
+                      )
+                    : 365;
+                return daysSince >= 90 && daysSince < 180;
+            });
+        } else if (statusFilter === "archived") {
+            result = result.filter((p) => {
+                const lastVisit = p.last_visit ? new Date(p.last_visit) : null;
+                const now = new Date();
+                const daysSince = lastVisit
+                    ? Math.floor(
+                          (now.getTime() - lastVisit.getTime()) /
+                              (1000 * 60 * 60 * 24)
+                      )
+                    : 365;
+                return daysSince >= 180;
+            });
+        }
+
+        // Apply gender filter
+        if (genderFilter === "male" || genderFilter === "female") {
+            result = result.filter(
+                (p) => p.gender?.toLowerCase() === genderFilter
+            );
+        }
+
+        return result;
+    }, [searchQuery, patients, statusFilter, genderFilter]);
+
+    const calculateBMI = (height?: number, weight?: number) => {
+        if (!height || !weight) return null;
+        const bmi = weight / (height / 100) ** 2;
+        return bmi.toFixed(1);
     };
 
-    if (!facilityId || !authData) {
+    const getGenderConfig = (gender?: string) => {
+        switch (gender?.toLowerCase()) {
+            case "male":
+                return {
+                    bg: "bg-blue-500/10",
+                    text: "text-blue-700",
+                    border: "border-blue-200",
+                    dot: "bg-blue-500",
+                    icon: "👨",
+                };
+            case "female":
+                return {
+                    bg: "bg-pink-500/10",
+                    text: "text-pink-700",
+                    border: "border-pink-200",
+                    dot: "bg-pink-500",
+                    icon: "👩",
+                };
+            default:
+                return {
+                    bg: "bg-gray-500/10",
+                    text: "text-gray-700",
+                    border: "border-gray-200",
+                    dot: "bg-gray-500",
+                    icon: "👤",
+                };
+        }
+    };
+
+    const getPatientStatus = (patient: Patient) => {
+        const lastVisit = patient.last_visit
+            ? new Date(patient.last_visit)
+            : null;
+        const now = new Date();
+        const daysSince = lastVisit
+            ? Math.floor(
+                  (now.getTime() - lastVisit.getTime()) / (1000 * 60 * 60 * 24)
+              )
+            : 365;
+
+        if (daysSince < 30)
+            return {
+                status: "active",
+                color: "bg-green-500",
+                text: "text-green-700",
+                bg: "bg-green-50",
+            };
+        if (daysSince < 90)
+            return {
+                status: "regular",
+                color: "bg-blue-500",
+                text: "text-blue-700",
+                bg: "bg-blue-50",
+            };
+        if (daysSince < 180)
+            return {
+                status: "inactive",
+                color: "bg-amber-500",
+                text: "text-amber-700",
+                bg: "bg-amber-50",
+            };
+        return {
+            status: "archived",
+            color: "bg-gray-500",
+            text: "text-gray-700",
+            bg: "bg-gray-50",
+        };
+    };
+
+    const formatDate = (dateString?: string) => {
+        if (!dateString) return "Never";
+        const date = new Date(dateString);
+        return date.toLocaleDateString("en-US", {
+            month: "short",
+            day: "numeric",
+            year: "numeric",
+        });
+    };
+
+    const getAge = (dateOfBirth?: string) => {
+        if (!dateOfBirth) return null;
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const m = today.getMonth() - birthDate.getMonth();
+        if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+            age--;
+        }
+        return age;
+    };
+
+    if (!facilityId) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Card className="w-full max-w-md border-none shadow-2xl">
-                    <CardContent className="p-8">
-                        <div className="text-center space-y-6">
-                            <div className="w-20 h-20 rounded-2xl bg-gradient-to-br from-primary/10 to-primary/5 flex items-center justify-center mx-auto">
-                                <Users className="w-10 h-10 text-primary" />
-                            </div>
-                            <div className="space-y-3">
-                                <h3 className="text-2xl font-bold">
-                                    Access Denied
-                                </h3>
-                                <p className="text-muted-foreground">
-                                    Please sign in as a facility staff member to
-                                    view patients
-                                </p>
-                            </div>
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <Card className="max-w-md border-none shadow-lg">
+                    <CardContent className="p-8 text-center space-y-4">
+                        <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mx-auto">
+                            <User className="w-8 h-8 text-primary" />
+                        </div>
+                        <div>
+                            <h3 className="text-xl font-semibold mb-2">
+                                Access Required
+                            </h3>
+                            <p className="text-muted-foreground">
+                                Sign in as facility staff to manage patients
+                            </p>
                         </div>
                     </CardContent>
                 </Card>
@@ -378,538 +288,634 @@ export default function PatientListPage() {
     }
 
     return (
-        <div className="bg-gradient-to-b from-background to-muted/20 p-4 md:p-6">
-            <PageTitle title={"Patients Management"} />
-            <div className="mx-auto space-y-8">
-                {/* Search Section */}
-                <div className="mb-8 space-y-6">
-                    <div>
-                        <h2 className="text-3xl font-bold mb-3">
-                            Patient Records
-                        </h2>
-                        <p className="text-muted-foreground">
-                            Manage and view patient information for your
-                            facility
-                        </p>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-12">
-                        <div className="md:col-span-8 lg:col-span-9">
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search patients by name, email, phone, or blood type..."
-                                    className="pl-12 h-14 text-base rounded-xl border-border/60 focus:border-primary"
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                />
-                                {searchQuery && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8"
-                                        onClick={() => setSearchQuery("")}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                )}
+        <div className="min-h-screen bg-background p-4 md:p-6">
+            <div className="space-y-8">
+                {/* Header */}
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-primary/10">
+                                <User className="h-6 w-6 text-primary" />
+                            </div>
+                            <div>
+                                <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                                    Patient Management
+                                </h1>
+                                <p className="text-muted-foreground mt-1">
+                                    Manage patient records, appointments, and
+                                    health data
+                                </p>
                             </div>
                         </div>
-                        <div className="md:col-span-4 lg:col-span-3 flex gap-2">
-                            <Button
-                                variant="outline"
-                                className="h-14 flex-1 rounded-xl gap-2 border-border/60"
-                                onClick={() =>
-                                    setViewMode(
-                                        viewMode === "grid" ? "list" : "grid"
-                                    )
-                                }
-                            >
-                                <Filter className="h-4 w-4" />
-                                {viewMode === "grid"
-                                    ? "List View"
-                                    : "Grid View"}
-                            </Button>
-                        </div>
                     </div>
-                </div>
-
-                {/* Stats */}
-                <div className="mb-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-6">
-                        <div className="space-y-1">
-                            <h3 className="text-lg font-semibold">
-                                Registered Patients
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                {filteredPatients.length}{" "}
-                                {filteredPatients.length === 1
-                                    ? "patient"
-                                    : "patients"}{" "}
-                                found
-                                {searchQuery && ` for "${searchQuery}"`}
-                            </p>
-                        </div>
-
-                        {/* ADD PATIENT */}
+                    <div className="flex items-center gap-3">
+                        <Button
+                            variant="outline"
+                            size="lg"
+                            onClick={fetchPatients}
+                            className="gap-2 hover:bg-accent"
+                        >
+                            <RefreshCw className="w-4 h-4" />
+                            Refresh
+                        </Button>
                         <AddPatientSheet onCreated={fetchPatients}>
-                            <Button className="rounded-xl gap-2">
+                            <Button
+                                size="lg"
+                                className="gap-2 shadow-lg shadow-primary/20"
+                            >
                                 <UserPlus className="w-4 h-4" />
                                 Add Patient
                             </Button>
                         </AddPatientSheet>
                     </div>
-
-                    {/* Quick Stats */}
-                    {filteredPatients.length > 0 && (
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                            <Card className="bg-gradient-to-br from-blue-500/5 to-blue-500/10 border-blue-200/50">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Total Patients
-                                            </p>
-                                            <p className="text-2xl font-bold">
-                                                {filteredPatients.length}
-                                            </p>
-                                        </div>
-                                        <div className="p-2 bg-blue-500/10 rounded-lg">
-                                            <Users className="h-4 w-4 text-blue-600" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="bg-gradient-to-br from-green-500/5 to-green-500/10 border-green-200/50">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Male Patients
-                                            </p>
-                                            <p className="text-2xl font-bold">
-                                                {
-                                                    filteredPatients.filter(
-                                                        (p) =>
-                                                            p.gender?.toLowerCase() ===
-                                                            "male"
-                                                    ).length
-                                                }
-                                            </p>
-                                        </div>
-                                        <div className="p-2 bg-green-500/10 rounded-lg">
-                                            <Users className="h-4 w-4 text-green-600" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="bg-gradient-to-br from-pink-500/5 to-pink-500/10 border-pink-200/50">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Female Patients
-                                            </p>
-                                            <p className="text-2xl font-bold">
-                                                {
-                                                    filteredPatients.filter(
-                                                        (p) =>
-                                                            p.gender?.toLowerCase() ===
-                                                            "female"
-                                                    ).length
-                                                }
-                                            </p>
-                                        </div>
-                                        <div className="p-2 bg-pink-500/10 rounded-lg">
-                                            <Users className="h-4 w-4 text-pink-600" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-
-                            <Card className="bg-gradient-to-br from-amber-500/5 to-amber-500/10 border-amber-200/50">
-                                <CardContent className="p-4">
-                                    <div className="flex items-center justify-between">
-                                        <div>
-                                            <p className="text-sm text-muted-foreground">
-                                                Avg. Age
-                                            </p>
-                                            <p className="text-2xl font-bold">
-                                                {filteredPatients.filter(
-                                                    (p) => p.age
-                                                ).length > 0
-                                                    ? Math.round(
-                                                          filteredPatients
-                                                              .filter(
-                                                                  (p) => p.age
-                                                              )
-                                                              .reduce(
-                                                                  (acc, p) =>
-                                                                      acc +
-                                                                      (p.age ||
-                                                                          0),
-                                                                  0
-                                                              ) /
-                                                              filteredPatients.filter(
-                                                                  (p) => p.age
-                                                              ).length
-                                                      )
-                                                    : "N/A"}
-                                            </p>
-                                        </div>
-                                        <div className="p-2 bg-amber-500/10 rounded-lg">
-                                            <Calendar className="h-4 w-4 text-amber-600" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        </div>
-                    )}
                 </div>
 
-                {/* Results */}
-                {isLoading ? (
-                    <div
-                        className={`grid ${
-                            viewMode === "grid"
-                                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                                : "grid-cols-1 gap-4"
-                        }`}
-                    >
-                        {[...Array(6)].map((_, i) => (
-                            <Card
-                                key={i}
-                                className="overflow-hidden border-border/40"
-                            >
-                                <CardContent className="p-6">
-                                    <div className="space-y-4">
-                                        <Skeleton className="h-6 w-3/4 rounded-lg" />
-                                        <Skeleton className="h-4 w-1/2 rounded-lg" />
-                                        <div className="flex gap-2">
-                                            <Skeleton className="h-6 w-20 rounded-full" />
-                                            <Skeleton className="h-6 w-20 rounded-full" />
-                                        </div>
-                                        <Skeleton className="h-24 w-full rounded-lg" />
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
+                {/* Stats Overview */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card className="border-2 border-primary/10 hover:border-primary/20 transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Total Patients
+                                    </p>
+                                    <h3 className="text-3xl font-bold mt-2">
+                                        {patients.length}
+                                    </h3>
+                                </div>
+                                <div className="p-3 rounded-full bg-primary/10">
+                                    <User className="h-6 w-6 text-primary" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-green-500/10 hover:border-green-500/20 transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Active Patients
+                                    </p>
+                                    <h3 className="text-3xl font-bold mt-2">
+                                        {
+                                            patients.filter(
+                                                (p) =>
+                                                    getPatientStatus(p)
+                                                        .status === "active"
+                                            ).length
+                                        }
+                                    </h3>
+                                </div>
+                                <div className="p-3 rounded-full bg-green-500/10">
+                                    <Activity className="h-6 w-6 text-green-500" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-blue-500/10 hover:border-blue-500/20 transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Avg Age
+                                    </p>
+                                    <h3 className="text-3xl font-bold mt-2">
+                                        {patients.length > 0
+                                            ? Math.round(
+                                                  patients.reduce(
+                                                      (sum, p) =>
+                                                          sum +
+                                                          (getAge(
+                                                              p.date_of_birth
+                                                          ) || 0),
+                                                      0
+                                                  ) / patients.length
+                                              )
+                                            : 0}
+                                    </h3>
+                                </div>
+                                <div className="p-3 rounded-full bg-blue-500/10">
+                                    <Calendar className="h-6 w-6 text-blue-500" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-amber-500/10 hover:border-amber-500/20 transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Needs Follow-up
+                                    </p>
+                                    <h3 className="text-3xl font-bold mt-2">
+                                        {
+                                            patients.filter(
+                                                (p) =>
+                                                    getPatientStatus(p)
+                                                        .status === "inactive"
+                                            ).length
+                                        }
+                                    </h3>
+                                </div>
+                                <div className="p-3 rounded-full bg-amber-500/10">
+                                    <AlertCircle className="h-6 w-6 text-amber-500" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Search and Filters */}
+                <div className="space-y-4">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <h2 className="text-2xl font-semibold">
+                                Patient Directory
+                            </h2>
+                            <p className="text-sm text-muted-foreground">
+                                {filteredPatients.length} patients found
+                                {searchQuery && ` for "${searchQuery}"`}
+                            </p>
+                        </div>
                     </div>
-                ) : filteredPatients.length === 0 ? (
-                    <Card className="border-dashed border-border/60 bg-gradient-to-br from-background to-muted/10">
-                        <CardContent className="p-12 text-center">
-                            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-muted/30 to-muted/10 flex items-center justify-center mx-auto mb-6">
-                                <Search className="w-10 h-10 text-muted-foreground" />
+
+                    <div className="grid gap-4 md:grid-cols-3">
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input
+                                placeholder="Search patients by name, email, phone..."
+                                className="pl-12 h-14 rounded-xl"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8"
+                                    onClick={() => setSearchQuery("")}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+
+                        <Select
+                            value={statusFilter}
+                            onValueChange={setStatusFilter}
+                        >
+                            <SelectTrigger className="h-14 rounded-xl">
+                                <Filter className="w-4 h-4 mr-2" />
+                                <SelectValue placeholder="Filter by status" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Status</SelectItem>
+                                <SelectItem value="active">Active</SelectItem>
+                                <SelectItem value="inactive">
+                                    Inactive
+                                </SelectItem>
+                                <SelectItem value="archived">
+                                    Archived
+                                </SelectItem>
+                            </SelectContent>
+                        </Select>
+
+                        <Select
+                            value={genderFilter}
+                            onValueChange={setGenderFilter}
+                        >
+                            <SelectTrigger className="h-14 rounded-xl">
+                                <Filter className="w-4 h-4 mr-2" />
+                                <SelectValue placeholder="Filter by gender" />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="all">All Genders</SelectItem>
+                                <SelectItem value="male">Male</SelectItem>
+                                <SelectItem value="female">Female</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                </div>
+
+                {/* Patients Table */}
+                <div className="rounded-xl border border-border overflow-hidden bg-card">
+                    {isLoading ? (
+                        <div className="p-6 space-y-4">
+                            {[...Array(5)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center space-x-4 p-4"
+                                >
+                                    <Skeleton className="h-12 w-12 rounded-full" />
+                                    <div className="space-y-2 flex-1">
+                                        <Skeleton className="h-4 w-1/4" />
+                                        <Skeleton className="h-3 w-1/3" />
+                                    </div>
+                                    <Skeleton className="h-10 w-24" />
+                                </div>
+                            ))}
+                        </div>
+                    ) : filteredPatients.length === 0 ? (
+                        <div className="p-12 text-center">
+                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                                <User className="w-10 h-10 text-muted-foreground" />
                             </div>
                             <h3 className="text-xl font-semibold mb-3">
                                 No patients found
                             </h3>
                             <p className="text-muted-foreground mb-6 max-w-md mx-auto">
                                 {searchQuery
-                                    ? `No results for "${searchQuery}". Try different keywords.`
-                                    : "No patients have booked appointments at your facility yet."}
+                                    ? `No patients match "${searchQuery}". Try a different search.`
+                                    : "No patients are currently registered to your facility."}
                             </p>
-                            {searchQuery && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setSearchQuery("")}
-                                    className="gap-2 rounded-xl"
-                                >
-                                    <X className="w-4 h-4" />
-                                    Clear Search
-                                </Button>
-                            )}
-                            <AddPatientSheet onCreated={fetchPatients}>
-                                <Button className="gap-2 rounded-xl">
-                                    <UserPlus className="w-4 h-4" />
-                                    Add First Patient
-                                </Button>
-                            </AddPatientSheet>
-                        </CardContent>
-                    </Card>
-                ) : viewMode === "grid" ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                        {filteredPatients.map((patient) => (
-                            <Card
-                                key={patient.id}
-                                className="group hover:shadow-xl transition-all duration-300 border-border/40 bg-gradient-to-br from-card to-muted/5 overflow-hidden"
-                            >
-                                <CardHeader className="pb-4">
-                                    <div className="flex items-start gap-4 mb-3">
-                                        <div className="w-16 h-16 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-xl font-bold">
-                                            {patient.full_name
-                                                ?.charAt(0)
-                                                .toUpperCase()}
-                                        </div>
-                                        <div className="flex-1">
-                                            <h3 className="font-bold text-lg line-clamp-1">
-                                                {patient.full_name}
-                                            </h3>
-                                            <p className="text-sm text-muted-foreground">
-                                                {patient.age
-                                                    ? `${patient.age} years old`
-                                                    : "Age not set"}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex gap-2">
-                                        {patient.gender && (
-                                            <Badge
-                                                variant="outline"
-                                                className="text-xs"
-                                            >
-                                                {patient.gender}
-                                            </Badge>
-                                        )}
-                                        {patient.blood_type && (
-                                            <Badge
-                                                variant="secondary"
-                                                className="text-xs bg-red-500/10 text-red-700"
-                                            >
-                                                {patient.blood_type}
-                                            </Badge>
-                                        )}
-                                    </div>
-                                </CardHeader>
+                            <div className="flex gap-3 justify-center">
+                                {searchQuery && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setSearchQuery("")}
+                                        className="gap-2"
+                                    >
+                                        <X className="w-4 h-4" />
+                                        Clear Search
+                                    </Button>
+                                )}
+                                <AddPatientSheet onCreated={fetchPatients}>
+                                    <Button className="gap-2">
+                                        <UserPlus className="w-4 h-4" />
+                                        Add Patient
+                                    </Button>
+                                </AddPatientSheet>
+                            </div>
+                        </div>
+                    ) : (
+                        <Table>
+                            <TableHeader className="bg-muted/50">
+                                <TableRow>
+                                    <TableHead className="font-semibold w-[250px]">
+                                        Patient
+                                    </TableHead>
+                                    <TableHead className="font-semibold">
+                                        Contact Information
+                                    </TableHead>
+                                    <TableHead className="font-semibold">
+                                        Health Profile
+                                    </TableHead>
+                                    <TableHead className="font-semibold">
+                                        Status & Activity
+                                    </TableHead>
+                                    <TableHead className="font-semibold text-right">
+                                        Actions
+                                    </TableHead>
+                                </TableRow>
+                            </TableHeader>
+                            <TableBody>
+                                {filteredPatients.map((patient) => {
+                                    const genderConfig = getGenderConfig(
+                                        patient.gender
+                                    );
+                                    const status = getPatientStatus(patient);
+                                    const bmi = calculateBMI(
+                                        patient.height_cm,
+                                        patient.weight_kg
+                                    );
+                                    const age = getAge(patient.date_of_birth);
 
-                                <CardContent className="space-y-3">
-                                    {patient.email && (
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Mail className="w-4 h-4 text-muted-foreground shrink-0" />
-                                            <span className="line-clamp-1">
-                                                {patient.email}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {patient.phone_number && (
-                                        <div className="flex items-center gap-2 text-sm">
-                                            <Phone className="w-4 h-4 text-muted-foreground shrink-0" />
-                                            <span>{patient.phone_number}</span>
-                                        </div>
-                                    )}
-
-                                    {(patient.height_cm ||
-                                        patient.weight_kg) && (
-                                        <div className="flex gap-4 text-sm">
-                                            {patient.height_cm && (
-                                                <div>
-                                                    <span className="text-muted-foreground">
-                                                        Height:{" "}
-                                                    </span>
-                                                    <span className="font-medium">
-                                                        {patient.height_cm} cm
-                                                    </span>
-                                                </div>
-                                            )}
-                                            {patient.weight_kg && (
-                                                <div>
-                                                    <span className="text-muted-foreground">
-                                                        Weight:{" "}
-                                                    </span>
-                                                    <span className="font-medium">
-                                                        {patient.weight_kg} kg
-                                                    </span>
-                                                </div>
-                                            )}
-                                        </div>
-                                    )}
-
-                                    {patient.allergies && (
-                                        <div className="text-sm">
-                                            <span className="text-red-600 font-medium">
-                                                ⚠️ Allergies:{" "}
-                                            </span>
-                                            <span className="text-muted-foreground">
-                                                {patient.allergies}
-                                            </span>
-                                        </div>
-                                    )}
-
-                                    {patient.chronic_conditions && (
-                                        <div className="text-sm">
-                                            <span className="text-amber-600 font-medium">
-                                                Conditions:{" "}
-                                            </span>
-                                            <span className="text-muted-foreground">
-                                                {patient.chronic_conditions}
-                                            </span>
-                                        </div>
-                                    )}
-                                </CardContent>
-
-                                <CardFooter className="pt-4 border-t border-border/30">
-                                    <div className="flex gap-3 w-full">
-                                        {/* View */}
-                                        <Link
-                                            href={`/admin/patients/${patient.id}`}
-                                            className="flex-1"
+                                    return (
+                                        <TableRow
+                                            key={patient.id}
+                                            className="hover:bg-muted/30"
                                         >
-                                            <Button
-                                                className="w-full rounded-lg gap-2"
-                                                variant="outline"
-                                            >
-                                                <Eye className="w-4 h-4" />
-                                                View
-                                            </Button>
-                                        </Link>
-
-                                        {/* Edit */}
-                                        <EditPatientModal
-                                            patient={{
-                                                id: patient.id,
-                                                email: patient.email,
-                                                full_name: patient.full_name,
-                                                role: "patient",
-                                                avatar_url:
-                                                    patient.avatar_url ??
-                                                    undefined,
-                                                phone_number:
-                                                    patient.phone_number ??
-                                                    undefined,
-                                                created_at: patient.created_at!,
-                                                status: "active",
-                                            }}
-                                            onSave={handlePatientUpdate}
-                                        >
-                                            <Button
-                                                variant="outline"
-                                                size="icon"
-                                                className="rounded-lg"
-                                                title="Edit patient"
-                                            >
-                                                <Edit className="w-4 h-4" />
-                                            </Button>
-                                        </EditPatientModal>
-                                    </div>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {filteredPatients.map((patient) => (
-                            <Card
-                                key={patient.id}
-                                className="hover:shadow-md transition-shadow border-border/40 bg-gradient-to-br from-card to-muted/5"
-                            >
-                                <div className="p-6">
-                                    <div className="flex flex-col md:flex-row md:items-center gap-6">
-                                        <div className="md:w-1/4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-full bg-gradient-to-br from-primary/20 to-primary/10 flex items-center justify-center text-lg font-bold">
-                                                    {patient.full_name
-                                                        ?.charAt(0)
-                                                        .toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-bold line-clamp-1">
-                                                        {patient.full_name}
-                                                    </h3>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {patient.age
-                                                            ? `${patient.age} yrs`
-                                                            : "N/A"}{" "}
-                                                        •{" "}
-                                                        {patient.gender ||
-                                                            "N/A"}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="md:w-1/4">
-                                            <div className="space-y-1">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Mail className="w-4 h-4 text-muted-foreground" />
-                                                    <span className="line-clamp-1">
-                                                        {patient.email}
-                                                    </span>
-                                                </div>
-                                                {patient.phone_number && (
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <Phone className="w-4 h-4 text-muted-foreground" />
-                                                        <span>
-                                                            {
-                                                                patient.phone_number
+                                            {/* Patient Column */}
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <Avatar className="h-10 w-10 border-2">
+                                                        <AvatarImage
+                                                            src={
+                                                                patient.avatar_url
                                                             }
+                                                        />
+                                                        <AvatarFallback
+                                                            className={
+                                                                genderConfig.bg
+                                                            }
+                                                        >
+                                                            {patient.full_name
+                                                                ?.charAt(0)
+                                                                .toUpperCase()}
+                                                        </AvatarFallback>
+                                                    </Avatar>
+                                                    <div className="space-y-1">
+                                                        <div className="flex items-center gap-2">
+                                                            <p className="font-semibold text-sm hover:text-primary transition-colors">
+                                                                {
+                                                                    patient.full_name
+                                                                }
+                                                            </p>
+                                                            <Badge
+                                                                variant="outline"
+                                                                className={`text-xs px-2 py-0.5 ${genderConfig.bg} ${genderConfig.text} ${genderConfig.border}`}
+                                                            >
+                                                                {
+                                                                    genderConfig.icon
+                                                                }
+                                                            </Badge>
+                                                        </div>
+                                                        <p className="text-xs text-muted-foreground">
+                                                            Patient ID:{" "}
+                                                            {patient.id.slice(
+                                                                0,
+                                                                8
+                                                            )}
+                                                            ...
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Contact Information Column */}
+                                            <TableCell>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                                                        <span className="text-sm truncate">
+                                                            {patient.email}
                                                         </span>
                                                     </div>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="md:w-1/4">
-                                            <div className="flex flex-wrap gap-2">
-                                                {patient.blood_type && (
-                                                    <Badge
-                                                        variant="secondary"
-                                                        className="bg-red-500/10 text-red-700"
-                                                    >
-                                                        {patient.blood_type}
-                                                    </Badge>
-                                                )}
-                                                {patient.height_cm &&
-                                                    patient.weight_kg && (
-                                                        <Badge variant="outline">
-                                                            BMI:{" "}
-                                                            {calculateBMI(
-                                                                patient.height_cm,
-                                                                patient.weight_kg
-                                                            )}
-                                                        </Badge>
+                                                    {patient.phone_number && (
+                                                        <div className="flex items-center gap-2">
+                                                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                                                            <span className="text-sm">
+                                                                {
+                                                                    patient.phone_number
+                                                                }
+                                                            </span>
+                                                        </div>
                                                     )}
-                                            </div>
-                                        </div>
+                                                    {patient.emergency_contact && (
+                                                        <div className="flex items-center gap-2 text-xs text-amber-600">
+                                                            <AlertCircle className="h-3 w-3" />
+                                                            <span>
+                                                                Emergency:{" "}
+                                                                {
+                                                                    patient.emergency_contact
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
 
-                                        <div className="md:w-1/4">
-                                            <Link
-                                                href={`/admin/patients/${patient.id}`}
-                                            >
-                                                <Button
-                                                    className="w-full rounded-lg gap-2"
-                                                    variant="outline"
-                                                >
-                                                    <Eye className="w-4 h-4" />
-                                                    View Details
-                                                </Button>
-                                            </Link>
-                                            <EditPatientModal
-                                                patient={{
-                                                    id: patient.id,
-                                                    email: patient.email,
-                                                    full_name:
-                                                        patient.full_name,
-                                                    role: "patient",
-                                                    avatar_url:
-                                                        patient.avatar_url ??
-                                                        undefined,
-                                                    phone_number:
-                                                        patient.phone_number ??
-                                                        undefined,
-                                                    created_at:
-                                                        patient.created_at!,
-                                                    status: "active",
-                                                }}
-                                                onSave={handlePatientUpdate}
-                                            >
-                                                <Button
-                                                    variant="outline"
-                                                    size="icon"
-                                                    title="Edit patient"
-                                                >
-                                                    <Edit className="w-4 h-4" />
-                                                </Button>
-                                            </EditPatientModal>
-                                        </div>
+                                            {/* Health Profile Column */}
+                                            <TableCell>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-3">
+                                                        {age && (
+                                                            <div className="text-sm">
+                                                                <span className="text-muted-foreground">
+                                                                    Age:{" "}
+                                                                </span>
+                                                                <span className="font-medium">
+                                                                    {age} years
+                                                                </span>
+                                                            </div>
+                                                        )}
+                                                        {patient.blood_type && (
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-xs"
+                                                            >
+                                                                Blood:{" "}
+                                                                {
+                                                                    patient.blood_type
+                                                                }
+                                                            </Badge>
+                                                        )}
+                                                    </div>
+                                                    {bmi && (
+                                                        <div className="space-y-1">
+                                                            <div className="flex items-center justify-between text-xs">
+                                                                <span className="text-muted-foreground">
+                                                                    BMI:{" "}
+                                                                </span>
+                                                                <span className="font-medium">
+                                                                    {bmi}
+                                                                </span>
+                                                            </div>
+                                                            <Progress
+                                                                value={Math.min(
+                                                                    Number(
+                                                                        bmi
+                                                                    ) * 3,
+                                                                    100
+                                                                )}
+                                                                className="h-1.5"
+                                                            />
+                                                        </div>
+                                                    )}
+                                                    {patient.chronic_conditions && (
+                                                        <div className="text-xs text-muted-foreground truncate">
+                                                            Conditions:{" "}
+                                                            {
+                                                                patient.chronic_conditions
+                                                            }
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Status & Activity Column */}
+                                            <TableCell>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <div
+                                                            className={`h-2 w-2 rounded-full ${status.color}`}
+                                                        />
+                                                        <Badge
+                                                            variant="outline"
+                                                            className={`text-xs px-2 py-0.5 ${status.bg} ${status.text}`}
+                                                        >
+                                                            {status.status
+                                                                .charAt(0)
+                                                                .toUpperCase() +
+                                                                status.status.slice(
+                                                                    1
+                                                                )}
+                                                        </Badge>
+                                                    </div>
+                                                    <div className="text-xs text-muted-foreground">
+                                                        Last visit:{" "}
+                                                        {formatDate(
+                                                            patient.last_visit
+                                                        )}
+                                                    </div>
+                                                    {patient.created_at && (
+                                                        <div className="text-xs text-muted-foreground">
+                                                            Registered:{" "}
+                                                            {formatDate(
+                                                                patient.created_at
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Actions Column */}
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Link
+                                                        href={`/admin/patients/${patient.id}`}
+                                                    >
+                                                        <Button
+                                                            variant="ghost"
+                                                            size="icon"
+                                                            className="h-8 w-8"
+                                                        >
+                                                            <Eye className="h-4 w-4" />
+                                                        </Button>
+                                                    </Link>
+                                                    <Button
+                                                        variant="ghost"
+                                                        size="icon"
+                                                        className="h-8 w-8"
+                                                        onClick={() =>
+                                                            window.open(
+                                                                `tel:${patient.phone_number}`
+                                                            )
+                                                        }
+                                                    >
+                                                        <Phone className="h-4 w-4" />
+                                                    </Button>
+
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger
+                                                            asChild
+                                                        >
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8"
+                                                            >
+                                                                <MoreVertical className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent
+                                                            align="end"
+                                                            className="w-48"
+                                                        >
+                                                            <DropdownMenuItem className="gap-2 cursor-pointer">
+                                                                <Edit className="h-4 w-4" />
+                                                                Edit Patient
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="gap-2 cursor-pointer">
+                                                                <FileText className="h-4 w-4" />
+                                                                View Medical
+                                                                History
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="gap-2 cursor-pointer">
+                                                                <Calendar className="h-4 w-4" />
+                                                                Schedule
+                                                                Appointment
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuItem className="gap-2 cursor-pointer">
+                                                                <Bell className="h-4 w-4" />
+                                                                Send Reminder
+                                                            </DropdownMenuItem>
+                                                            <DropdownMenuSeparator />
+                                                            <DropdownMenuItem className="gap-2 cursor-pointer text-destructive">
+                                                                <Trash2 className="h-4 w-4" />
+                                                                Remove Patient
+                                                            </DropdownMenuItem>
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    );
+                                })}
+                            </TableBody>
+                        </Table>
+                    )}
+                </div>
+
+                {/* Footer Stats */}
+                {filteredPatients.length > 0 && (
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-full bg-primary/20">
+                                        <Heart className="h-6 w-6 text-primary" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold mb-1">
+                                            Patient Health Insights
+                                        </h4>
+                                        <p className="text-sm text-muted-foreground">
+                                            Monitor patient health trends and
+                                            provide proactive care
+                                        </p>
                                     </div>
                                 </div>
-                            </Card>
-                        ))}
+                            </CardContent>
+                        </Card>
+
+                        <Card className="bg-gradient-to-r from-green-500/5 to-green-500/10 border-green-500/20">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-full bg-green-500/20">
+                                        <Activity className="h-6 w-6 text-green-500" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold mb-1">
+                                            Active Patients
+                                        </h4>
+                                        <p className="text-2xl font-bold text-green-600">
+                                            {
+                                                patients.filter(
+                                                    (p) =>
+                                                        getPatientStatus(p)
+                                                            .status === "active"
+                                                ).length
+                                            }
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            Visited in last 30 days
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        <Card className="bg-gradient-to-r from-amber-500/5 to-amber-500/10 border-amber-500/20">
+                            <CardContent className="p-6">
+                                <div className="flex items-center gap-4">
+                                    <div className="p-3 rounded-full bg-amber-500/20">
+                                        <AlertCircle className="h-6 w-6 text-amber-500" />
+                                    </div>
+                                    <div>
+                                        <h4 className="font-semibold mb-1">
+                                            Follow-up Needed
+                                        </h4>
+                                        <p className="text-2xl font-bold text-amber-600">
+                                            {
+                                                patients.filter(
+                                                    (p) =>
+                                                        getPatientStatus(p)
+                                                            .status ===
+                                                        "inactive"
+                                                ).length
+                                            }
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            No visits in 90+ days
+                                        </p>
+                                    </div>
+                                </div>
+                            </CardContent>
+                        </Card>
                     </div>
                 )}
             </div>

@@ -13,37 +13,54 @@ import {
     X,
     Building,
     Navigation,
+    Phone,
+    MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import {
-    Card,
-    CardContent,
-    CardFooter,
-    CardHeader,
-} from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import {
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
+} from "@/components/ui/table";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import {
+    Select,
+    SelectTrigger,
+    SelectValue,
+    SelectContent,
+    SelectItem,
+} from "@/components/ui/select";
 
 export interface Facility {
     id: string;
     name: string;
-    type?: string;
+    type: string;
     specialty?: string;
     address: string;
     phone?: string;
+    is_active: boolean;
+    created_at: string;
+    latitude?: string;
+    longitude?: string;
     rating?: number;
     wait_time?: number;
-    slots?: string[];
-    coordinates?: [number, number];
-    is_active?: boolean;
-    description?: string;
-    capacity?: number;
     distance?: number;
-    services?: string[];
     doctors_count?: number;
+    services?: string[];
 }
 
 export default function AppointmentPage() {
@@ -51,7 +68,7 @@ export default function AppointmentPage() {
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
-    const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+    const [filterType, setFilterType] = useState<string>("all");
 
     useEffect(() => {
         const fetchFacilities = async () => {
@@ -60,41 +77,21 @@ export default function AppointmentPage() {
                 const { data, error } = await supabase
                     .from("cura_facilities")
                     .select("*")
-                    .eq("is_active", true);
+                    .eq("is_active", true)
+                    .order("name");
 
                 if (error) throw error;
 
                 const formattedData = (data || []).map((f) => ({
                     ...f,
-                    phone: f.phone || "+1 (555) 123-4567",
-                    rating: f.rating || Math.random() * 2 + 3,
-                    wait_time:
-                        f.wait_time || Math.floor(Math.random() * 30) + 5,
-                    slots: [
-                        "09:00 AM",
-                        "10:00 AM",
-                        "11:00 AM",
-                        "02:00 PM",
-                        "03:00 PM",
-                        "04:00 PM",
-                    ],
-                    coordinates:
-                        f.latitude && f.longitude
-                            ? [parseFloat(f.latitude), parseFloat(f.longitude)]
-                            : [3.139, 101.6869],
-                    description:
-                        f.description ||
-                        "Modern healthcare facility providing comprehensive medical services with state-of-the-art equipment.",
                     type: f.type || "Medical Center",
+                    specialty: f.specialty || "General Medicine",
+                    phone: f.phone || "+1 (555) 123-4567",
+                    rating: Math.random() * 2 + 3,
+                    wait_time: Math.floor(Math.random() * 30) + 5,
                     distance: Math.floor(Math.random() * 15) + 1,
-                    services: [
-                        "Consultation",
-                        "Lab Tests",
-                        "Imaging",
-                        "Pharmacy",
-                        "Emergency",
-                    ],
                     doctors_count: Math.floor(Math.random() * 20) + 5,
+                    services: ["Consultation", "Lab Tests", "Emergency Care"],
                 }));
 
                 setFacilities(formattedData);
@@ -108,39 +105,59 @@ export default function AppointmentPage() {
         fetchFacilities();
     }, []);
 
+    const facilityTypes = useMemo(() => {
+        const types = facilities.map((f) => f.type).filter(Boolean);
+        return Array.from(new Set(types));
+    }, [facilities]);
+
     const filteredFacilities = useMemo(() => {
-        const filtered = facilities.filter(
+        let filtered = facilities.filter(
             (f) =>
-                (f.name || "")
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                (f.specialty || "")
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                (f.type || "")
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase()) ||
-                (f.address || "")
-                    .toLowerCase()
-                    .includes(searchQuery.toLowerCase())
+                f.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                (f.specialty?.toLowerCase() || "").includes(
+                    searchQuery.toLowerCase()
+                ) ||
+                f.type.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                f.address.toLowerCase().includes(searchQuery.toLowerCase())
         );
+
+        if (filterType !== "all") {
+            filtered = filtered.filter((f) => f.type === filterType);
+        }
 
         return filtered;
-    }, [searchQuery, facilities]);
+    }, [searchQuery, facilities, filterType]);
 
-    const openMaps = (address: string) => {
-        window.open(
-            `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                address
-            )}`,
-            "_blank"
-        );
+    const openMaps = (
+        address: string,
+        latitude?: string,
+        longitude?: string
+    ) => {
+        if (latitude && longitude) {
+            window.open(
+                `https://www.google.com/maps?q=${latitude},${longitude}`,
+                "_blank"
+            );
+        } else {
+            window.open(
+                `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
+                    address
+                )}`,
+                "_blank"
+            );
+        }
+    };
+
+    const openPhone = (phone?: string) => {
+        if (phone) {
+            window.open(`tel:${phone}`);
+        }
     };
 
     if (!user) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Card className="w-full max-w-md border-none shadow-2xl">
+            <div className="min-h-screen flex items-center justify-center p-4">
+                <Card className="border-none shadow-2xl">
                     <CardContent className="p-8">
                         <div className="text-center space-y-6">
                             <div className="w-20 h-20 rounded-2xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center mx-auto">
@@ -166,324 +183,450 @@ export default function AppointmentPage() {
     }
 
     return (
-        <div className="bg-linear-to-b from-background to-muted/20 p-4 md:p-6">
-            <div className="mx-auto space-y-8">
-                {/* Search Section */}
-                <div className="mb-8 space-y-6">
-                    <div>
-                        <h2 className="text-3xl font-bold mb-3">
-                            Find Healthcare Providers
-                        </h2>
-                        <p className="text-muted-foreground">
-                            Book appointments with trusted medical facilities in
-                            your area
-                        </p>
-                    </div>
-
-                    <div className="grid gap-4 md:grid-cols-12">
-                        <div className="md:col-span-8 lg:col-span-9">
-                            <div className="relative">
-                                <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
-                                <Input
-                                    placeholder="Search facilities, specialties, or locations..."
-                                    className="pl-12 h-14 text-base rounded-xl border-2"
-                                    value={searchQuery}
-                                    onChange={(e) =>
-                                        setSearchQuery(e.target.value)
-                                    }
-                                />
-                                {searchQuery && (
-                                    <Button
-                                        variant="ghost"
-                                        size="icon"
-                                        className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8"
-                                        onClick={() => setSearchQuery("")}
-                                    >
-                                        <X className="h-4 w-4" />
-                                    </Button>
-                                )}
-                            </div>
+        <div className="min-h-screen bg-background p-4 md:p-6">
+            <div className="space-y-8">
+                {/* Header */}
+                <div className="space-y-2">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h1 className="text-3xl md:text-4xl font-bold tracking-tight">
+                                Healthcare Facilities
+                            </h1>
+                            <p className="text-muted-foreground mt-2">
+                                Browse and book appointments at trusted medical
+                                facilities
+                            </p>
                         </div>
-                        <div className="md:col-span-4 lg:col-span-3 flex gap-2">
-                            <Button
-                                variant="outline"
-                                className="h-14 flex-1 rounded-xl gap-2"
-                                onClick={() =>
-                                    setViewMode(
-                                        viewMode === "grid" ? "list" : "grid"
-                                    )
-                                }
+                        <Badge variant="outline" className="px-4 py-2">
+                            {facilities.length} Total Facilities
+                        </Badge>
+                    </div>
+                </div>
+
+                {/* Search & Filter */}
+                <div className="grid gap-4 md:grid-cols-12">
+                    <div className="md:col-span-8 lg:col-span-9">
+                        <div className="relative">
+                            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+                            <Input
+                                placeholder="Search facilities by name, specialty, or location..."
+                                className="pl-12 h-14 text-base rounded-xl border-2"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                            />
+                            {searchQuery && (
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="absolute right-3 top-1/2 -translate-y-1/2 h-8 w-8"
+                                    onClick={() => setSearchQuery("")}
+                                >
+                                    <X className="h-4 w-4" />
+                                </Button>
+                            )}
+                        </div>
+                    </div>
+                    <div className="md:col-span-4 lg:col-span-3">
+                        <div className="relative">
+                            <Select
+                                value={filterType}
+                                onValueChange={setFilterType}
                             >
-                                <Filter className="h-4 w-4" />
-                                {viewMode === "grid"
-                                    ? "List View"
-                                    : "Grid View"}
-                            </Button>
+                                <SelectTrigger className="w-full h-14 rounded-xl border-2 border-input bg-background px-4 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
+                                    <SelectValue placeholder="All Facility Types" />
+                                </SelectTrigger>
+
+                                <SelectContent>
+                                    <SelectItem value="all">
+                                        All Facility Types
+                                    </SelectItem>
+
+                                    {facilityTypes.map((type) => (
+                                        <SelectItem key={type} value={type}>
+                                            {type}
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                            <Filter className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
                         </div>
                     </div>
                 </div>
 
-                {/* Filters & Stats */}
-                <div className="mb-8">
-                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-                        <div className="space-y-1">
-                            <h3 className="text-lg font-semibold">
-                                Available Facilities
-                            </h3>
+                {/* Stats Cards */}
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                    <Card className="border-2 border-blue-500/10 hover:border-blue-500/20 transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Available Today
+                                    </p>
+                                    <h3 className="text-3xl font-bold mt-2">
+                                        {facilities.length}
+                                    </h3>
+                                </div>
+                                <div className="p-3 rounded-full bg-blue-500/10">
+                                    <Building className="h-6 w-6 text-blue-500" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-green-500/10 hover:border-green-500/20 transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Average Rating
+                                    </p>
+                                    <h3 className="text-3xl font-bold mt-2">
+                                        4.2
+                                    </h3>
+                                </div>
+                                <div className="p-3 rounded-full bg-green-500/10">
+                                    <Star className="h-6 w-6 text-green-500" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-amber-500/10 hover:border-amber-500/20 transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Avg Wait Time
+                                    </p>
+                                    <h3 className="text-3xl font-bold mt-2">
+                                        18 min
+                                    </h3>
+                                </div>
+                                <div className="p-3 rounded-full bg-amber-500/10">
+                                    <Clock className="h-6 w-6 text-amber-500" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-purple-500/10 hover:border-purple-500/20 transition-all">
+                        <CardContent className="p-6">
+                            <div className="flex items-center justify-between">
+                                <div>
+                                    <p className="text-sm font-medium text-muted-foreground">
+                                        Total Doctors
+                                    </p>
+                                    <h3 className="text-3xl font-bold mt-2">
+                                        142
+                                    </h3>
+                                </div>
+                                <div className="p-3 rounded-full bg-purple-500/10">
+                                    <Users className="h-6 w-6 text-purple-500" />
+                                </div>
+                            </div>
+                        </CardContent>
+                    </Card>
+                </div>
+
+                {/* Facilities Table */}
+                <div className="space-y-4">
+                    <div className="flex items-center justify-between">
+                        <div>
+                            <h2 className="text-2xl font-semibold">
+                                Facilities
+                            </h2>
                             <p className="text-sm text-muted-foreground">
                                 {filteredFacilities.length} facilities found
                                 {searchQuery && ` for "${searchQuery}"`}
+                                {filterType !== "all" &&
+                                    ` • Filtered by: ${filterType}`}
                             </p>
                         </div>
                     </div>
-                </div>
 
-                {/* Results */}
-                {isLoading ? (
-                    <div
-                        className={`grid ${
-                            viewMode === "grid"
-                                ? "grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"
-                                : "grid-cols-1 gap-4"
-                        }`}
-                    >
-                        {[...Array(6)].map((_, i) => (
-                            <Card key={i} className="overflow-hidden">
-                                <CardContent className="p-6">
-                                    <div className="space-y-4">
-                                        <Skeleton className="h-6 w-3/4" />
-                                        <Skeleton className="h-4 w-1/2" />
-                                        <div className="flex gap-2">
-                                            <Skeleton className="h-6 w-20 rounded-full" />
-                                            <Skeleton className="h-6 w-20 rounded-full" />
-                                        </div>
-                                        <Skeleton className="h-24 w-full" />
-                                        <div className="flex gap-2 pt-2">
-                                            <Skeleton className="h-10 flex-1 rounded-lg" />
-                                            <Skeleton className="h-10 w-10 rounded-lg" />
-                                        </div>
-                                    </div>
-                                </CardContent>
-                            </Card>
-                        ))}
-                    </div>
-                ) : filteredFacilities.length === 0 ? (
-                    <Card className="border-dashed">
-                        <CardContent className="p-12 text-center">
-                            <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
-                                <Search className="w-10 h-10 text-muted-foreground" />
-                            </div>
-                            <h3 className="text-xl font-semibold mb-3">
-                                No facilities found
-                            </h3>
-                            <p className="text-muted-foreground mb-6">
-                                {searchQuery
-                                    ? `No results for "${searchQuery}". Try different keywords.`
-                                    : "No healthcare facilities available at the moment."}
-                            </p>
-                            {searchQuery && (
-                                <Button
-                                    variant="outline"
-                                    onClick={() => setSearchQuery("")}
-                                    className="gap-2"
+                    {isLoading ? (
+                        <div className="space-y-2">
+                            {[...Array(5)].map((_, i) => (
+                                <div
+                                    key={i}
+                                    className="flex items-center space-x-4 p-4 border rounded-lg"
                                 >
-                                    <X className="w-4 h-4" />
-                                    Clear Search
-                                </Button>
-                            )}
-                        </CardContent>
-                    </Card>
-                ) : viewMode === "grid" ? (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                        {filteredFacilities.map((facility) => (
-                            <Card
-                                key={facility.id}
-                                className="group hover:shadow-xl transition-all duration-300 border overflow-hidden"
-                            >
-                                <CardHeader className="pb-4">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <Badge
-                                            variant="secondary"
-                                            className="font-normal"
-                                        >
-                                            {facility.type}
-                                        </Badge>
-                                        <div className="flex items-center gap-1 text-sm">
-                                            <Star className="w-3 h-3 fill-yellow-400 text-yellow-400" />
-                                            <span className="font-medium">
-                                                {facility.rating?.toFixed(1)}
-                                            </span>
-                                        </div>
+                                    <Skeleton className="h-12 w-12 rounded-lg" />
+                                    <div className="space-y-2 flex-1">
+                                        <Skeleton className="h-4 w-1/4" />
+                                        <Skeleton className="h-3 w-1/3" />
                                     </div>
-                                    <h3 className="font-bold text-lg line-clamp-1 group-hover:text-primary transition-colors">
-                                        {facility.name}
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground line-clamp-1">
-                                        {facility.specialty ||
-                                            "General Medicine"}
-                                    </p>
-                                </CardHeader>
-
-                                <CardContent className="space-y-4">
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <MapPin className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        <span className="line-clamp-1">
-                                            {facility.address}
-                                        </span>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 text-sm">
-                                        <span>{facility.distance} km away</span>
-                                    </div>
-
-                                    <div className="flex flex-wrap gap-2">
-                                        {facility.services
-                                            ?.slice(0, 3)
-                                            .map((service, i) => (
-                                                <Badge
-                                                    key={i}
-                                                    variant="outline"
-                                                    className="text-xs font-normal"
-                                                >
-                                                    {service}
-                                                </Badge>
-                                            ))}
-                                        {facility.services &&
-                                            facility.services.length > 3 && (
-                                                <Badge
-                                                    variant="outline"
-                                                    className="text-xs font-normal"
-                                                >
-                                                    +
-                                                    {facility.services.length -
-                                                        3}{" "}
-                                                    more
-                                                </Badge>
-                                            )}
-                                    </div>
-                                </CardContent>
-
-                                <CardFooter className="pt-4 border-t">
-                                    <div className="flex gap-3 w-full">
-                                        <Link
-                                            href={`/user/appointments/${facility.id}`}
-                                            className="flex-1"
-                                        >
-                                            <Button className="w-full rounded-lg">
-                                                <Calendar className="w-4 h-4 mr-2" />
-                                                Book
-                                            </Button>
-                                        </Link>
-
-                                        <Button
-                                            variant="outline"
-                                            size="icon"
-                                            className="rounded-lg"
-                                            onClick={() =>
-                                                openMaps(facility.address)
-                                            }
-                                            title="Get directions"
-                                        >
-                                            <Navigation className="w-4 h-4" />
-                                        </Button>
-                                    </div>
-                                </CardFooter>
-                            </Card>
-                        ))}
-                    </div>
-                ) : (
-                    <div className="space-y-4">
-                        {filteredFacilities.map((facility) => (
-                            <Card
-                                key={facility.id}
-                                className="hover:shadow-md transition-shadow"
-                            >
-                                <div className="p-6">
-                                    <div className="flex flex-col md:flex-row md:items-center gap-6">
-                                        <div className="md:w-1/4">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-12 h-12 rounded-xl bg-linear-to-br from-primary/10 to-primary/5 flex items-center justify-center">
-                                                    <Building className="w-6 h-6 text-primary" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-bold line-clamp-1">
-                                                        {facility.name}
-                                                    </h3>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {facility.type}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="md:w-1/4">
-                                            <div className="space-y-2">
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <MapPin className="w-4 h-4 text-muted-foreground" />
-                                                    <span className="line-clamp-1">
-                                                        {facility.address}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-2 text-sm">
-                                                    <Clock className="w-4 h-4 text-muted-foreground" />
-                                                    <span className="font-medium text-amber-600">
-                                                        ~{facility.wait_time}{" "}
-                                                        min wait
-                                                    </span>
-                                                </div>
-                                            </div>
-                                        </div>
-
-                                        <div className="md:w-1/4">
-                                            <div className="flex flex-wrap gap-2">
-                                                <Badge
-                                                    variant="secondary"
-                                                    className="font-normal"
-                                                >
-                                                    <Star className="w-3 h-3 mr-1 fill-yellow-400 text-yellow-400" />
-                                                    {facility.rating?.toFixed(
-                                                        1
-                                                    )}
-                                                </Badge>
-                                                <Badge
-                                                    variant="outline"
-                                                    className="font-normal"
-                                                >
-                                                    {facility.doctors_count}{" "}
-                                                    doctors
-                                                </Badge>
-                                            </div>
-                                        </div>
-
-                                        <div className="md:w-1/4">
-                                            <div className="flex gap-3">
-                                                <Link
-                                                    href={`/user/appointments/${facility.id}`}
-                                                    className="flex-1"
-                                                >
-                                                    <Button className="w-full rounded-lg">
-                                                        <Calendar className="w-4 h-4 mr-2" />
-                                                        Book
-                                                    </Button>
-                                                </Link>
-
-                                                <Link
-                                                    href={`/user/appointments/${facility.id}`}
-                                                    className="flex-1"
-                                                >
-                                                    <Button className="w-full rounded-lg font-medium">
-                                                        <Calendar className="w-4 h-4 mr-2" />
-                                                        Book Now
-                                                    </Button>
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    </div>
+                                    <Skeleton className="h-10 w-24" />
                                 </div>
-                            </Card>
-                        ))}
-                    </div>
-                )}
+                            ))}
+                        </div>
+                    ) : filteredFacilities.length === 0 ? (
+                        <Card className="border-dashed">
+                            <CardContent className="p-12 text-center">
+                                <div className="w-20 h-20 rounded-full bg-muted flex items-center justify-center mx-auto mb-6">
+                                    <Search className="w-10 h-10 text-muted-foreground" />
+                                </div>
+                                <h3 className="text-xl font-semibold mb-3">
+                                    No facilities found
+                                </h3>
+                                <p className="text-muted-foreground mb-6">
+                                    {searchQuery
+                                        ? `No results for "${searchQuery}". Try different keywords.`
+                                        : "No healthcare facilities available at the moment."}
+                                </p>
+                                {searchQuery && (
+                                    <Button
+                                        variant="outline"
+                                        onClick={() => setSearchQuery("")}
+                                        className="gap-2"
+                                    >
+                                        <X className="w-4 h-4" />
+                                        Clear Search
+                                    </Button>
+                                )}
+                            </CardContent>
+                        </Card>
+                    ) : (
+                        <div className="rounded-xl border border-border overflow-hidden bg-card">
+                            <Table>
+                                <TableHeader className="bg-muted/50">
+                                    <TableRow>
+                                        <TableHead className="font-semibold w-[300px]">
+                                            Facility
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Contact & Location
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Services & Availability
+                                        </TableHead>
+                                        <TableHead className="font-semibold">
+                                            Metrics
+                                        </TableHead>
+                                        <TableHead className="font-semibold text-right">
+                                            Actions
+                                        </TableHead>
+                                    </TableRow>
+                                </TableHeader>
+                                <TableBody>
+                                    {filteredFacilities.map((facility) => (
+                                        <TableRow
+                                            key={facility.id}
+                                            className="hover:bg-muted/30"
+                                        >
+                                            {/* Facility Column */}
+                                            <TableCell>
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 rounded-lg bg-primary/10">
+                                                        <Building className="h-5 w-5 text-primary" />
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        <h3 className="font-semibold text-sm">
+                                                            {facility.name}
+                                                        </h3>
+                                                        <div className="flex items-center gap-2">
+                                                            <Badge
+                                                                variant="outline"
+                                                                className="text-xs"
+                                                            >
+                                                                {facility.type}
+                                                            </Badge>
+                                                            <span className="text-xs text-muted-foreground">
+                                                                {
+                                                                    facility.specialty
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Contact & Location Column */}
+                                            <TableCell>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-start gap-2">
+                                                        <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
+                                                        <div>
+                                                            <p className="text-sm">
+                                                                {
+                                                                    facility.address
+                                                                }
+                                                            </p>
+                                                            <p className="text-xs text-muted-foreground">
+                                                                {
+                                                                    facility.distance
+                                                                }{" "}
+                                                                km away
+                                                            </p>
+                                                        </div>
+                                                    </div>
+                                                    {facility.phone && (
+                                                        <div className="flex items-center gap-2 text-sm">
+                                                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                                                            <span>
+                                                                {facility.phone}
+                                                            </span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Services & Availability Column */}
+                                            <TableCell>
+                                                <div className="space-y-2">
+                                                    <div className="flex flex-wrap gap-1">
+                                                        {facility.services
+                                                            ?.slice(0, 2)
+                                                            .map(
+                                                                (
+                                                                    service,
+                                                                    i
+                                                                ) => (
+                                                                    <Badge
+                                                                        key={i}
+                                                                        variant="outline"
+                                                                        className="text-xs px-1.5 py-0.5"
+                                                                    >
+                                                                        {
+                                                                            service
+                                                                        }
+                                                                    </Badge>
+                                                                )
+                                                            )}
+                                                        {facility.services &&
+                                                            facility.services
+                                                                .length > 2 && (
+                                                                <Badge
+                                                                    variant="outline"
+                                                                    className="text-xs px-1.5 py-0.5"
+                                                                >
+                                                                    +
+                                                                    {facility
+                                                                        .services
+                                                                        .length -
+                                                                        2}{" "}
+                                                                    more
+                                                                </Badge>
+                                                            )}
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-sm">
+                                                        <Clock className="h-3.5 w-3.5 text-amber-500" />
+                                                        <span className="text-amber-600 font-medium">
+                                                            {facility.wait_time}{" "}
+                                                            min wait
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Metrics Column */}
+                                            <TableCell>
+                                                <div className="space-y-2">
+                                                    <div className="flex items-center gap-3">
+                                                        <div className="flex items-center gap-1">
+                                                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                                                            <span className="text-sm font-medium">
+                                                                {facility.rating?.toFixed(
+                                                                    1
+                                                                )}
+                                                            </span>
+                                                        </div>
+                                                        <div className="flex items-center gap-1">
+                                                            <Users className="h-3.5 w-3.5 text-blue-500" />
+                                                            <span className="text-sm font-medium text-blue-600">
+                                                                {
+                                                                    facility.doctors_count
+                                                                }
+                                                            </span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="flex items-center gap-2 text-xs">
+                                                        <div
+                                                            className={`h-2 w-2 rounded-full ${
+                                                                facility.is_active
+                                                                    ? "bg-green-500"
+                                                                    : "bg-gray-300"
+                                                            }`}
+                                                        />
+                                                        <span className="text-muted-foreground">
+                                                            {facility.is_active
+                                                                ? "Active"
+                                                                : "Inactive"}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </TableCell>
+
+                                            {/* Actions Column */}
+                                            <TableCell className="text-right">
+                                                <div className="flex items-center justify-end gap-2">
+                                                    <Link
+                                                        href={`/user/appointments/${facility.id}`}
+                                                        className="flex-1 max-w-[140px]"
+                                                    >
+                                                        <Button
+                                                            className="w-full gap-2"
+                                                            size="sm"
+                                                        >
+                                                            <Calendar className="h-4 w-4" />
+                                                            Book Now
+                                                        </Button>
+                                                    </Link>
+
+                                                    <DropdownMenu>
+                                                        <DropdownMenuTrigger
+                                                            asChild
+                                                        >
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="icon"
+                                                                className="h-8 w-8"
+                                                            >
+                                                                <MoreHorizontal className="h-4 w-4" />
+                                                            </Button>
+                                                        </DropdownMenuTrigger>
+                                                        <DropdownMenuContent
+                                                            align="end"
+                                                            className="w-48"
+                                                        >
+                                                            <DropdownMenuItem
+                                                                className="gap-2 cursor-pointer"
+                                                                onClick={() =>
+                                                                    openMaps(
+                                                                        facility.address,
+                                                                        facility.latitude,
+                                                                        facility.longitude
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Navigation className="h-4 w-4" />
+                                                                Get Directions
+                                                            </DropdownMenuItem>
+                                                            {facility.phone && (
+                                                                <DropdownMenuItem
+                                                                    className="gap-2 cursor-pointer"
+                                                                    onClick={() =>
+                                                                        openPhone(
+                                                                            facility.phone
+                                                                        )
+                                                                    }
+                                                                >
+                                                                    <Phone className="h-4 w-4" />
+                                                                    Call
+                                                                    Facility
+                                                                </DropdownMenuItem>
+                                                            )}
+                                                        </DropdownMenuContent>
+                                                    </DropdownMenu>
+                                                </div>
+                                            </TableCell>
+                                        </TableRow>
+                                    ))}
+                                </TableBody>
+                            </Table>
+                        </div>
+                    )}
+                </div>
             </div>
         </div>
     );

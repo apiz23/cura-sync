@@ -23,17 +23,19 @@ import { AdminProfileMenu } from "./admin-profile-menu";
 import { adminMenu } from "@/lib/admin-menu";
 
 export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
-    const { staff } = useAuth();
-    const role = staff?.role || "";
+    const { user, loading } = useAuth();
     const pathname = usePathname();
 
-    if (!staff) return null;
+    // 🔑 IMPORTANT: handle loading FIRST
+    if (loading) return null;
+    if (!user) return null;
+
+    const role = user.role;
 
     const isMenuActive = (itemUrl: string) => {
         if (itemUrl === "/admin") {
             return pathname === "/admin";
         }
-
         return pathname === itemUrl || pathname.startsWith(itemUrl + "/");
     };
 
@@ -115,9 +117,8 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
             {/* ================= FOOTER ================= */}
             <SidebarFooter>
-                <AdminProfileMenu staff={staff} />
+                <AdminProfileMenu user={user} />
             </SidebarFooter>
-
             <SidebarRail />
         </Sidebar>
     );

@@ -1,18 +1,25 @@
-import { NextResponse } from "next/server";
+import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import supabase from "@/lib/supabase";
 
-export async function GET() {
-    const { userId } = await auth();
+/* =========================
+   GET /api/medications
+   ========================= */
+export async function GET(req: NextRequest) {
+    const { searchParams } = new URL(req.url);
+    const profileId = searchParams.get("profile_id");
 
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!profileId) {
+        return NextResponse.json(
+            { error: "profile_id is required" },
+            { status: 400 }
+        );
     }
 
     const { data, error } = await supabase
         .from("cura_medications")
         .select("*")
-        .eq("profile_id", userId)
+        .eq("profile_id", profileId)
         .order("created_at", { ascending: false });
 
     if (error) {
@@ -22,7 +29,10 @@ export async function GET() {
     return NextResponse.json(data);
 }
 
-export async function POST(req: Request) {
+/* =========================
+   POST /api/medications
+   ========================= */
+export async function POST(req: NextRequest) {
     const { userId } = await auth();
 
     if (!userId) {
@@ -31,11 +41,45 @@ export async function POST(req: Request) {
 
     const body = await req.json();
 
+    const {
+        profile_id,
+        name,
+        dosage,
+        frequency,
+        schedule,
+        start_date,
+        end_date,
+        notes,
+        prescribed_by,
+    } = body;
+
+    if (
+        !profile_id ||
+        !name ||
+        !dosage ||
+        !frequency ||
+        !schedule ||
+        !start_date
+    ) {
+        return NextResponse.json(
+            { error: "Missing required fields" },
+            { status: 400 }
+        );
+    }
+
     const { data, error } = await supabase
         .from("cura_medications")
         .insert({
-            ...body,
-            profile_id: userId,
+            profile_id,
+            name,
+            dosage,
+            frequency,
+            schedule,
+            start_date,
+            end_date,
+            notes,
+            prescribed_by,
+            status: "ACTIVE",
         })
         .select()
         .single();

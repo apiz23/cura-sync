@@ -44,7 +44,7 @@ export default function RootLayout({
                         <Navbar />
                         <ChatbotLauncher />
                         {children}
-                        <Toaster />
+                        <Toaster richColors />
                     </ThemeProvider>
                 </body>
             </html>

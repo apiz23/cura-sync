@@ -60,7 +60,7 @@ export default function RegisterClinicPage() {
         const data = Object.fromEntries(formData.entries());
 
         try {
-            const response = await fetch("/api/facilities/register", {
+            const response = await fetch("/api/facility/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(data),

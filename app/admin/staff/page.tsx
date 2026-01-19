@@ -32,6 +32,7 @@ import {
     Mail,
     Calendar,
     MoreVertical,
+    Eye,
 } from "lucide-react";
 import AddStaffSheet from "./add-staff-sheet";
 import {
@@ -42,17 +43,8 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-
-export type StaffRole = "doctor" | "staff" | "admin";
-
-export interface Staff {
-    id: string;
-    full_name: string;
-    email: string;
-    role: StaffRole;
-    specialization?: string;
-    created_at: string;
-}
+import ViewStaffSheet from "./view-staff-sheet";
+import { Staff, StaffRole } from "@/app/types";
 
 export default function StaffPage() {
     const [staff, setStaff] = useState<Staff[]>([]);
@@ -60,6 +52,8 @@ export default function StaffPage() {
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState<StaffRole | "all">("all");
     const [deletingId, setDeletingId] = useState<string | null>(null);
+    const [viewStaff, setViewStaff] = useState<Staff | null>(null);
+    const [viewOpen, setViewOpen] = useState(false);
 
     async function fetchStaff() {
         setLoading(true);
@@ -121,7 +115,7 @@ export default function StaffPage() {
         return matchSearch && matchRole;
     });
 
-    const getRoleIcon = (role: StaffRole) => {
+    const getRoleIcon = (role: StaffRole | null) => {
         switch (role) {
             case "doctor":
                 return <Stethoscope className="w-3.5 h-3.5" />;
@@ -129,10 +123,12 @@ export default function StaffPage() {
                 return <Shield className="w-3.5 h-3.5" />;
             case "admin":
                 return <UserCog className="w-3.5 h-3.5" />;
+            default:
+                return <Users className="w-3.5 h-3.5 text-muted-foreground" />;
         }
     };
 
-    const getRoleColor = (role: StaffRole) => {
+    const getRoleColor = (role: StaffRole | null) => {
         switch (role) {
             case "doctor":
                 return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200";
@@ -140,6 +136,8 @@ export default function StaffPage() {
                 return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900 dark:text-emerald-200";
             case "admin":
                 return "bg-purple-100 text-purple-800 hover:bg-purple-100 dark:bg-purple-900 dark:text-purple-200";
+            default:
+                return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
         }
     };
 
@@ -151,8 +149,13 @@ export default function StaffPage() {
         });
     };
 
+    const handleViewStaff = (staff: Staff) => {
+        setViewStaff(staff);
+        setViewOpen(true);
+    };
+
     return (
-        <div className="container mx-auto p-6 space-y-6">
+        <div className="p-6 space-y-6">
             {/* Header */}
             <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                 <div>
@@ -168,7 +171,7 @@ export default function StaffPage() {
 
             {/* Stats Card */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
+                <Card className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -184,7 +187,7 @@ export default function StaffPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20">
+                <Card className="bg-linear-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20">
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -193,8 +196,10 @@ export default function StaffPage() {
                                 </p>
                                 <p className="text-3xl font-bold mt-2">
                                     {
-                                        staff.filter((s) =>
-                                            ["doctor", "staff"].includes(s.role)
+                                        staff.filter(
+                                            (s) =>
+                                                s.role === "doctor" ||
+                                                s.role === "staff"
                                         ).length
                                     }
                                 </p>
@@ -204,7 +209,7 @@ export default function StaffPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20">
+                <Card className="bg-linear-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20">
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
@@ -271,9 +276,7 @@ export default function StaffPage() {
                                     <SelectItem value="doctor">
                                         Doctors
                                     </SelectItem>
-                                    <SelectItem value="staff">
-                                        Staff
-                                    </SelectItem>
+                                    <SelectItem value="staff">Staff</SelectItem>
                                     <SelectItem value="admin">
                                         Administrators
                                     </SelectItem>
@@ -355,7 +358,7 @@ export default function StaffPage() {
                                         >
                                             <TableCell>
                                                 <div className="flex items-center gap-3">
-                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-gradient-to-br from-primary/10 to-primary/20 text-primary font-semibold">
+                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-linear-to-br from-primary/10 to-primary/20 text-primary font-semibold">
                                                         {s.full_name.charAt(0)}
                                                     </div>
                                                     <div>
@@ -409,12 +412,22 @@ export default function StaffPage() {
                                                         <Button
                                                             variant="ghost"
                                                             size="icon"
-                                                            className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            className="h-8 w-8 opacity-100 group-hover:opacity-100 transition-opacity"
                                                         >
                                                             <MoreVertical className="w-4 h-4" />
                                                         </Button>
                                                     </DropdownMenuTrigger>
                                                     <DropdownMenuContent align="end">
+                                                        <DropdownMenuItem
+                                                            onClick={() =>
+                                                                handleViewStaff(
+                                                                    s
+                                                                )
+                                                            }
+                                                        >
+                                                            <Eye className="w-3.5 h-3.5 mr-2" />
+                                                            View Details
+                                                        </DropdownMenuItem>
                                                         <DropdownMenuItem
                                                             className="text-destructive focus:text-destructive"
                                                             onClick={() =>
@@ -448,6 +461,15 @@ export default function StaffPage() {
                     </div>
                 </CardContent>
             </Card>
+            <ViewStaffSheet
+                staff={viewStaff}
+                open={viewOpen}
+                onOpenChange={setViewOpen}
+                onEdit={() => {
+                    // Handle edit functionality
+                }}
+                onDelete={removeStaff}
+            />
         </div>
     );
 }

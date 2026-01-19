@@ -1,14 +1,22 @@
 export interface Facility {
     id: string;
     name: string;
-    type?: string;
-    specialty?: string;
+    type: string | null;
+    specialty: string | null;
     address: string;
-    phone?: string;
-    rating?: number;
-    wait_time?: number;
-    slots?: string[];
-    coordinates?: [number, number];
+    is_active: boolean;
+    created_at: string;
+    latitude: string | null;
+    longitude: string | null;
+}
+
+export interface FacilitySchedule {
+    id: string;
+    facility_id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+    slot_duration_minutes: number;
 }
 
 export interface Appointment {
@@ -25,36 +33,35 @@ export interface Appointment {
     facility_name: string;
 }
 
-type AvailabilitySlot = {
-    day:
-        | "Monday"
-        | "Tuesday"
-        | "Wednesday"
-        | "Thursday"
-        | "Friday"
-        | "Saturday"
-        | "Sunday";
-    start_time: string;
-    end_time: string;
-};
+export type StaffRole = "doctor" | "staff" | "admin";
+export type DayOfWeek =
+    | "monday"
+    | "tuesday"
+    | "wednesday"
+    | "thursday"
+    | "friday"
+    | "saturday"
+    | "sunday";
 
-export type Staff = {
+export type WeeklyAvailability = Record<DayOfWeek, string[]>;
+
+export interface Staff {
     id: string;
     full_name: string;
     email: string;
-    role: "admin" | "doctor" | "nurse" | null;
+    role: StaffRole | null;
     specialization: string | null;
     license_number: string | null;
     facility_id: string | null;
     years_of_experience: number | null;
-    availability: AvailabilitySlot | null;
+    availability: WeeklyAvailability | null;
     created_at: string;
-};
+}
 
 export type SessionStaff = {
     id: string;
     email: string;
-    role: "admin" | "doctor" | "nurse";
+    role: StaffRole;
     facility_id: string;
 };
 
@@ -70,8 +77,8 @@ export type Medication = {
     end_date?: string | null;
     notes?: string | null;
     prescribed_by?: string | null;
-    created_at?: string;
-    updated_at?: string;
+    created_at: string;
+    updated_at: string;
 };
 
 export type FacilityEdit = {
@@ -97,7 +104,7 @@ export interface StaffProfile {
     id: string;
     full_name: string;
     email: string;
-    role: "doctor" | "nurse" | "admin";
+    role: StaffRole;
     specialization: string | null;
     license_number: string | null;
     facility_id: string | null;
@@ -116,10 +123,25 @@ interface Availability {
 export interface Patient {
     id: string;
     email: string;
-    full_name?: string; 
+    full_name?: string;
     role?: string;
     avatar_url?: string;
     phone_number?: string;
     created_at: string;
     status?: "active" | "inactive" | "suspended";
+}
+
+export type UserRole = "admin" | "staff" | "doctor";
+
+export interface AuthUser {
+    id: string;
+    full_name: string;
+    email: string;
+    role: UserRole;
+    specialization?: string | null;
+    license_number?: string | null;
+    facility_id?: string | null;
+    years_of_experience?: number | null;
+    availability?: WeeklyAvailability | null;
+    created_at: string;
 }

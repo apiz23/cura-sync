@@ -26,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
-    const { staff: initialStaff, loading } = useAuth();
+    const { user: initialStaff, loading } = useAuth();
 
     return (
         <div className="flex flex-1 flex-col gap-8 p-6">

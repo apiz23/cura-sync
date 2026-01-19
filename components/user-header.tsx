@@ -12,6 +12,7 @@ import { SidebarTrigger } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import { getPageTitle } from "@/lib/getPageTitle";
 import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
+import { Separator } from "./ui/separator";
 
 export function UserHeader() {
     const { isLoaded, isSignedIn } = useUser();
@@ -39,10 +40,13 @@ export function UserHeader() {
     }
 
     return (
-        <header className="flex h-16 items-center justify-between gap-4 bg-background/95 backdrop-blur sticky top-0 z-50 px-4">
+        <header className="flex h-(--header-height) shrink-0 rounded-t-3xl items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) justify-between bg-background/90 p-3">
             <div className="flex items-center gap-4">
-                <SidebarTrigger className="h-9 w-9 data-[state=open]:bg-accent transition-all duration-200 hover:scale-105" />
-
+                <SidebarTrigger className="h-9 w-9" />
+                <Separator
+                    orientation="vertical"
+                    className="mx-2 data-[orientation=vertical]:h-4"
+                />
                 <Breadcrumb>
                     <BreadcrumbList>
                         <BreadcrumbItem>

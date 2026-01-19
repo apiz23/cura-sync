@@ -12,7 +12,6 @@ import {
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Textarea } from "@/components/ui/textarea";
 import {
     Select,
     SelectContent,
@@ -25,12 +24,10 @@ import {
     Mail,
     Award,
     Calendar,
-    Clock,
     Building2,
     FileText,
     Shield,
     Check,
-    ChevronRight,
     ChevronLeft,
     UserCircle,
     GraduationCap,
@@ -39,30 +36,31 @@ import {
 import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { StaffProfile } from "@/app/types";
+import { AuthUser } from "@/app/types";
 
 interface EditStaffProfileModalProps {
-    staff: StaffProfile;
-    onSave: (updatedData: Partial<StaffProfile>) => Promise<void>;
+    user: AuthUser;
+    onSave: (updatedData: Partial<AuthUser>) => Promise<void>;
     onClose: () => void;
 }
 
 export default function EditStaffProfileModal({
-    staff,
+    user,
     onSave,
     onClose,
 }: EditStaffProfileModalProps) {
-    const [formData, setFormData] = useState<Partial<StaffProfile>>({
-        ...staff,
+    const [formData, setFormData] = useState<Partial<AuthUser>>({
+        ...user,
     });
+
     const [isSubmitting, setIsSubmitting] = useState(false);
-    const [activeTab, setActiveTab] = useState<
-        "personal" | "professional" | "availability"
-    >("personal");
+    const [activeTab, setActiveTab] = useState<"personal" | "professional">(
+        "personal"
+    );
 
     useEffect(() => {
-        setFormData({ ...staff });
-    }, [staff]);
+        setFormData({ ...user });
+    }, [user]);
 
     const handleInputChange = (
         e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -115,7 +113,7 @@ export default function EditStaffProfileModal({
     };
 
     const tabs: {
-        id: "personal" | "professional" | "availability";
+        id: "personal" | "professional";
         label: string;
         icon: React.ElementType;
         description: string;
@@ -135,13 +133,6 @@ export default function EditStaffProfileModal({
             description: "Set your professional information",
             color: "text-purple-600 bg-purple-50",
         },
-        {
-            id: "availability",
-            label: "Availability",
-            icon: Clock,
-            description: "Manage your schedule",
-            color: "text-green-600 bg-green-50",
-        },
     ];
 
     const currentTab = tabs.find((tab) => tab.id === activeTab);
@@ -150,9 +141,9 @@ export default function EditStaffProfileModal({
         <Sheet open onOpenChange={(open) => !open && onClose()}>
             <SheetContent className="sm:max-w-xl overflow-y-auto p-0 border-l">
                 {/* Header */}
-                <SheetHeader className="p-6 border-b bg-gradient-to-r from-background to-muted/20">
+                <SheetHeader className="p-6 border-b bg-linear-to-r from-background to-muted/20">
                     <div className="flex items-start gap-4">
-                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center flex-shrink-0">
+                        <div className="w-12 h-12 rounded-xl bg-primary/10 flex items-center justify-center shrink-0">
                             <UserCircle className="w-6 h-6 text-primary" />
                         </div>
                         <div className="flex-1">
@@ -162,7 +153,7 @@ export default function EditStaffProfileModal({
                             <SheetDescription className="text-muted-foreground mt-1">
                                 Update professional information for{" "}
                                 <span className="font-semibold text-foreground">
-                                    {staff.full_name}
+                                    {user.full_name}
                                 </span>
                             </SheetDescription>
                         </div>
@@ -311,7 +302,7 @@ export default function EditStaffProfileModal({
                                                         Doctor
                                                     </div>
                                                 </SelectItem>
-                                                <SelectItem value="staff">
+                                                <SelectItem value="user">
                                                     <div className="flex items-center gap-2">
                                                         <User className="w-4 h-4" />
                                                         Staff
@@ -428,126 +419,6 @@ export default function EditStaffProfileModal({
                         </Card>
                     )}
 
-                    {/* Availability Tab */}
-                    {activeTab === "availability" && (
-                        <Card className="border-0 shadow-sm">
-                            <CardContent className="p-6 space-y-6">
-                                <div className="space-y-4">
-                                    <div>
-                                        <Label className="mb-2 flex items-center gap-2">
-                                            <Clock className="w-4 h-4 text-primary" />
-                                            Availability Status
-                                        </Label>
-                                        <Select
-                                            value={
-                                                formData.availability
-                                                    ?.available !== undefined
-                                                    ? String(
-                                                          formData.availability
-                                                              .available
-                                                      )
-                                                    : "true"
-                                            }
-                                            onValueChange={(value) => {
-                                                const availability = {
-                                                    ...formData.availability,
-                                                    available: value === "true",
-                                                    updated_at:
-                                                        new Date().toISOString(),
-                                                };
-                                                setFormData((prev) => ({
-                                                    ...prev,
-                                                    availability,
-                                                }));
-                                            }}
-                                        >
-                                            <SelectTrigger className="h-12">
-                                                <SelectValue placeholder="Select availability status" />
-                                            </SelectTrigger>
-                                            <SelectContent>
-                                                <SelectItem value="true">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-2 h-2 rounded-full bg-green-500" />
-                                                        <span>Available</span>
-                                                    </div>
-                                                </SelectItem>
-                                                <SelectItem value="false">
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-2 h-2 rounded-full bg-red-500" />
-                                                        <span>Unavailable</span>
-                                                    </div>
-                                                </SelectItem>
-                                            </SelectContent>
-                                        </Select>
-                                    </div>
-
-                                    {formData.availability && (
-                                        <div className="space-y-4">
-                                            <div>
-                                                <Label
-                                                    htmlFor="availability_schedule"
-                                                    className="mb-2"
-                                                >
-                                                    Schedule Details
-                                                </Label>
-                                                <Input
-                                                    id="availability_schedule"
-                                                    value={
-                                                        formData.availability
-                                                            .schedule || ""
-                                                    }
-                                                    onChange={(e) => {
-                                                        const availability = {
-                                                            ...formData.availability,
-                                                            schedule:
-                                                                e.target.value,
-                                                        };
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            availability,
-                                                        }));
-                                                    }}
-                                                    placeholder="e.g., Monday-Friday 9AM-5PM"
-                                                    className="h-12"
-                                                />
-                                            </div>
-
-                                            <div>
-                                                <Label
-                                                    htmlFor="availability_notes"
-                                                    className="mb-2"
-                                                >
-                                                    Additional Notes
-                                                </Label>
-                                                <Textarea
-                                                    id="availability_notes"
-                                                    value={
-                                                        formData.availability
-                                                            .notes || ""
-                                                    }
-                                                    onChange={(e) => {
-                                                        const availability = {
-                                                            ...formData.availability,
-                                                            notes: e.target
-                                                                .value,
-                                                        };
-                                                        setFormData((prev) => ({
-                                                            ...prev,
-                                                            availability,
-                                                        }));
-                                                    }}
-                                                    placeholder="Add any notes about your availability, time off, or special arrangements"
-                                                    className="min-h-[100px]"
-                                                    rows={4}
-                                                />
-                                            </div>
-                                        </div>
-                                    )}
-                                </div>
-                            </CardContent>
-                        </Card>
-                    )}
-
                     {/* Form Actions */}
                     <SheetFooter className="flex flex-col sm:flex-row gap-3 pt-8">
                         <div className="flex-1 flex gap-3">
@@ -571,28 +442,6 @@ export default function EditStaffProfileModal({
                                 >
                                     <ChevronLeft className="w-4 h-4" />
                                     Back
-                                </Button>
-                            )}
-
-                            {activeTab !== "availability" && (
-                                <Button
-                                    type="button"
-                                    variant="outline"
-                                    onClick={() => {
-                                        const nextTab =
-                                            tabs[
-                                                (tabs.findIndex(
-                                                    (t) => t.id === activeTab
-                                                ) +
-                                                    1) %
-                                                    tabs.length
-                                            ];
-                                        setActiveTab(nextTab.id);
-                                    }}
-                                    className="gap-2"
-                                >
-                                    Next
-                                    <ChevronRight className="w-4 h-4" />
                                 </Button>
                             )}
                         </div>

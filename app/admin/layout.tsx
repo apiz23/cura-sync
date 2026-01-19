@@ -1,13 +1,13 @@
 import type { Metadata } from "next";
 import { DM_Sans, Space_Mono } from "next/font/google";
-import "../globals.css"; // Adjust path if needed
+import "../globals.css";
 import { Toaster } from "sonner";
 import { ThemeProvider } from "@/components/theme-provider";
 import { AdminSidebar } from "@/components/admin-sidebar";
 import { AdminHeader } from "@/components/admin-header";
 import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { ClerkProvider } from "@clerk/nextjs";
-import { AuthAdminProvider } from "@/components/authprovideradmin";
+import { AuthProvider } from "@/components/authprovideradmin";
 
 const dmSans = DM_Sans({
     subsets: ["latin"],
@@ -43,11 +43,11 @@ export default function AdminLayout({
                         enableSystem
                         disableTransitionOnChange
                     >
-                        <AuthAdminProvider>
+                        <AuthProvider>
                             <SidebarProvider
                                 style={
                                     {
-                                        "--sidebar-width": "18rem",
+                                        "--sidebar-width": "16rem",
                                         "--sidebar-width-mobile": "20rem",
                                     } as React.CSSProperties
                                 }
@@ -55,17 +55,11 @@ export default function AdminLayout({
                                 <AdminSidebar />
                                 <SidebarInset>
                                     <AdminHeader />
-
                                     {children}
                                 </SidebarInset>
                             </SidebarProvider>
-                        </AuthAdminProvider>
-                        <Toaster
-                            position="bottom-right"
-                            theme="dark"
-                            richColors
-                            closeButton
-                        />
+                        </AuthProvider>
+                        <Toaster richColors />
                     </ThemeProvider>
                 </body>
             </html>

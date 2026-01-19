@@ -5,9 +5,10 @@ import { usePathname } from "next/navigation";
 import { getPageTitle } from "@/lib/getPageTitle";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
+import { Separator } from "./ui/separator";
 
 export function AdminHeader() {
-    const { staff, loading } = useAuth();
+    const { user, loading } = useAuth();
     const pathname = usePathname();
     const pageTitle = getPageTitle(pathname);
 
@@ -19,12 +20,16 @@ export function AdminHeader() {
         );
     }
 
-    if (!staff) return null;
+    if (!user) return null;
 
     return (
-        <header className="flex h-16 items-center justify-between border-b bg-background/90 px-6 sticky top-0 z-50">
+        <header className="flex h-(--header-height) shrink-0 rounded-t-3xl items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) justify-between bg-background/90 p-3">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="h-9 w-9" />
+                <Separator
+                    orientation="vertical"
+                    className="mx-2 data-[orientation=vertical]:h-4"
+                />
                 <p className="text-sm font-semibold">{pageTitle}</p>
             </div>
 

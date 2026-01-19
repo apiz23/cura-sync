@@ -19,21 +19,18 @@ import {
     SidebarMenuItem,
     useSidebar,
 } from "@/components/ui/sidebar";
+import { AuthUser } from "@/app/types";
 
 interface AdminProfileMenuProps {
-    staff: {
-        full_name: string;
-        email: string;
-        role: string | null;
-    };
+    user: AuthUser;
 }
 
-export function AdminProfileMenu({ staff }: AdminProfileMenuProps) {
+export function AdminProfileMenu({ user }: AdminProfileMenuProps) {
     const { isMobile } = useSidebar();
 
     const initials =
-        (staff.full_name?.split(" ")[0]?.[0] || "") +
-        (staff.full_name?.split(" ")[1]?.[0] || "");
+        (user.full_name?.split(" ")[0]?.[0] || "") +
+        (user.full_name?.split(" ")[1]?.[0] || "");
 
     const handleLogout = () => {
         sessionStorage.clear();
@@ -48,11 +45,11 @@ export function AdminProfileMenu({ staff }: AdminProfileMenuProps) {
                         <SidebarMenuButton
                             size="lg"
                             className="
-                gap-3
-                data-[state=open]:bg-sidebar-accent
-                data-[state=open]:text-sidebar-accent-foreground
-                group-data-[collapsible=icon]:justify-center
-              "
+                                gap-3
+                                data-[state=open]:bg-sidebar-accent
+                                data-[state=open]:text-sidebar-accent-foreground
+                                group-data-[collapsible=icon]:justify-center
+                            "
                         >
                             {/* Avatar */}
                             <Avatar className="h-8 w-8 rounded-lg shrink-0">
@@ -61,17 +58,16 @@ export function AdminProfileMenu({ staff }: AdminProfileMenuProps) {
                                 </AvatarFallback>
                             </Avatar>
 
-                            {/* Text (hidden when collapsed) */}
+                            {/* Text */}
                             <div className="grid flex-1 text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                                 <span className="truncate font-medium">
-                                    {staff.full_name}
+                                    {user.full_name}
                                 </span>
                                 <span className="truncate text-xs text-muted-foreground">
-                                    {staff.role || "Administrator"}
+                                    {user.role || "Administrator"}
                                 </span>
                             </div>
 
-                            {/* Chevron (hidden when collapsed) */}
                             <ChevronsUpDown className="ml-auto size-4 group-data-[collapsible=icon]:hidden" />
                         </SidebarMenuButton>
                     </DropdownMenuTrigger>
@@ -91,10 +87,10 @@ export function AdminProfileMenu({ staff }: AdminProfileMenuProps) {
                                 </Avatar>
                                 <div className="grid flex-1 text-left text-sm leading-tight">
                                     <span className="truncate font-medium">
-                                        {staff.full_name}
+                                        {user.full_name}
                                     </span>
                                     <span className="truncate text-xs text-muted-foreground">
-                                        {staff.email}
+                                        {user.email}
                                     </span>
                                 </div>
                             </div>

@@ -2,17 +2,17 @@
 
 import { createContext, useContext, useEffect, useState } from "react";
 import supabase from "@/lib/supabase";
-import { Staff } from "@/app/types";
+import { AuthUser } from "@/app/types";
 
 interface AuthContextType {
-    staff: Staff | null;
+    user: AuthUser | null;
     loading: boolean;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
-    const [staff, setStaff] = useState<Staff | null>(null);
+export function AuthProvider({ children }: { children: React.ReactNode }) {
+    const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -33,8 +33,7 @@ export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
                 return;
             }
 
-            const { email } = session;
-            if (!email) {
+            if (!session?.email) {
                 setLoading(false);
                 return;
             }
@@ -42,11 +41,11 @@ export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
             const { data, error } = await supabase
                 .from("cura_staff_profiles")
                 .select("*")
-                .eq("email", email)
+                .eq("email", session.email)
                 .single();
 
             if (!error && data) {
-                setStaff({
+                setUser({
                     id: data.id,
                     full_name: data.full_name,
                     email: data.email,
@@ -67,7 +66,7 @@ export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
     }, []);
 
     return (
-        <AuthContext.Provider value={{ staff, loading }}>
+        <AuthContext.Provider value={{ user, loading }}>
             {children}
         </AuthContext.Provider>
     );
@@ -76,7 +75,7 @@ export function AuthAdminProvider({ children }: { children: React.ReactNode }) {
 export function useAuth() {
     const context = useContext(AuthContext);
     if (!context) {
-        throw new Error("useAuth must be used within an AuthAdminProvider");
+        throw new Error("useAuth must be used within AuthProvider");
     }
     return context;
 }

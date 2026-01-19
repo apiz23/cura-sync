@@ -1,29 +1,39 @@
 "use client";
 
 import Image from "next/image";
-import { notFound, useParams } from "next/navigation";
+import { notFound, useParams, useRouter } from "next/navigation";
 import {
     User,
     Mail,
     Phone,
     Calendar,
-    Shield,
     Activity,
     UserCircle,
     Hash,
     Copy,
     Check,
-    Clock,
     CalendarDays,
     UserCheck,
     MoreVertical,
     FileText,
     Stethoscope,
     Pill,
-    LucideIcon,
+    History,
+    Heart,
+    AlertCircle,
+    Clipboard,
+    Clock,
+    MapPin,
+    Edit,
+    Share2,
+    Printer,
+    Download,
+    Bell,
+    MessageSquare,
+    ArrowLeft,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
-import { Card } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -32,7 +42,13 @@ import MedicationCard from "./medication-card";
 import { Medication } from "@/app/types";
 import AddMedicationSheet from "./add-medication-sheet";
 import { useAuth } from "@/components/authprovideradmin";
-import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import {
+    DropdownMenu,
+    DropdownMenuContent,
+    DropdownMenuItem,
+    DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface Patient {
     id: string;
@@ -47,6 +63,11 @@ interface Patient {
     date_of_birth?: string;
     gender?: string;
     address?: string;
+    blood_type?: string;
+    height_cm?: number;
+    weight_kg?: number;
+    allergies?: string;
+    chronic_conditions?: string;
 }
 
 export default function PatientDetailPage() {
@@ -56,10 +77,11 @@ export default function PatientDetailPage() {
     const [activeTab, setActiveTab] = useState("overview");
     const [medications, setMedications] = useState<Medication[]>([]);
     const [medLoading, setMedLoading] = useState(false);
-    const { staff } = useAuth();
+    const { user } = useAuth();
+    const router = useRouter();
 
-    const staffId = staff?.id ?? null;
-    const staffName = staff?.full_name || staff?.email || "Unknown Staff";
+    const staffId = user?.id ?? null;
+    const staffName = user?.full_name || user?.email || "Unknown User";
 
     useEffect(() => {
         async function fetchPatient() {
@@ -87,10 +109,13 @@ export default function PatientDetailPage() {
     }, [params.patientId]);
 
     const fetchMedications = useCallback(async () => {
+        if (!patient?.id) return;
+
         setMedLoading(true);
+
         try {
             const res = await fetch(
-                `/api/medications?profile_id=${params.patientId}`,
+                `/api/medications?profile_id=${patient.id}`,
                 { cache: "no-store" }
             );
 
@@ -107,13 +132,34 @@ export default function PatientDetailPage() {
         } finally {
             setMedLoading(false);
         }
-    }, [params.patientId]);
+    }, [patient?.id]);
 
     useEffect(() => {
         if (activeTab === "medication") {
             fetchMedications();
         }
     }, [activeTab, fetchMedications]);
+
+    const calculateAge = (dateOfBirth?: string) => {
+        if (!dateOfBirth) return null;
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (
+            monthDiff < 0 ||
+            (monthDiff === 0 && today.getDate() < birthDate.getDate())
+        ) {
+            age--;
+        }
+        return age;
+    };
+
+    const calculateBMI = () => {
+        if (!patient?.height_cm || !patient?.weight_kg) return null;
+        const heightM = patient.height_cm / 100;
+        return (patient.weight_kg / (heightM * heightM)).toFixed(1);
+    };
 
     if (loading) {
         return <PatientDetailSkeleton />;
@@ -123,373 +169,569 @@ export default function PatientDetailPage() {
         return notFound();
     }
 
+    const age = calculateAge(patient.date_of_birth);
+    const bmi = calculateBMI();
+
     return (
-        <div className="max-w-7xl mx-auto space-y-6 p-4 md:p-6">
-            {/* Header Section */}
-            <div className="flex flex-col lg:flex-row gap-6">
-                {/* Profile Card */}
-                <Card className="p-6 border-border/40 bg-linear-to-br from-card to-muted/20 rounded-2xl flex-1 shadow-sm">
-                    <div className="flex flex-col md:flex-row gap-6">
-                        {/* Avatar */}
-                        <div className="flex flex-col items-center md:items-start">
-                            <div className="relative group">
+        <div className="min-h-screen bg-linear-to-b from-background to-muted/20 p-0">
+            {/* Header Banner */}
+            <div className="bg-linear-to-r from-primary/10 via-primary/5 to-transparent border-b">
+                <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                        <div className="flex items-center gap-4">
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={() => router.push("/admin/patients")}
+                                className="rounded-full hover:bg-primary/10"
+                            >
+                                <ArrowLeft className="w-5 h-5" />
+                            </Button>
+
+                            <div className="relative">
                                 {patient.avatar_url ? (
-                                    <div className="relative w-32 h-32 rounded-xl overflow-hidden border-2 border-background/80 shadow-lg">
+                                    <div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-white shadow-lg">
                                         <Image
                                             src={patient.avatar_url}
-                                            alt={`${
-                                                patient.full_name || "Patient"
-                                            } avatar`}
-                                            fill
-                                            className="object-cover transition-transform duration-300 group-hover:scale-105"
-                                            sizes="(max-width: 768px) 128px, 128px"
+                                            alt={patient.full_name || "Patient"}
+                                            width={80}
+                                            height={80}
+                                            className="object-cover"
                                         />
-                                        {/* linear Overlay */}
-                                        <div className="absolute inset-0 bg-linear-to-t from-black/10 via-transparent to-transparent" />
                                     </div>
                                 ) : (
-                                    <div className="w-32 h-32 rounded-xl bg-linear-to-br from-primary/25 to-primary/10 border-2 border-background/80 shadow-lg flex items-center justify-center">
-                                        <UserCircle
-                                            size={64}
-                                            className="text-primary/80"
-                                        />
+                                    <div className="w-20 h-20 rounded-xl bg-linear-to-br from-primary/20 to-primary/10 border-2 border-white flex items-center justify-center">
+                                        <UserCircle className="w-10 h-10 text-primary" />
                                     </div>
                                 )}
+                            </div>
+                            <div>
+                                <h1 className="text-3xl font-bold text-foreground">
+                                    {patient.full_name || "Unnamed Patient"}
+                                </h1>
+                                <div className="flex items-center gap-3 mt-2">
+                                    <Badge
+                                        variant="secondary"
+                                        className="rounded-full"
+                                    >
+                                        <Stethoscope className="w-3 h-3 mr-1.5" />
+                                        Patient
+                                    </Badge>
+                                    {patient.status && (
+                                        <Badge
+                                            variant="outline"
+                                            className="rounded-full"
+                                        >
+                                            {patient.status}
+                                        </Badge>
+                                    )}
+                                    <span className="text-sm text-muted-foreground flex items-center gap-1">
+                                        <Clock className="w-3.5 h-3.5" />
+                                        ID: {patient.id.slice(0, 8)}
+                                    </span>
+                                </div>
                             </div>
                         </div>
-
-                        {/* Profile Info */}
-                        <div className="flex-1">
-                            <div className="flex items-start justify-between">
-                                <div>
-                                    <h1 className="text-2xl font-bold text-foreground">
-                                        {patient.full_name || "Unnamed Patient"}
-                                    </h1>
-                                    <div className="flex items-center gap-3 mt-2">
-                                        <Badge
-                                            variant="secondary"
-                                            className="rounded-lg px-3 py-1"
-                                        >
-                                            <Stethoscope className="h-3 w-3 mr-1.5" />
-                                            {patient.role || "Patient"}
-                                        </Badge>
-                                        <span className="text-sm text-muted-foreground flex items-center gap-1.5">
-                                            <Clock className="h-3.5 w-3.5" />
-                                            Member since{" "}
-                                            {new Date(
-                                                patient.created_at
-                                            ).toLocaleDateString()}
-                                        </span>
-                                    </div>
-                                </div>
-                                <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="rounded-xl"
-                                >
-                                    <MoreVertical className="h-5 w-5" />
-                                </Button>
-                            </div>
-
-                            {/* Contact Info */}
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-6">
-                                <ContactItem
-                                    icon={Mail}
-                                    label="Email"
-                                    value={patient.email}
-                                    copyable
-                                />
-                                <ContactItem
-                                    icon={Phone}
-                                    label="Phone"
-                                    value={
-                                        patient.phone_number || "Not provided"
-                                    }
-                                    copyable={!!patient.phone_number}
-                                />
-                                {patient.date_of_birth && (
-                                    <ContactItem
-                                        icon={CalendarDays}
-                                        label="Date of Birth"
-                                        value={patient.date_of_birth}
-                                    />
-                                )}
-                                {patient.gender && (
-                                    <ContactItem
-                                        icon={UserCheck}
-                                        label="Gender"
-                                        value={patient.gender}
-                                    />
-                                )}
-                            </div>
+                        <div className="flex items-center gap-2">
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                            >
+                                <MessageSquare className="w-4 h-4" />
+                                Message
+                            </Button>
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="gap-2"
+                            >
+                                <Bell className="w-4 h-4" />
+                                Notify
+                            </Button>
+                            <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="icon">
+                                        <MoreVertical className="w-4 h-4" />
+                                    </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                    <DropdownMenuItem className="gap-2">
+                                        <Edit className="w-4 h-4" />
+                                        Edit Profile
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="gap-2">
+                                        <Printer className="w-4 h-4" />
+                                        Print Summary
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="gap-2">
+                                        <Download className="w-4 h-4" />
+                                        Export Records
+                                    </DropdownMenuItem>
+                                    <DropdownMenuItem className="gap-2">
+                                        <Share2 className="w-4 h-4" />
+                                        Share Access
+                                    </DropdownMenuItem>
+                                </DropdownMenuContent>
+                            </DropdownMenu>
                         </div>
                     </div>
-                </Card>
+                </div>
             </div>
 
-            {/* Patient ID Card */}
-            <Card className="p-5 border-border/40 bg-linear-to-br from-card to-muted/20 rounded-2xl shadow-sm">
-                <div className="flex items-center gap-3 mb-4">
-                    <div className="p-2 bg-primary/10 rounded-lg">
-                        <Hash className="h-4 w-4 text-primary" />
-                    </div>
-                    <h3 className="font-semibold text-foreground">
-                        Patient ID
-                    </h3>
-                </div>
-                <CopyableId value={patient.id} />
-            </Card>
-
-            {/* Tabs Section */}
-            <Tabs
-                value={activeTab}
-                onValueChange={setActiveTab}
-                className="space-y-6"
-            >
-                <TabsList className="bg-muted/30 p-1 rounded-xl w-full md:w-auto">
-                    <TabsTrigger
-                        value="overview"
-                        className="rounded-lg data-[state=active]:bg-background"
-                    >
-                        <User className="h-4 w-4 mr-2" />
-                        Overview
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="medical"
-                        className="rounded-lg data-[state=active]:bg-background"
-                    >
-                        <Activity className="h-4 w-4 mr-2" />
-                        Medical History
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="medication"
-                        className="rounded-lg data-[state=active]:bg-background"
-                    >
-                        <Pill className="h-4 w-4 mr-2" />
-                        Medication
-                    </TabsTrigger>
-                    <TabsTrigger
-                        value="documents"
-                        className="rounded-lg data-[state=active]:bg-background"
-                    >
-                        <FileText className="h-4 w-4 mr-2" />
-                        Documents
-                    </TabsTrigger>
-                </TabsList>
-
-                <TabsContent value="overview" className="space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        {/* Personal Information Card */}
-                        <Card className="p-5 border-border/40 bg-linear-to-br from-card to-muted/20 rounded-2xl shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <UserCircle className="h-4 w-4 text-primary" />
-                                </div>
-                                <h3 className="font-semibold text-foreground">
-                                    Personal Information
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    {/* Left Column - Patient Info */}
+                    <div className="lg:col-span-1 space-y-6">
+                        {/* Quick Info Card */}
+                        <Card className="border-border/40">
+                            <CardContent className="p-6">
+                                <h3 className="font-semibold text-lg mb-4">
+                                    Quick Info
                                 </h3>
-                            </div>
-                            <div className="space-y-4">
-                                <InfoRow
-                                    label="Full Name"
-                                    value={patient.full_name}
-                                />
-                                <InfoRow label="Email" value={patient.email} />
-                                <InfoRow
-                                    label="Phone"
-                                    value={patient.phone_number}
-                                />
-                                <InfoRow
-                                    label="Date of Birth"
-                                    value={patient.date_of_birth}
-                                />
-                                <InfoRow
-                                    label="Gender"
-                                    value={patient.gender}
-                                />
-                                {patient.address && (
-                                    <div className="pt-2 border-t border-border/30">
-                                        <p className="text-sm text-muted-foreground mb-1">
-                                            Address
-                                        </p>
-                                        <p className="text-sm">
-                                            {patient.address}
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        </Card>
-
-                        {/* Account Information Card */}
-                        <Card className="p-5 border-border/40 bg-linear-to-br from-card to-muted/20 rounded-2xl shadow-sm">
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="p-2 bg-primary/10 rounded-lg">
-                                    <Shield className="h-4 w-4 text-primary" />
-                                </div>
-                                <h3 className="font-semibold text-foreground">
-                                    Account Information
-                                </h3>
-                            </div>
-                            <div className="space-y-4">
-                                <InfoRow
-                                    label="Status"
-                                    value={patient.status?.toUpperCase()}
-                                />
-                                <InfoRow label="Role" value={patient.role} />
-                                <InfoRow
-                                    label="Member Since"
-                                    value={new Date(
-                                        patient.created_at
-                                    ).toLocaleDateString()}
-                                />
-                                {patient.last_login && (
-                                    <InfoRow
-                                        label="Last Login"
+                                <div className="space-y-4">
+                                    <InfoItem
+                                        icon={Calendar}
+                                        label="Age"
+                                        value={age ? `${age} years` : "N/A"}
+                                    />
+                                    <InfoItem
+                                        icon={UserCheck}
+                                        label="Gender"
+                                        value={patient.gender || "N/A"}
+                                    />
+                                    {patient.date_of_birth && (
+                                        <InfoItem
+                                            icon={CalendarDays}
+                                            label="Date of Birth"
+                                            value={patient.date_of_birth}
+                                        />
+                                    )}
+                                    <InfoItem
+                                        icon={Clock}
+                                        label="Member Since"
                                         value={new Date(
-                                            patient.last_login
-                                        ).toLocaleString()}
+                                            patient.created_at
+                                        ).toLocaleDateString()}
                                     />
-                                )}
-                                <InfoRow
-                                    label="Patient ID"
-                                    value={patient.id.slice(0, 8) + "..."}
-                                />
-                            </div>
-                        </Card>
-                    </div>
-
-                    {/* Timeline Card */}
-                    <Card className="p-5 border-border/40 bg-linear-to-br from-card to-muted/20 rounded-2xl shadow-sm">
-                        <div className="flex items-center gap-3 mb-4">
-                            <div className="p-2 bg-primary/10 rounded-lg">
-                                <Calendar className="h-4 w-4 text-primary" />
-                            </div>
-                            <h3 className="font-semibold text-foreground">
-                                Timeline
-                            </h3>
-                        </div>
-                        <div className="space-y-4">
-                            <TimelineItem
-                                date={new Date(patient.created_at)}
-                                title="Account Created"
-                                description="Patient account was created in the system"
-                                icon={<User className="h-4 w-4" />}
-                            />
-                            {patient.last_login && (
-                                <TimelineItem
-                                    date={new Date(patient.last_login)}
-                                    title="Last Login"
-                                    description="Patient last accessed their account"
-                                    icon={<Activity className="h-4 w-4" />}
-                                />
-                            )}
-                        </div>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="medical">
-                    <Card className="p-5 border-border/40 bg-linear-to-br from-card to-muted/20 rounded-2xl shadow-sm">
-                        <div className="text-center py-12">
-                            <Activity className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                            <h3 className="text-lg font-medium text-foreground mb-2">
-                                Medical History
-                            </h3>
-                            <p className="text-muted-foreground max-w-md mx-auto">
-                                Medical records and history will be displayed
-                                here once available
-                            </p>
-                        </div>
-                    </Card>
-                </TabsContent>
-
-                <TabsContent value="medication" className="space-y-6">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h3 className="text-lg font-semibold text-foreground">
-                                Medications
-                            </h3>
-                            <p className="text-sm text-muted-foreground">
-                                Active and historical medications for this
-                                patient
-                            </p>
-                        </div>
-                        {staffId && (
-                            <AddMedicationSheet
-                                profileId={patient.id}
-                                doctorName={staffName}
-                                onSuccess={fetchMedications}
-                            >
-                                <Button className="rounded-xl gap-2">
-                                    <Pill className="h-4 w-4" />
-                                    Add Medication
-                                </Button>
-                            </AddMedicationSheet>
-                        )}
-                    </div>
-
-                    <ScrollArea className="max-h-[40vh]">
-                        {medLoading ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {[1, 2, 3, 4].map((i) => (
-                                    <Card key={i} className="p-5 rounded-2xl">
-                                        <Skeleton className="h-6 w-32 mb-4" />
-                                        <Skeleton className="h-4 w-full mb-2" />
-                                        <Skeleton className="h-4 w-3/4" />
-                                    </Card>
-                                ))}
-                            </div>
-                        ) : medications.length > 0 ? (
-                            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                                {medications.map((medication) => (
-                                    <MedicationCard
-                                        key={medication.id}
-                                        medication={medication}
-                                        onUpdate={fetchMedications}
-                                    />
-                                ))}
-                            </div>
-                        ) : (
-                            <Card className="p-8 border-border/40 bg-linear-to-br from-card to-muted/20 rounded-2xl shadow-sm">
-                                <div className="text-center py-6">
-                                    <Pill className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-                                    <h3 className="text-lg font-medium text-foreground mb-2">
-                                        No Medications Found
-                                    </h3>
-                                    <p className="text-muted-foreground mb-6 max-w-md mx-auto">
-                                        This patient doesn{"'"}t have any
-                                        medications recorded yet.
-                                    </p>
-                                    <AddMedicationSheet
-                                        profileId={patient.id}
-                                        doctorName={staffName}
-                                        onSuccess={fetchMedications}
-                                    >
-                                        <Button className="rounded-xl gap-2">
-                                            <Pill className="h-4 w-4" />
-                                            Add First Medication
-                                        </Button>
-                                    </AddMedicationSheet>
+                                    {patient.last_login && (
+                                        <InfoItem
+                                            icon={Activity}
+                                            label="Last Login"
+                                            value={new Date(
+                                                patient.last_login
+                                            ).toLocaleDateString()}
+                                        />
+                                    )}
                                 </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Contact Card */}
+                        <Card className="border-border/40">
+                            <CardContent className="p-6">
+                                <h3 className="font-semibold text-lg mb-4">
+                                    Contact Info
+                                </h3>
+                                <div className="space-y-4">
+                                    <ContactItem
+                                        icon={Mail}
+                                        label="Email"
+                                        value={patient.email}
+                                    />
+                                    <ContactItem
+                                        icon={Phone}
+                                        label="Phone"
+                                        value={
+                                            patient.phone_number ||
+                                            "Not provided"
+                                        }
+                                    />
+                                    {patient.address && (
+                                        <ContactItem
+                                            icon={MapPin}
+                                            label="Address"
+                                            value={patient.address}
+                                        />
+                                    )}
+                                </div>
+                            </CardContent>
+                        </Card>
+
+                        {/* Health Stats Card */}
+                        {(patient.blood_type ||
+                            patient.height_cm ||
+                            patient.weight_kg) && (
+                            <Card className="border-border/40">
+                                <CardContent className="p-6">
+                                    <h3 className="font-semibold text-lg mb-4">
+                                        Health Stats
+                                    </h3>
+                                    <div className="space-y-4">
+                                        {patient.blood_type && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-red-50 rounded-lg">
+                                                        <Heart className="w-4 h-4 text-red-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Blood Type
+                                                        </p>
+                                                        <p className="font-medium">
+                                                            {patient.blood_type}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {patient.height_cm && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-blue-50 rounded-lg">
+                                                        <User className="w-4 h-4 text-blue-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Height
+                                                        </p>
+                                                        <p className="font-medium">
+                                                            {patient.height_cm}{" "}
+                                                            cm
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {patient.weight_kg && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-green-50 rounded-lg">
+                                                        <Activity className="w-4 h-4 text-green-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            Weight
+                                                        </p>
+                                                        <p className="font-medium">
+                                                            {patient.weight_kg}{" "}
+                                                            kg
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                        {bmi && (
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="p-2 bg-amber-50 rounded-lg">
+                                                        <Clipboard className="w-4 h-4 text-amber-600" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm text-muted-foreground">
+                                                            BMI
+                                                        </p>
+                                                        <p className="font-medium">
+                                                            {bmi}
+                                                        </p>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )}
+                                    </div>
+                                </CardContent>
                             </Card>
                         )}
-                    </ScrollArea>
-                </TabsContent>
+                    </div>
 
-                <TabsContent value="documents">
-                    <Card className="p-5 border-border/40 bg-linear-to-br from-card to-muted/20 rounded-2xl shadow-sm">
-                        <div className="text-center py-12">
-                            <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-50" />
-                            <h3 className="text-lg font-medium text-foreground mb-2">
-                                Documents
-                            </h3>
-                            <p className="text-muted-foreground max-w-md mx-auto">
-                                Patient documents and files will appear here
-                                once uploaded
-                            </p>
+                    {/* Right Column - Main Content */}
+                    <div className="lg:col-span-2 space-y-6">
+                        {/* Tabs Section */}
+                        <div className="border-border/40 pt-0">
+                            <Tabs
+                                value={activeTab}
+                                onValueChange={setActiveTab}
+                                className="w-full"
+                            >
+                                <div className="border-b">
+                                    <TabsList className="w-full justify-start rounded-none border-0 bg-transparent p-0 h-14">
+                                        <TabsTrigger
+                                            value="overview"
+                                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-14 px-6"
+                                        >
+                                            <User className="w-4 h-4 mr-2" />
+                                            Overview
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="medical"
+                                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-14 px-6"
+                                        >
+                                            <History className="w-4 h-4 mr-2" />
+                                            Medical History
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="medication"
+                                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-14 px-6"
+                                        >
+                                            <Pill className="w-4 h-4 mr-2" />
+                                            Medication
+                                        </TabsTrigger>
+                                        <TabsTrigger
+                                            value="documents"
+                                            className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-14 px-6"
+                                        >
+                                            <FileText className="w-4 h-4 mr-2" />
+                                            Documents
+                                        </TabsTrigger>
+                                    </TabsList>
+                                </div>
+
+                                <div className="p-6">
+                                    <TabsContent
+                                        value="overview"
+                                        className="space-y-6"
+                                    >
+                                        {/* Personal Information */}
+                                        <div>
+                                            <h3 className="font-semibold text-lg mb-4">
+                                                Personal Information
+                                            </h3>
+
+                                            <h2 className="font-semibold text-md mb-4">
+                                                Patient ID
+                                            </h2>
+                                            <CopyableId value={patient.id} />
+                                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                                <InfoCard
+                                                    label="Full Name"
+                                                    value={patient.full_name}
+                                                />
+                                                <InfoCard
+                                                    label="Email"
+                                                    value={patient.email}
+                                                />
+                                                <InfoCard
+                                                    label="Phone"
+                                                    value={patient.phone_number}
+                                                />
+                                                <InfoCard
+                                                    label="Date of Birth"
+                                                    value={
+                                                        patient.date_of_birth
+                                                    }
+                                                />
+                                                <InfoCard
+                                                    label="Gender"
+                                                    value={patient.gender}
+                                                />
+                                                <InfoCard
+                                                    label="Status"
+                                                    value={patient.status?.toUpperCase()}
+                                                />
+                                            </div>
+                                        </div>
+
+                                        <Separator />
+
+                                        {/* Medical Conditions */}
+                                        {(patient.allergies ||
+                                            patient.chronic_conditions) && (
+                                            <div>
+                                                <h3 className="font-semibold text-lg mb-4">
+                                                    Medical Conditions
+                                                </h3>
+                                                <div className="space-y-4">
+                                                    {patient.allergies && (
+                                                        <AlertBox
+                                                            icon={AlertCircle}
+                                                            title="Allergies"
+                                                            content={
+                                                                patient.allergies
+                                                            }
+                                                            type="warning"
+                                                        />
+                                                    )}
+                                                    {patient.chronic_conditions && (
+                                                        <AlertBox
+                                                            icon={Activity}
+                                                            title="Chronic Conditions"
+                                                            content={
+                                                                patient.chronic_conditions
+                                                            }
+                                                            type="info"
+                                                        />
+                                                    )}
+                                                </div>
+                                            </div>
+                                        )}
+
+                                        <Separator />
+
+                                        {/* Recent Activity */}
+                                        <div>
+                                            <h3 className="font-semibold text-lg mb-4">
+                                                Recent Activity
+                                            </h3>
+                                            <div className="space-y-4">
+                                                <TimelineItem
+                                                    date={
+                                                        new Date(
+                                                            patient.created_at
+                                                        )
+                                                    }
+                                                    title="Account Created"
+                                                    description="Patient account was registered in the system"
+                                                    icon={
+                                                        <User className="w-4 h-4" />
+                                                    }
+                                                />
+                                                {patient.last_login && (
+                                                    <TimelineItem
+                                                        date={
+                                                            new Date(
+                                                                patient.last_login
+                                                            )
+                                                        }
+                                                        title="Last Login"
+                                                        description="Patient last accessed their account"
+                                                        icon={
+                                                            <Activity className="w-4 h-4" />
+                                                        }
+                                                    />
+                                                )}
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent value="medical">
+                                        <div className="space-y-6">
+                                            <h3 className="font-semibold text-lg">
+                                                Medical History
+                                            </h3>
+                                            <div className="text-center py-16">
+                                                <History className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-40" />
+                                                <h3 className="text-lg font-medium mb-2">
+                                                    No Medical History
+                                                </h3>
+                                                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                                                    Medical records and history
+                                                    will appear here once
+                                                    documented
+                                                </p>
+                                                <Button className="gap-2">
+                                                    <Clipboard className="h-4 w-4" />
+                                                    Add Medical Record
+                                                </Button>
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+
+                                    <TabsContent
+                                        value="medication"
+                                        className="space-y-6"
+                                    >
+                                        <div className="flex items-center justify-between">
+                                            <div>
+                                                <h3 className="font-semibold text-lg">
+                                                    Medications
+                                                </h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {medications.length}{" "}
+                                                    medications recorded
+                                                </p>
+                                            </div>
+                                            {staffId && (
+                                                <AddMedicationSheet
+                                                    profileId={patient.id}
+                                                    doctorName={staffName}
+                                                    onSuccess={fetchMedications}
+                                                >
+                                                    <Button className="gap-2">
+                                                        <Pill className="h-4 w-4" />
+                                                        Add Medication
+                                                    </Button>
+                                                </AddMedicationSheet>
+                                            )}
+                                        </div>
+
+                                        {medLoading ? (
+                                            <div className="space-y-4">
+                                                {[1, 2, 3].map((i) => (
+                                                    <Skeleton
+                                                        key={i}
+                                                        className="h-24 w-full rounded-lg"
+                                                    />
+                                                ))}
+                                            </div>
+                                        ) : medications.length > 0 ? (
+                                            <div className="space-y-4">
+                                                {medications.map(
+                                                    (medication) => (
+                                                        <MedicationCard
+                                                            key={medication.id}
+                                                            medication={
+                                                                medication
+                                                            }
+                                                            onUpdate={
+                                                                fetchMedications
+                                                            }
+                                                        />
+                                                    )
+                                                )}
+                                            </div>
+                                        ) : (
+                                            <div className="text-center py-12">
+                                                <Pill className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-40" />
+                                                <h3 className="text-lg font-medium mb-2">
+                                                    No Medications
+                                                </h3>
+                                                <p className="text-muted-foreground max-w-md mx-auto mb-6">
+                                                    No medications have been
+                                                    prescribed to this patient
+                                                    yet
+                                                </p>
+                                                {staffId && (
+                                                    <AddMedicationSheet
+                                                        profileId={patient.id}
+                                                        doctorName={staffName}
+                                                        onSuccess={
+                                                            fetchMedications
+                                                        }
+                                                    >
+                                                        <Button className="gap-2">
+                                                            <Pill className="h-4 w-4" />
+                                                            Add First Medication
+                                                        </Button>
+                                                    </AddMedicationSheet>
+                                                )}
+                                            </div>
+                                        )}
+                                    </TabsContent>
+
+                                    <TabsContent value="documents">
+                                        <div className="space-y-6">
+                                            <h3 className="font-semibold text-lg">
+                                                Documents
+                                            </h3>
+                                            <div className="text-center py-16">
+                                                <FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-40" />
+                                                <h3 className="text-lg font-medium mb-2">
+                                                    No Documents
+                                                </h3>
+                                                <p className="text-muted-foreground max-w-md mx-auto">
+                                                    Patient documents and files
+                                                    will appear here once
+                                                    uploaded
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </TabsContent>
+                                </div>
+                            </Tabs>
                         </div>
-                    </Card>
-                </TabsContent>
-            </Tabs>
+                    </div>
+                </div>
+            </div>
         </div>
     );
 }
@@ -498,38 +740,57 @@ export default function PatientDetailPage() {
 
 function PatientDetailSkeleton() {
     return (
-        <div className="max-w-7xl mx-auto space-y-6 p-6">
-            {/* Profile Skeleton */}
-            <Card className="p-6 rounded-2xl">
-                <div className="flex flex-col md:flex-row gap-6">
-                    <Skeleton className="w-32 h-32 rounded-xl" />
-                    <div className="flex-1 space-y-4">
-                        <Skeleton className="h-8 w-64" />
-                        <div className="flex gap-3">
-                            <Skeleton className="h-6 w-24" />
-                            <Skeleton className="h-6 w-36" />
-                        </div>
-                        <div className="grid grid-cols-2 gap-4 mt-4">
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
-                            <Skeleton className="h-12 w-full" />
+        <div className="min-h-screen p-0">
+            <div className="bg-linear-to-r from-primary/10 via-primary/5 to-transparent border-b py-8">
+                <div className="max-w-7xl mx-auto px-4 md:px-6">
+                    <div className="flex items-center gap-4">
+                        <Skeleton className="w-20 h-20 rounded-xl" />
+                        <div className="space-y-3">
+                            <Skeleton className="h-8 w-64" />
+                            <div className="flex gap-2">
+                                <Skeleton className="h-6 w-24 rounded-full" />
+                                <Skeleton className="h-6 w-20 rounded-full" />
+                            </div>
                         </div>
                     </div>
                 </div>
-            </Card>
+            </div>
 
-            {/* ID Card Skeleton */}
-            <Skeleton className="h-24 w-full rounded-2xl" />
-
-            {/* Tabs Skeleton */}
-            <div className="space-y-4">
-                <Skeleton className="h-10 w-full md:w-96 rounded-xl" />
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Skeleton className="h-64 rounded-2xl" />
-                    <Skeleton className="h-64 rounded-2xl" />
+            <div className="max-w-7xl mx-auto px-4 md:px-6 py-8">
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                    <div className="space-y-6">
+                        {[1, 2, 3].map((i) => (
+                            <Skeleton key={i} className="h-64 rounded-lg" />
+                        ))}
+                    </div>
+                    <div className="lg:col-span-2 space-y-6">
+                        <Skeleton className="h-12 w-full rounded-lg" />
+                        <Skeleton className="h-96 w-full rounded-lg" />
+                    </div>
                 </div>
             </div>
+        </div>
+    );
+}
+
+function InfoItem({
+    icon: Icon,
+    label,
+    value,
+}: {
+    icon: React.ElementType;
+    label: string;
+    value: string;
+}) {
+    return (
+        <div className="flex items-center justify-between py-2">
+            <div className="flex items-center gap-3">
+                <div className="p-2 bg-muted rounded-lg">
+                    <Icon className="w-4 h-4 text-muted-foreground" />
+                </div>
+                <span className="text-sm text-muted-foreground">{label}</span>
+            </div>
+            <span className="font-medium">{value}</span>
         </div>
     );
 }
@@ -538,46 +799,20 @@ function ContactItem({
     icon: Icon,
     label,
     value,
-    copyable = false,
 }: {
-    icon: LucideIcon;
+    icon: React.ElementType;
     label: string;
     value: string;
-    copyable?: boolean;
 }) {
-    const [copied, setCopied] = useState(false);
-
-    const handleCopy = () => {
-        if (copyable && value && value !== "Not provided") {
-            navigator.clipboard.writeText(value);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 2000);
-        }
-    };
-
     return (
-        <div className="flex items-start gap-3 p-3 bg-muted/20 rounded-xl">
-            <div className="p-2 bg-primary/10 rounded-lg">
-                <Icon className="h-4 w-4 text-primary" />
+        <div className="flex items-start gap-3">
+            <div className="p-2 bg-muted rounded-lg">
+                <Icon className="w-4 h-4 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
-                <p className="text-xs text-muted-foreground mb-1">{label}</p>
-                <p className="text-sm font-medium truncate">{value}</p>
+                <p className="text-sm text-muted-foreground mb-1">{label}</p>
+                <p className="font-medium truncate">{value}</p>
             </div>
-            {copyable && value !== "Not provided" && (
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={handleCopy}
-                    className="h-8 w-8 rounded-lg hover:bg-primary/5"
-                >
-                    {copied ? (
-                        <Check className="h-3.5 w-3.5 text-green-600" />
-                    ) : (
-                        <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                    )}
-                </Button>
-            )}
         </div>
     );
 }
@@ -586,16 +821,16 @@ function CopyableId({ value }: { value: string }) {
     const [copied, setCopied] = useState(false);
 
     return (
-        <div className="flex items-center justify-between bg-muted/30 p-4 rounded-xl border border-border/40">
+        <div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border">
             <div className="flex items-center gap-3">
                 <div className="p-2 bg-primary/10 rounded-lg">
-                    <Hash className="h-4 w-4 text-primary" />
+                    <Hash className="w-4 h-4 text-primary" />
                 </div>
-                <div>
-                    <p className="text-sm text-muted-foreground mb-1">
-                        Unique Identifier
+                <div className="min-w-0">
+                    <p className="text-sm text-muted-foreground mb-1 truncate">
+                        Patient ID
                     </p>
-                    <code className="text-sm font-mono font-medium">
+                    <code className="text-sm font-mono truncate block">
                         {value}
                     </code>
                 </div>
@@ -608,17 +843,17 @@ function CopyableId({ value }: { value: string }) {
                     setCopied(true);
                     setTimeout(() => setCopied(false), 2000);
                 }}
-                className="rounded-lg gap-2 hover:bg-primary/5"
+                className="gap-2"
             >
                 {copied ? (
                     <>
-                        <Check className="h-3.5 w-3.5" />
+                        <Check className="w-3.5 h-3.5" />
                         Copied
                     </>
                 ) : (
                     <>
-                        <Copy className="h-3.5 w-3.5" />
-                        Copy ID
+                        <Copy className="w-3.5 h-3.5" />
+                        Copy
                     </>
                 )}
             </Button>
@@ -626,13 +861,43 @@ function CopyableId({ value }: { value: string }) {
     );
 }
 
-function InfoRow({ label, value }: { label: string; value?: string | null }) {
+function InfoCard({ label, value }: { label: string; value?: string | null }) {
     if (!value) return null;
 
     return (
-        <div className="flex justify-between items-center py-3 border-b border-border/30 last:border-0">
-            <span className="text-sm text-muted-foreground">{label}</span>
-            <span className="text-sm font-medium">{value}</span>
+        <div className="p-4 bg-muted/20 rounded-lg">
+            <p className="text-sm text-muted-foreground mb-1">{label}</p>
+            <p className="font-medium">{value}</p>
+        </div>
+    );
+}
+
+function AlertBox({
+    icon: Icon,
+    title,
+    content,
+    type = "info",
+}: {
+    icon: React.ElementType;
+    title: string;
+    content: string;
+    type?: "info" | "warning" | "danger";
+}) {
+    const colors = {
+        info: "bg-blue-50 text-blue-700 border-blue-200",
+        warning: "bg-amber-50 text-amber-700 border-amber-200",
+        danger: "bg-red-50 text-red-700 border-red-200",
+    };
+
+    return (
+        <div className={`p-4 rounded-lg border ${colors[type]}`}>
+            <div className="flex items-start gap-3">
+                <Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
+                <div>
+                    <h4 className="font-medium mb-1">{title}</h4>
+                    <p className="text-sm opacity-90">{content}</p>
+                </div>
+            </div>
         </div>
     );
 }
@@ -649,16 +914,13 @@ function TimelineItem({
     icon: React.ReactNode;
 }) {
     return (
-        <div className="flex gap-4">
-            <div className="flex flex-col items-center">
-                <div className="p-2 bg-primary/10 rounded-lg">
-                    <div className="text-primary">{icon}</div>
-                </div>
-                <div className="flex-1 w-px bg-border my-2"></div>
+        <div className="flex items-start gap-4">
+            <div className="p-2 bg-primary/10 rounded-lg">
+                <div className="text-primary">{icon}</div>
             </div>
-            <div className="flex-1 pb-4">
+            <div className="flex-1">
                 <div className="flex items-center justify-between mb-1">
-                    <h4 className="font-medium text-foreground">{title}</h4>
+                    <h4 className="font-medium">{title}</h4>
                     <span className="text-xs text-muted-foreground">
                         {date.toLocaleDateString()} at{" "}
                         {date.toLocaleTimeString([], {
