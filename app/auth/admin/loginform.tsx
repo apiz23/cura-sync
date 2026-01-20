@@ -113,7 +113,7 @@ export function AdminLoginForm({
                                     Email Address
                                 </FieldLabel>
                                 <div className="relative group">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 overflow-hidden" />
+                                    <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 overflow-hidden" />
                                     <div className="relative">
                                         <Input
                                             id="email"
@@ -155,7 +155,7 @@ export function AdminLoginForm({
                                     Password
                                 </FieldLabel>
                                 <div className="relative group">
-                                    <div className="absolute inset-0 bg-gradient-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 overflow-hidden" />
+                                    <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 overflow-hidden" />
                                     <div className="relative">
                                         <Input
                                             id="password"
@@ -200,7 +200,7 @@ export function AdminLoginForm({
                             <Button
                                 type="submit"
                                 disabled={loading}
-                                className="w-full h-12 rounded-xl bg-gradient-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
+                                className="w-full h-12 rounded-xl bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
                                 size="lg"
                             >
                                 {loading ? (
@@ -221,7 +221,7 @@ export function AdminLoginForm({
                     {/* Security Note */}
                     <div className="p-5 rounded-xl bg-accent/50 border border-border">
                         <div className="flex items-start gap-4">
-                            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center flex-shrink-0">
+                            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
                                 <Shield className="w-5 h-5 text-primary" />
                             </div>
                             <div className="space-y-1.5">

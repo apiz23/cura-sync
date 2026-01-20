@@ -15,6 +15,7 @@ import {
     Navigation,
     Phone,
     MoreHorizontal,
+    ChevronRightIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -23,14 +24,18 @@ import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { ColumnDef } from "@/components/kibo-ui/table";
 import {
-    Table,
     TableBody,
     TableCell,
+    TableColumnHeader,
     TableHead,
     TableHeader,
+    TableHeaderGroup,
+    TableProvider,
     TableRow,
-} from "@/components/ui/table";
+} from "@/components/kibo-ui/table";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -153,6 +158,210 @@ export default function AppointmentPage() {
             window.open(`tel:${phone}`);
         }
     };
+
+    // Define columns for the table
+    const columns: ColumnDef<Facility>[] = [
+        {
+            accessorKey: "name",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Facility" />
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center gap-3">
+                    <div className="relative">
+                        <Avatar className="size-8">
+                            <AvatarFallback className="bg-primary/10 text-primary">
+                                <Building className="h-4 w-4" />
+                            </AvatarFallback>
+                        </Avatar>
+                        <div
+                            className="absolute right-0 bottom-0 h-2 w-2 rounded-full ring-2 ring-background"
+                            style={{
+                                backgroundColor: row.original.is_active
+                                    ? "#10B981"
+                                    : "#6B7280",
+                            }}
+                        />
+                    </div>
+                    <div>
+                        <div className="font-semibold text-sm">
+                            {row.original.name}
+                        </div>
+                        <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                            <Badge
+                                variant="outline"
+                                className="text-xs px-1.5 py-0"
+                            >
+                                {row.original.type}
+                            </Badge>
+                            <ChevronRightIcon size={12} />
+                            <span>{row.original.specialty}</span>
+                        </div>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "address",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Location" />
+            ),
+            cell: ({ row }) => (
+                <div className="space-y-1">
+                    <div className="flex items-start gap-2">
+                        <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5 flex-shrink-0" />
+                        <div>
+                            <p className="text-sm line-clamp-2">
+                                {row.original.address}
+                            </p>
+                            <p className="text-xs text-muted-foreground">
+                                {row.original.distance} km away
+                            </p>
+                        </div>
+                    </div>
+                    {row.original.phone && (
+                        <div className="flex items-center gap-2 text-sm">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="truncate">
+                                {row.original.phone}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            accessorKey: "services",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Services" />
+            ),
+            cell: ({ row }) => (
+                <div className="space-y-2">
+                    <div className="flex flex-wrap gap-1">
+                        {row.original.services
+                            ?.slice(0, 2)
+                            .map((service, i) => (
+                                <Badge
+                                    key={i}
+                                    variant="outline"
+                                    className="text-xs px-1.5 py-0.5"
+                                >
+                                    {service}
+                                </Badge>
+                            ))}
+                        {row.original.services &&
+                            row.original.services.length > 2 && (
+                                <Badge
+                                    variant="outline"
+                                    className="text-xs px-1.5 py-0.5"
+                                >
+                                    +{row.original.services.length - 2} more
+                                </Badge>
+                            )}
+                    </div>
+                    <div className="flex items-center gap-2 text-sm">
+                        <Clock className="h-3.5 w-3.5 text-amber-500" />
+                        <span className="text-amber-600 font-medium">
+                            {row.original.wait_time} min wait
+                        </span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "rating",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Metrics" />
+            ),
+            cell: ({ row }) => (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-1">
+                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
+                            <span className="text-sm font-medium">
+                                {row.original.rating?.toFixed(1)}
+                            </span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                            <Users className="h-3.5 w-3.5 text-blue-500" />
+                            <span className="text-sm font-medium text-blue-600">
+                                {row.original.doctors_count}
+                            </span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 text-xs">
+                        <div
+                            className={`h-2 w-2 rounded-full ${
+                                row.original.is_active
+                                    ? "bg-green-500"
+                                    : "bg-gray-300"
+                            }`}
+                        />
+                        <span className="text-muted-foreground">
+                            {row.original.is_active ? "Active" : "Inactive"}
+                        </span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            id: "actions",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Actions" />
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center justify-end gap-2">
+                    <Link
+                        href={`/user/appointments/${row.original.id}`}
+                        className="flex-1 max-w-[140px]"
+                    >
+                        <Button className="w-full gap-2" size="sm">
+                            <Calendar className="h-4 w-4" />
+                            Book Now
+                        </Button>
+                    </Link>
+
+                    <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                className="h-8 w-8"
+                            >
+                                <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem
+                                className="gap-2 cursor-pointer"
+                                onClick={() =>
+                                    openMaps(
+                                        row.original.address,
+                                        row.original.latitude,
+                                        row.original.longitude
+                                    )
+                                }
+                            >
+                                <Navigation className="h-4 w-4" />
+                                Get Directions
+                            </DropdownMenuItem>
+                            {row.original.phone && (
+                                <DropdownMenuItem
+                                    className="gap-2 cursor-pointer"
+                                    onClick={() =>
+                                        openPhone(row.original.phone)
+                                    }
+                                >
+                                    <Phone className="h-4 w-4" />
+                                    Call Facility
+                                </DropdownMenuItem>
+                            )}
+                        </DropdownMenuContent>
+                    </DropdownMenu>
+                </div>
+            ),
+        },
+    ];
 
     if (!user) {
         return (
@@ -388,242 +597,38 @@ export default function AppointmentPage() {
                         </Card>
                     ) : (
                         <div className="rounded-xl border border-border overflow-hidden bg-card">
-                            <Table>
-                                <TableHeader className="bg-muted/50">
-                                    <TableRow>
-                                        <TableHead className="font-semibold w-[300px]">
-                                            Facility
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Contact & Location
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Services & Availability
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Metrics
-                                        </TableHead>
-                                        <TableHead className="font-semibold text-right">
-                                            Actions
-                                        </TableHead>
-                                    </TableRow>
+                            <TableProvider
+                                columns={columns}
+                                data={filteredFacilities}
+                            >
+                                <TableHeader>
+                                    {({ headerGroup }) => (
+                                        <TableHeaderGroup
+                                            headerGroup={headerGroup}
+                                            key={headerGroup.id}
+                                        >
+                                            {({ header }) => (
+                                                <TableHead
+                                                    header={header}
+                                                    key={header.id}
+                                                />
+                                            )}
+                                        </TableHeaderGroup>
+                                    )}
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredFacilities.map((facility) => (
-                                        <TableRow
-                                            key={facility.id}
-                                            className="hover:bg-muted/30"
-                                        >
-                                            {/* Facility Column */}
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="p-2 rounded-lg bg-primary/10">
-                                                        <Building className="h-5 w-5 text-primary" />
-                                                    </div>
-                                                    <div className="space-y-1">
-                                                        <h3 className="font-semibold text-sm">
-                                                            {facility.name}
-                                                        </h3>
-                                                        <div className="flex items-center gap-2">
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="text-xs"
-                                                            >
-                                                                {facility.type}
-                                                            </Badge>
-                                                            <span className="text-xs text-muted-foreground">
-                                                                {
-                                                                    facility.specialty
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Contact & Location Column */}
-                                            <TableCell>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-start gap-2">
-                                                        <MapPin className="h-3.5 w-3.5 text-muted-foreground mt-0.5" />
-                                                        <div>
-                                                            <p className="text-sm">
-                                                                {
-                                                                    facility.address
-                                                                }
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {
-                                                                    facility.distance
-                                                                }{" "}
-                                                                km away
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                    {facility.phone && (
-                                                        <div className="flex items-center gap-2 text-sm">
-                                                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                                                            <span>
-                                                                {facility.phone}
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Services & Availability Column */}
-                                            <TableCell>
-                                                <div className="space-y-2">
-                                                    <div className="flex flex-wrap gap-1">
-                                                        {facility.services
-                                                            ?.slice(0, 2)
-                                                            .map(
-                                                                (
-                                                                    service,
-                                                                    i
-                                                                ) => (
-                                                                    <Badge
-                                                                        key={i}
-                                                                        variant="outline"
-                                                                        className="text-xs px-1.5 py-0.5"
-                                                                    >
-                                                                        {
-                                                                            service
-                                                                        }
-                                                                    </Badge>
-                                                                )
-                                                            )}
-                                                        {facility.services &&
-                                                            facility.services
-                                                                .length > 2 && (
-                                                                <Badge
-                                                                    variant="outline"
-                                                                    className="text-xs px-1.5 py-0.5"
-                                                                >
-                                                                    +
-                                                                    {facility
-                                                                        .services
-                                                                        .length -
-                                                                        2}{" "}
-                                                                    more
-                                                                </Badge>
-                                                            )}
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-sm">
-                                                        <Clock className="h-3.5 w-3.5 text-amber-500" />
-                                                        <span className="text-amber-600 font-medium">
-                                                            {facility.wait_time}{" "}
-                                                            min wait
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Metrics Column */}
-                                            <TableCell>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-3">
-                                                        <div className="flex items-center gap-1">
-                                                            <Star className="h-3.5 w-3.5 fill-yellow-400 text-yellow-400" />
-                                                            <span className="text-sm font-medium">
-                                                                {facility.rating?.toFixed(
-                                                                    1
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-1">
-                                                            <Users className="h-3.5 w-3.5 text-blue-500" />
-                                                            <span className="text-sm font-medium text-blue-600">
-                                                                {
-                                                                    facility.doctors_count
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                    <div className="flex items-center gap-2 text-xs">
-                                                        <div
-                                                            className={`h-2 w-2 rounded-full ${
-                                                                facility.is_active
-                                                                    ? "bg-green-500"
-                                                                    : "bg-gray-300"
-                                                            }`}
-                                                        />
-                                                        <span className="text-muted-foreground">
-                                                            {facility.is_active
-                                                                ? "Active"
-                                                                : "Inactive"}
-                                                        </span>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Actions Column */}
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Link
-                                                        href={`/user/appointments/${facility.id}`}
-                                                        className="flex-1 max-w-[140px]"
-                                                    >
-                                                        <Button
-                                                            className="w-full gap-2"
-                                                            size="sm"
-                                                        >
-                                                            <Calendar className="h-4 w-4" />
-                                                            Book Now
-                                                        </Button>
-                                                    </Link>
-
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8"
-                                                            >
-                                                                <MoreHorizontal className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent
-                                                            align="end"
-                                                            className="w-48"
-                                                        >
-                                                            <DropdownMenuItem
-                                                                className="gap-2 cursor-pointer"
-                                                                onClick={() =>
-                                                                    openMaps(
-                                                                        facility.address,
-                                                                        facility.latitude,
-                                                                        facility.longitude
-                                                                    )
-                                                                }
-                                                            >
-                                                                <Navigation className="h-4 w-4" />
-                                                                Get Directions
-                                                            </DropdownMenuItem>
-                                                            {facility.phone && (
-                                                                <DropdownMenuItem
-                                                                    className="gap-2 cursor-pointer"
-                                                                    onClick={() =>
-                                                                        openPhone(
-                                                                            facility.phone
-                                                                        )
-                                                                    }
-                                                                >
-                                                                    <Phone className="h-4 w-4" />
-                                                                    Call
-                                                                    Facility
-                                                                </DropdownMenuItem>
-                                                            )}
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
-                                            </TableCell>
+                                    {({ row }) => (
+                                        <TableRow key={row.id} row={row}>
+                                            {({ cell }) => (
+                                                <TableCell
+                                                    cell={cell}
+                                                    key={cell.id}
+                                                />
+                                            )}
                                         </TableRow>
-                                    ))}
+                                    )}
                                 </TableBody>
-                            </Table>
+                            </TableProvider>
                         </div>
                     )}
                 </div>

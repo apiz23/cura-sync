@@ -6,6 +6,7 @@ import Navbar from "@/components/navbar";
 import { ThemeProvider } from "@/components/theme-provider";
 import ChatbotLauncher from "@/components/chatbot-launcher";
 import { ClerkProvider } from "@clerk/nextjs";
+import IntroGate from "./intro-gate";
 
 const dmSans = DM_Sans({
     subsets: ["latin"],
@@ -26,9 +27,9 @@ export const metadata: Metadata = {
 
 export default function RootLayout({
     children,
-}: Readonly<{
+}: {
     children: React.ReactNode;
-}>) {
+}) {
     return (
         <ClerkProvider>
             <html lang="en" suppressHydrationWarning>
@@ -45,6 +46,9 @@ export default function RootLayout({
                         <ChatbotLauncher />
                         {children}
                         <Toaster richColors />
+
+                        {/* Intro overlay */}
+                        <IntroGate />
                     </ThemeProvider>
                 </body>
             </html>
