@@ -13,6 +13,7 @@ import {
     Edit,
     MoreHorizontal,
     CheckCircle,
+    ChevronRightIcon,
 } from "lucide-react";
 import { Medication } from "@/app/types";
 import AddMedicationDialog from "./add-medication-sheet";
@@ -20,14 +21,18 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@clerk/nextjs";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { ColumnDef } from "@/components/kibo-ui/table";
 import {
-    Table,
     TableBody,
     TableCell,
+    TableColumnHeader,
     TableHead,
     TableHeader,
+    TableHeaderGroup,
+    TableProvider,
     TableRow,
-} from "@/components/ui/table";
+} from "@/components/kibo-ui/table";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -186,6 +191,197 @@ export default function MedicationPage() {
             console.error("Failed to mark as stopped:", error);
         }
     }
+
+    // Define columns for the table
+    const columns: ColumnDef<Medication>[] = [
+        {
+            accessorKey: "name",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Medication" />
+            ),
+            cell: ({ row }) => {
+                const statusConfig = getStatusConfig(row.original.status);
+                return (
+                    <div className="flex items-center gap-3">
+                        <div className="relative">
+                            <Avatar className="size-8">
+                                <AvatarFallback className={statusConfig.color}>
+                                    <Pill className="h-4 w-4" />
+                                </AvatarFallback>
+                            </Avatar>
+                            <div
+                                className="absolute right-0 bottom-0 h-2 w-2 rounded-full ring-2 ring-background"
+                                style={{
+                                    backgroundColor: statusConfig.dotColor,
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <div className="font-semibold text-sm">
+                                {row.original.name}
+                            </div>
+                            <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                                <span>{row.original.dosage}</span>
+                                <ChevronRightIcon size={12} />
+                                <span>{row.original.frequency}</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "schedule",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Schedule" />
+            ),
+            cell: ({ row }) => (
+                <div className="space-y-1">
+                    <div className="font-medium text-sm">
+                        {row.original.frequency}
+                    </div>
+                    {row.original.schedule && (
+                        <div className="text-xs text-muted-foreground">
+                            {row.original.schedule}
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            id: "dates",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Dates" />
+            ),
+            cell: ({ row }) => {
+                const isExpired = row.original.end_date
+                    ? new Date(row.original.end_date) < new Date()
+                    : false;
+
+                return (
+                    <div className="space-y-1">
+                        <div className="text-sm">
+                            <span className="text-muted-foreground">
+                                Start:{" "}
+                            </span>
+                            {formatShortDate(row.original.start_date)}
+                        </div>
+                        {row.original.end_date && (
+                            <div
+                                className={`text-xs ${
+                                    isExpired
+                                        ? "text-amber-600 font-medium"
+                                        : "text-muted-foreground"
+                                }`}
+                            >
+                                <span className="text-muted-foreground">
+                                    End:{" "}
+                                </span>
+                                {formatShortDate(row.original.end_date)}
+                                {isExpired && " (Expired)"}
+                            </div>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            accessorKey: "status",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Status" />
+            ),
+            cell: ({ row }) => {
+                const statusConfig = getStatusConfig(row.original.status);
+                const isActive = row.original.status === "ACTIVE";
+
+                return (
+                    <div className="flex items-center gap-2">
+                        <Badge
+                            className={`flex items-center gap-1.5 px-2.5 py-1 border ${statusConfig.color} text-xs font-normal`}
+                            variant="outline"
+                        >
+                            <div
+                                className={`h-2 w-2 rounded-full ${statusConfig.dotColor}`}
+                            />
+                            {statusConfig.label}
+                        </Badge>
+                        {isActive && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                className="h-8 px-3 gap-1.5 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200"
+                                onClick={() => markAsTaken(row.original.id)}
+                            >
+                                <CheckCircle className="h-3.5 w-3.5" />
+                                <span className="text-xs">Take</span>
+                            </Button>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            id: "actions",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Actions" />
+            ),
+            cell: ({ row }) => {
+                const isActive = row.original.status === "ACTIVE";
+
+                return (
+                    <div className="flex items-center justify-end gap-2">
+                        <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                                <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
+                                >
+                                    <MoreHorizontal className="h-4 w-4" />
+                                </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-48">
+                                <DropdownMenuItem
+                                    className="gap-2 cursor-pointer"
+                                    onClick={() => {
+                                        setSelectedMedication(row.original);
+                                        setDetailsOpen(true);
+                                    }}
+                                >
+                                    <Eye className="h-4 w-4" />
+                                    View Details
+                                </DropdownMenuItem>
+                                <DropdownMenuItem
+                                    className="gap-2 cursor-pointer"
+                                    onClick={() => {
+                                        setSelectedMedication(row.original);
+                                        setEditOpen(true);
+                                    }}
+                                >
+                                    <Edit className="h-4 w-4" />
+                                    Edit Medication
+                                </DropdownMenuItem>
+                                {isActive && (
+                                    <>
+                                        <DropdownMenuSeparator />
+                                        <DropdownMenuItem
+                                            className="gap-2 cursor-pointer text-amber-700"
+                                            onClick={() =>
+                                                markAsStopped(row.original.id)
+                                            }
+                                        >
+                                            <AlertCircle className="h-4 w-4" />
+                                            Stop Medication
+                                        </DropdownMenuItem>
+                                    </>
+                                )}
+                            </DropdownMenuContent>
+                        </DropdownMenu>
+                    </div>
+                );
+            },
+        },
+    ];
 
     if (loading) {
         return (
@@ -421,204 +617,38 @@ export default function MedicationPage() {
                         </Card>
                     ) : (
                         <div className="rounded-xl border border-border overflow-hidden">
-                            <Table>
-                                <TableHeader className="bg-muted/50">
-                                    <TableRow>
-                                        <TableHead className="font-semibold">
-                                            Medication
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Frequency & Schedule
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Dates
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Status
-                                        </TableHead>
-                                        <TableHead className="font-semibold text-right">
-                                            Actions
-                                        </TableHead>
-                                    </TableRow>
+                            <TableProvider
+                                columns={columns}
+                                data={filteredMeds}
+                            >
+                                <TableHeader>
+                                    {({ headerGroup }) => (
+                                        <TableHeaderGroup
+                                            headerGroup={headerGroup}
+                                            key={headerGroup.id}
+                                        >
+                                            {({ header }) => (
+                                                <TableHead
+                                                    header={header}
+                                                    key={header.id}
+                                                />
+                                            )}
+                                        </TableHeaderGroup>
+                                    )}
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredMeds.map((med) => {
-                                        const statusConfig = getStatusConfig(
-                                            med.status
-                                        );
-                                        const isActive =
-                                            med.status === "ACTIVE";
-                                        const isExpired = med.end_date
-                                            ? new Date(med.end_date) <
-                                              new Date()
-                                            : false;
-
-                                        return (
-                                            <TableRow
-                                                key={med.id}
-                                                className="hover:bg-muted/30"
-                                            >
-                                                <TableCell>
-                                                    <div className="flex items-center gap-3">
-                                                        <div
-                                                            className={`p-2 rounded-lg ${statusConfig.color} border`}
-                                                        >
-                                                            <Pill className="h-4 w-4" />
-                                                        </div>
-                                                        <div className="space-y-1">
-                                                            <h3 className="font-semibold text-sm">
-                                                                {med.name}
-                                                            </h3>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {med.dosage}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="space-y-1">
-                                                        <p className="font-medium text-sm">
-                                                            {med.frequency}
-                                                        </p>
-                                                        {med.schedule && (
-                                                            <p className="text-xs text-muted-foreground">
-                                                                {med.schedule}
-                                                            </p>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <div className="space-y-1">
-                                                        <div className="text-sm">
-                                                            <span className="text-muted-foreground">
-                                                                Start:{" "}
-                                                            </span>
-                                                            {formatShortDate(
-                                                                med.start_date
-                                                            )}
-                                                        </div>
-                                                        {med.end_date && (
-                                                            <div
-                                                                className={`text-xs ${
-                                                                    isExpired
-                                                                        ? "text-amber-600 font-medium"
-                                                                        : "text-muted-foreground"
-                                                                }`}
-                                                            >
-                                                                <span className="text-muted-foreground">
-                                                                    End:{" "}
-                                                                </span>
-                                                                {formatShortDate(
-                                                                    med.end_date
-                                                                )}
-                                                                {isExpired &&
-                                                                    " (Expired)"}
-                                                            </div>
-                                                        )}
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell>
-                                                    <Badge
-                                                        className={`flex items-center gap-1.5 px-2.5 py-1 border ${statusConfig.color} text-xs font-normal`}
-                                                        variant="outline"
-                                                    >
-                                                        <div
-                                                            className={`h-2 w-2 rounded-full ${statusConfig.dotColor}`}
-                                                        />
-                                                        {statusConfig.label}
-                                                    </Badge>
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        {isActive && (
-                                                            <Button
-                                                                variant="outline"
-                                                                size="sm"
-                                                                className="h-8 px-3 gap-1.5 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200"
-                                                                onClick={() =>
-                                                                    markAsTaken(
-                                                                        med.id
-                                                                    )
-                                                                }
-                                                            >
-                                                                <CheckCircle className="h-3.5 w-3.5" />
-                                                                <span className="text-xs">
-                                                                    Take
-                                                                </span>
-                                                            </Button>
-                                                        )}
-
-                                                        <DropdownMenu>
-                                                            <DropdownMenuTrigger
-                                                                asChild
-                                                            >
-                                                                <Button
-                                                                    variant="ghost"
-                                                                    size="icon"
-                                                                    className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted"
-                                                                >
-                                                                    <MoreHorizontal className="h-4 w-4" />
-                                                                </Button>
-                                                            </DropdownMenuTrigger>
-                                                            <DropdownMenuContent
-                                                                align="end"
-                                                                className="w-48"
-                                                            >
-                                                                <DropdownMenuItem
-                                                                    className="gap-2 cursor-pointer"
-                                                                    onClick={() => {
-                                                                        setSelectedMedication(
-                                                                            med
-                                                                        );
-                                                                        setDetailsOpen(
-                                                                            true
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    <Eye className="h-4 w-4" />
-                                                                    View Details
-                                                                </DropdownMenuItem>
-                                                                <DropdownMenuItem
-                                                                    className="gap-2 cursor-pointer"
-                                                                    onClick={() => {
-                                                                        setSelectedMedication(
-                                                                            med
-                                                                        );
-                                                                        setEditOpen(
-                                                                            true
-                                                                        );
-                                                                    }}
-                                                                >
-                                                                    <Edit className="h-4 w-4" />
-                                                                    Edit
-                                                                    Medication
-                                                                </DropdownMenuItem>
-                                                                {isActive && (
-                                                                    <>
-                                                                        <DropdownMenuSeparator />
-                                                                        <DropdownMenuItem
-                                                                            className="gap-2 cursor-pointer text-amber-700"
-                                                                            onClick={() =>
-                                                                                markAsStopped(
-                                                                                    med.id
-                                                                                )
-                                                                            }
-                                                                        >
-                                                                            <AlertCircle className="h-4 w-4" />
-                                                                            Stop
-                                                                            Medication
-                                                                        </DropdownMenuItem>
-                                                                    </>
-                                                                )}
-                                                            </DropdownMenuContent>
-                                                        </DropdownMenu>
-                                                    </div>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })}
+                                    {({ row }) => (
+                                        <TableRow key={row.id} row={row}>
+                                            {({ cell }) => (
+                                                <TableCell
+                                                    cell={cell}
+                                                    key={cell.id}
+                                                />
+                                            )}
+                                        </TableRow>
+                                    )}
                                 </TableBody>
-                            </Table>
+                            </TableProvider>
                         </div>
                     )}
                 </div>

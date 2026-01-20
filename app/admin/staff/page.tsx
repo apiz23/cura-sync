@@ -11,14 +11,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Users,
@@ -31,20 +23,25 @@ import {
     UserCog,
     Mail,
     Calendar,
-    MoreVertical,
-    Eye,
+    ChevronRightIcon,
 } from "lucide-react";
 import AddStaffSheet from "./add-staff-sheet";
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import ViewStaffSheet from "./view-staff-sheet";
 import { Staff, StaffRole } from "@/app/types";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { ColumnDef } from "@/components/kibo-ui/table";
+import {
+    TableBody,
+    TableCell,
+    TableColumnHeader,
+    TableHead,
+    TableHeader,
+    TableHeaderGroup,
+    TableProvider,
+    TableRow,
+} from "@/components/kibo-ui/table";
 
 export default function StaffPage() {
     const [staff, setStaff] = useState<Staff[]>([]);
@@ -131,13 +128,29 @@ export default function StaffPage() {
     const getRoleColor = (role: StaffRole | null) => {
         switch (role) {
             case "doctor":
-                return "bg-blue-100 text-blue-800 hover:bg-blue-100 dark:bg-blue-900 dark:text-blue-200";
+                return {
+                    bg: "bg-blue-100 dark:bg-blue-900",
+                    text: "text-blue-800 dark:text-blue-200",
+                    dot: "bg-blue-500",
+                };
             case "staff":
-                return "bg-emerald-100 text-emerald-800 hover:bg-emerald-100 dark:bg-emerald-900 dark:text-emerald-200";
+                return {
+                    bg: "bg-emerald-100 dark:bg-emerald-900",
+                    text: "text-emerald-800 dark:text-emerald-200",
+                    dot: "bg-emerald-500",
+                };
             case "admin":
-                return "bg-purple-100 text-purple-800 hover:bg-purple-100 dark:bg-purple-900 dark:text-purple-200";
+                return {
+                    bg: "bg-purple-100 dark:bg-purple-900",
+                    text: "text-purple-800 dark:text-purple-200",
+                    dot: "bg-purple-500",
+                };
             default:
-                return "bg-gray-100 text-gray-700 dark:bg-gray-800 dark:text-gray-300";
+                return {
+                    bg: "bg-gray-100 dark:bg-gray-800",
+                    text: "text-gray-700 dark:text-gray-300",
+                    dot: "bg-gray-500",
+                };
         }
     };
 
@@ -153,6 +166,118 @@ export default function StaffPage() {
         setViewStaff(staff);
         setViewOpen(true);
     };
+
+    // Define columns for the table
+    const columns: ColumnDef<Staff>[] = [
+        {
+            id: "index",
+            header: ({ column }) => (
+                <TableColumnHeader
+                    column={column}
+                    title="No"
+                    className="text-center"
+                />
+            ),
+            cell: ({ row }) => (
+                <div className="text-center font-medium">{row.index + 1}</div>
+            ),
+        },
+        {
+            accessorKey: "full_name",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Staff Member" />
+            ),
+            cell: ({ row }) => {
+                const roleColor = getRoleColor(row.original.role);
+
+                return (
+                    <div
+                        className="flex items-center gap-3 cursor-pointer group/patient"
+                        onClick={() => handleViewStaff(row.original)}
+                    >
+                        <div className="relative">
+                            <Avatar className="size-10 bg-gradient-to-br from-primary/10 to-primary/20">
+                                <AvatarFallback className="text-primary font-semibold">
+                                    {row.original.full_name.charAt(0)}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div
+                                className="absolute -right-1 -bottom-1 h-3 w-3 rounded-full ring-2 ring-background"
+                                style={{
+                                    backgroundColor: roleColor.dot,
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <div className="font-medium text-foreground group-hover/patient:text-primary transition-colors">
+                                {row.original.full_name}
+                            </div>
+                            <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                                <Mail className="w-3.5 h-3.5" />
+                                <span className="truncate">
+                                    {row.original.email}
+                                </span>
+                                <ChevronRightIcon size={10} />
+                                <span className="capitalize">
+                                    {row.original.role}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            },
+        },
+        {
+            id: "role",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Role" />
+            ),
+            cell: ({ row }) => {
+                const roleColor = getRoleColor(row.original.role);
+
+                return (
+                    <Badge
+                        className={`gap-1.5 ${roleColor.bg} ${roleColor.text}`}
+                        variant="secondary"
+                    >
+                        {getRoleIcon(row.original.role)}
+                        <span className="capitalize">{row.original.role}</span>
+                    </Badge>
+                );
+            },
+        },
+        {
+            accessorKey: "specialization",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Specialization" />
+            ),
+            cell: ({ row }) => (
+                <div className="max-w-[200px]">
+                    {row.original.specialization ? (
+                        <span className="text-sm">
+                            {row.original.specialization}
+                        </span>
+                    ) : (
+                        <span className="text-muted-foreground text-sm">
+                            Not specified
+                        </span>
+                    )}
+                </div>
+            ),
+        },
+        {
+            id: "joined",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Joined" />
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                    <Calendar className="w-3.5 h-3.5" />
+                    {formatDate(row.original.created_at)}
+                </div>
+            ),
+        },
+    ];
 
     return (
         <div className="p-6 space-y-6">
@@ -330,133 +455,38 @@ export default function StaffPage() {
                                 )}
                             </div>
                         ) : (
-                            <Table>
+                            <TableProvider
+                                columns={columns}
+                                data={filteredStaff}
+                            >
                                 <TableHeader>
-                                    <TableRow className="bg-muted/50 hover:bg-muted/50">
-                                        <TableHead className="font-semibold">
-                                            Staff Member
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Role
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Specialization
-                                        </TableHead>
-                                        <TableHead className="font-semibold">
-                                            Joined
-                                        </TableHead>
-                                        <TableHead className="font-semibold text-right">
-                                            Actions
-                                        </TableHead>
-                                    </TableRow>
+                                    {({ headerGroup }) => (
+                                        <TableHeaderGroup
+                                            headerGroup={headerGroup}
+                                            key={headerGroup.id}
+                                        >
+                                            {({ header }) => (
+                                                <TableHead
+                                                    header={header}
+                                                    key={header.id}
+                                                />
+                                            )}
+                                        </TableHeaderGroup>
+                                    )}
                                 </TableHeader>
                                 <TableBody>
-                                    {filteredStaff.map((s) => (
-                                        <TableRow
-                                            key={s.id}
-                                            className="group hover:bg-muted/30 transition-colors"
-                                        >
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-linear-to-br from-primary/10 to-primary/20 text-primary font-semibold">
-                                                        {s.full_name.charAt(0)}
-                                                    </div>
-                                                    <div>
-                                                        <p className="font-medium text-foreground">
-                                                            {s.full_name}
-                                                        </p>
-                                                        <div className="flex items-center gap-1 text-sm text-muted-foreground">
-                                                            <Mail className="w-3.5 h-3.5" />
-                                                            {s.email}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Badge
-                                                    className={`gap-1.5 ${getRoleColor(
-                                                        s.role
-                                                    )}`}
-                                                    variant="secondary"
-                                                >
-                                                    {getRoleIcon(s.role)}
-                                                    <span className="capitalize">
-                                                        {s.role}
-                                                    </span>
-                                                </Badge>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="max-w-[200px]">
-                                                    {s.specialization ? (
-                                                        <span className="text-sm">
-                                                            {s.specialization}
-                                                        </span>
-                                                    ) : (
-                                                        <span className="text-muted-foreground text-sm">
-                                                            Not specified
-                                                        </span>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell>
-                                                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
-                                                    <Calendar className="w-3.5 h-3.5" />
-                                                    {formatDate(s.created_at)}
-                                                </div>
-                                            </TableCell>
-                                            <TableCell className="text-right">
-                                                <DropdownMenu>
-                                                    <DropdownMenuTrigger
-                                                        asChild
-                                                    >
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8 opacity-100 group-hover:opacity-100 transition-opacity"
-                                                        >
-                                                            <MoreVertical className="w-4 h-4" />
-                                                        </Button>
-                                                    </DropdownMenuTrigger>
-                                                    <DropdownMenuContent align="end">
-                                                        <DropdownMenuItem
-                                                            onClick={() =>
-                                                                handleViewStaff(
-                                                                    s
-                                                                )
-                                                            }
-                                                        >
-                                                            <Eye className="w-3.5 h-3.5 mr-2" />
-                                                            View Details
-                                                        </DropdownMenuItem>
-                                                        <DropdownMenuItem
-                                                            className="text-destructive focus:text-destructive"
-                                                            onClick={() =>
-                                                                removeStaff(
-                                                                    s.id
-                                                                )
-                                                            }
-                                                            disabled={
-                                                                deletingId ===
-                                                                s.id
-                                                            }
-                                                        >
-                                                            {deletingId ===
-                                                            s.id ? (
-                                                                <Loader2 className="w-3.5 h-3.5 mr-2 animate-spin" />
-                                                            ) : (
-                                                                <Trash2 className="w-3.5 h-3.5 mr-2" />
-                                                            )}
-                                                            {deletingId === s.id
-                                                                ? "Deleting..."
-                                                                : "Delete"}
-                                                        </DropdownMenuItem>
-                                                    </DropdownMenuContent>
-                                                </DropdownMenu>
-                                            </TableCell>
+                                    {({ row }) => (
+                                        <TableRow key={row.id} row={row}>
+                                            {({ cell }) => (
+                                                <TableCell
+                                                    cell={cell}
+                                                    key={cell.id}
+                                                />
+                                            )}
                                         </TableRow>
-                                    ))}
+                                    )}
                                 </TableBody>
-                            </Table>
+                            </TableProvider>
                         )}
                     </div>
                 </CardContent>

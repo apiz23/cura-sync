@@ -8,34 +8,36 @@ import {
     X,
     Phone,
     Mail,
-    Eye,
-    UserPlus,
     Calendar,
     MoreVertical,
     RefreshCw,
     Activity,
     AlertCircle,
-    Edit,
-    Trash2,
     FileText,
     Heart,
     Bell,
+    ChevronRightIcon,
+    UserPlus,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import Link from "next/link";
 import AddPatientSheet from "./addPatientSheet";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { Progress } from "@/components/ui/progress";
+import type { ColumnDef } from "@/components/kibo-ui/table";
 import {
-    Table,
     TableBody,
     TableCell,
+    TableColumnHeader,
     TableHead,
     TableHeader,
+    TableHeaderGroup,
+    TableProvider,
     TableRow,
-} from "@/components/ui/table";
+} from "@/components/kibo-ui/table";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -50,8 +52,6 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Progress } from "@/components/ui/progress";
 
 export interface Patient {
     id: string;
@@ -264,6 +264,199 @@ export default function PatientListPage() {
         }
         return age;
     };
+
+    const handleViewPatient = (patient: Patient) => {
+        // Open patient view sheet/dialog
+        console.log("View patient:", patient.id);
+        // You can implement your sheet opening logic here
+        // Example: setSelectedPatient(patient); setViewOpen(true);
+    };
+
+    // Define columns for the table
+    const columns: ColumnDef<Patient>[] = [
+        {
+            id: "index",
+            header: ({ column }) => (
+                <TableColumnHeader
+                    column={column}
+                    title="No"
+                    className="text-center"
+                />
+            ),
+            cell: ({ row }) => (
+                <div className="text-center font-medium">{row.index + 1}</div>
+            ),
+        },
+        {
+            accessorKey: "full_name",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Patient" />
+            ),
+            cell: ({ row }) => {
+                const genderConfig = getGenderConfig(row.original.gender);
+                const status = getPatientStatus(row.original);
+                const age = getAge(row.original.date_of_birth);
+
+                return (
+                    <div
+                        className="flex items-center gap-3 cursor-pointer group/patient"
+                        onClick={() => handleViewPatient(row.original)}
+                    >
+                        <div className="relative">
+                            <Avatar className="size-10 border-2">
+                                <AvatarImage src={row.original.avatar_url} />
+                                <AvatarFallback className={genderConfig.bg}>
+                                    {row.original.full_name
+                                        ?.charAt(0)
+                                        .toUpperCase()}
+                                </AvatarFallback>
+                            </Avatar>
+                            <div
+                                className="absolute right-0 bottom-0 h-2 w-2 rounded-full ring-2 ring-background"
+                                style={{
+                                    backgroundColor: status.color,
+                                }}
+                            />
+                        </div>
+                        <div>
+                            <div className="flex items-center gap-2">
+                                <div className="font-semibold text-sm group-hover/patient:text-primary transition-colors">
+                                    {row.original.full_name}
+                                </div>
+                                <Badge
+                                    variant="outline"
+                                    className={`text-xs px-2 py-0.5 ${genderConfig.bg} ${genderConfig.text} ${genderConfig.border}`}
+                                >
+                                    {genderConfig.icon}
+                                </Badge>
+                            </div>
+                            <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                                <span>
+                                    ID: {row.original.id.slice(0, 8)}...
+                                </span>
+                                {age && (
+                                    <>
+                                        <ChevronRightIcon size={12} />
+                                        <span>{age} years</span>
+                                    </>
+                                )}
+                            </div>
+                        </div>
+                    </div>
+                );
+            },
+        },
+        {
+            id: "contact",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Contact" />
+            ),
+            cell: ({ row }) => (
+                <div className="space-y-2">
+                    <div className="flex items-center gap-2">
+                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
+                        <span className="text-sm truncate">
+                            {row.original.email}
+                        </span>
+                    </div>
+                    {row.original.phone_number && (
+                        <div className="flex items-center gap-2">
+                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
+                            <span className="text-sm">
+                                {row.original.phone_number}
+                            </span>
+                        </div>
+                    )}
+                    {row.original.emergency_contact && (
+                        <div className="flex items-center gap-2 text-xs text-amber-600">
+                            <AlertCircle className="h-3 w-3" />
+                            <span>
+                                Emergency: {row.original.emergency_contact}
+                            </span>
+                        </div>
+                    )}
+                </div>
+            ),
+        },
+        {
+            id: "health",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Health Profile" />
+            ),
+            cell: ({ row }) => {
+                const bmi = calculateBMI(
+                    row.original.height_cm,
+                    row.original.weight_kg
+                );
+
+                return (
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-3">
+                            {row.original.blood_type && (
+                                <Badge variant="outline" className="text-xs">
+                                    Blood: {row.original.blood_type}
+                                </Badge>
+                            )}
+                        </div>
+                        {bmi && (
+                            <div className="space-y-1">
+                                <div className="flex items-center justify-between text-xs">
+                                    <span className="text-muted-foreground">
+                                        BMI:{" "}
+                                    </span>
+                                    <span className="font-medium">{bmi}</span>
+                                </div>
+                                <Progress
+                                    value={Math.min(Number(bmi) * 3, 100)}
+                                    className="h-1.5"
+                                />
+                            </div>
+                        )}
+                        {row.original.chronic_conditions && (
+                            <div className="text-xs text-muted-foreground truncate">
+                                Conditions: {row.original.chronic_conditions}
+                            </div>
+                        )}
+                    </div>
+                );
+            },
+        },
+        {
+            id: "status",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Status & Activity" />
+            ),
+            cell: ({ row }) => {
+                const status = getPatientStatus(row.original);
+
+                return (
+                    <div className="space-y-2">
+                        <div className="flex items-center gap-2">
+                            <div
+                                className={`h-2 w-2 rounded-full ${status.color}`}
+                            />
+                            <Badge
+                                variant="outline"
+                                className={`text-xs px-2 py-0.5 ${status.bg} ${status.text}`}
+                            >
+                                {status.status.charAt(0).toUpperCase() +
+                                    status.status.slice(1)}
+                            </Badge>
+                        </div>
+                        <div className="text-xs text-muted-foreground">
+                            Last visit: {formatDate(row.original.last_visit)}
+                        </div>
+                        {row.original.created_at && (
+                            <div className="text-xs text-muted-foreground">
+                                Registered:{" "}
+                                {formatDate(row.original.created_at)}
+                            </div>
+                        )}
+                    </div>
+                );
+            },
+        },
+    ];
 
     if (!facilityId) {
         return (
@@ -551,299 +744,45 @@ export default function PatientListPage() {
                             </div>
                         </div>
                     ) : (
-                        <Table>
-                            <TableHeader className="bg-muted/50">
-                                <TableRow>
-                                    <TableHead className="font-semibold w-[250px]">
-                                        Patient
-                                    </TableHead>
-                                    <TableHead className="font-semibold">
-                                        Contact Information
-                                    </TableHead>
-                                    <TableHead className="font-semibold">
-                                        Health Profile
-                                    </TableHead>
-                                    <TableHead className="font-semibold">
-                                        Status & Activity
-                                    </TableHead>
-                                    <TableHead className="font-semibold text-right">
-                                        Actions
-                                    </TableHead>
-                                </TableRow>
+                        <TableProvider
+                            columns={columns}
+                            data={filteredPatients}
+                        >
+                            <TableHeader>
+                                {({ headerGroup }) => (
+                                    <TableHeaderGroup
+                                        headerGroup={headerGroup}
+                                        key={headerGroup.id}
+                                    >
+                                        {({ header }) => (
+                                            <TableHead
+                                                header={header}
+                                                key={header.id}
+                                            />
+                                        )}
+                                    </TableHeaderGroup>
+                                )}
                             </TableHeader>
                             <TableBody>
-                                {filteredPatients.map((patient) => {
-                                    const genderConfig = getGenderConfig(
-                                        patient.gender
-                                    );
-                                    const status = getPatientStatus(patient);
-                                    const bmi = calculateBMI(
-                                        patient.height_cm,
-                                        patient.weight_kg
-                                    );
-                                    const age = getAge(patient.date_of_birth);
-
-                                    return (
-                                        <TableRow
-                                            key={patient.id}
-                                            className="hover:bg-muted/30"
-                                        >
-                                            {/* Patient Column */}
-                                            <TableCell>
-                                                <div className="flex items-center gap-3">
-                                                    <Avatar className="h-10 w-10 border-2">
-                                                        <AvatarImage
-                                                            src={
-                                                                patient.avatar_url
-                                                            }
-                                                        />
-                                                        <AvatarFallback
-                                                            className={
-                                                                genderConfig.bg
-                                                            }
-                                                        >
-                                                            {patient.full_name
-                                                                ?.charAt(0)
-                                                                .toUpperCase()}
-                                                        </AvatarFallback>
-                                                    </Avatar>
-                                                    <div className="space-y-1">
-                                                        <div className="flex items-center gap-2">
-                                                            <p className="font-semibold text-sm hover:text-primary transition-colors">
-                                                                {
-                                                                    patient.full_name
-                                                                }
-                                                            </p>
-                                                            <Badge
-                                                                variant="outline"
-                                                                className={`text-xs px-2 py-0.5 ${genderConfig.bg} ${genderConfig.text} ${genderConfig.border}`}
-                                                            >
-                                                                {
-                                                                    genderConfig.icon
-                                                                }
-                                                            </Badge>
-                                                        </div>
-                                                        <p className="text-xs text-muted-foreground">
-                                                            Patient ID:{" "}
-                                                            {patient.id.slice(
-                                                                0,
-                                                                8
-                                                            )}
-                                                            ...
-                                                        </p>
-                                                    </div>
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Contact Information Column */}
-                                            <TableCell>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <Mail className="h-3.5 w-3.5 text-muted-foreground" />
-                                                        <span className="text-sm truncate">
-                                                            {patient.email}
-                                                        </span>
-                                                    </div>
-                                                    {patient.phone_number && (
-                                                        <div className="flex items-center gap-2">
-                                                            <Phone className="h-3.5 w-3.5 text-muted-foreground" />
-                                                            <span className="text-sm">
-                                                                {
-                                                                    patient.phone_number
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                    {patient.emergency_contact && (
-                                                        <div className="flex items-center gap-2 text-xs text-amber-600">
-                                                            <AlertCircle className="h-3 w-3" />
-                                                            <span>
-                                                                Emergency:{" "}
-                                                                {
-                                                                    patient.emergency_contact
-                                                                }
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Health Profile Column */}
-                                            <TableCell>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-3">
-                                                        {age && (
-                                                            <div className="text-sm">
-                                                                <span className="text-muted-foreground">
-                                                                    Age:{" "}
-                                                                </span>
-                                                                <span className="font-medium">
-                                                                    {age} years
-                                                                </span>
-                                                            </div>
-                                                        )}
-                                                        {patient.blood_type && (
-                                                            <Badge
-                                                                variant="outline"
-                                                                className="text-xs"
-                                                            >
-                                                                Blood:{" "}
-                                                                {
-                                                                    patient.blood_type
-                                                                }
-                                                            </Badge>
-                                                        )}
-                                                    </div>
-                                                    {bmi && (
-                                                        <div className="space-y-1">
-                                                            <div className="flex items-center justify-between text-xs">
-                                                                <span className="text-muted-foreground">
-                                                                    BMI:{" "}
-                                                                </span>
-                                                                <span className="font-medium">
-                                                                    {bmi}
-                                                                </span>
-                                                            </div>
-                                                            <Progress
-                                                                value={Math.min(
-                                                                    Number(
-                                                                        bmi
-                                                                    ) * 3,
-                                                                    100
-                                                                )}
-                                                                className="h-1.5"
-                                                            />
-                                                        </div>
-                                                    )}
-                                                    {patient.chronic_conditions && (
-                                                        <div className="text-xs text-muted-foreground truncate">
-                                                            Conditions:{" "}
-                                                            {
-                                                                patient.chronic_conditions
-                                                            }
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Status & Activity Column */}
-                                            <TableCell>
-                                                <div className="space-y-2">
-                                                    <div className="flex items-center gap-2">
-                                                        <div
-                                                            className={`h-2 w-2 rounded-full ${status.color}`}
-                                                        />
-                                                        <Badge
-                                                            variant="outline"
-                                                            className={`text-xs px-2 py-0.5 ${status.bg} ${status.text}`}
-                                                        >
-                                                            {status.status
-                                                                .charAt(0)
-                                                                .toUpperCase() +
-                                                                status.status.slice(
-                                                                    1
-                                                                )}
-                                                        </Badge>
-                                                    </div>
-                                                    <div className="text-xs text-muted-foreground">
-                                                        Last visit:{" "}
-                                                        {formatDate(
-                                                            patient.last_visit
-                                                        )}
-                                                    </div>
-                                                    {patient.created_at && (
-                                                        <div className="text-xs text-muted-foreground">
-                                                            Registered:{" "}
-                                                            {formatDate(
-                                                                patient.created_at
-                                                            )}
-                                                        </div>
-                                                    )}
-                                                </div>
-                                            </TableCell>
-
-                                            {/* Actions Column */}
-                                            <TableCell className="text-right">
-                                                <div className="flex items-center justify-end gap-2">
-                                                    <Link
-                                                        href={`/admin/patients/${patient.id}`}
-                                                    >
-                                                        <Button
-                                                            variant="ghost"
-                                                            size="icon"
-                                                            className="h-8 w-8"
-                                                        >
-                                                            <Eye className="h-4 w-4" />
-                                                        </Button>
-                                                    </Link>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="icon"
-                                                        className="h-8 w-8"
-                                                        onClick={() =>
-                                                            window.open(
-                                                                `tel:${patient.phone_number}`
-                                                            )
-                                                        }
-                                                    >
-                                                        <Phone className="h-4 w-4" />
-                                                    </Button>
-
-                                                    <DropdownMenu>
-                                                        <DropdownMenuTrigger
-                                                            asChild
-                                                        >
-                                                            <Button
-                                                                variant="ghost"
-                                                                size="icon"
-                                                                className="h-8 w-8"
-                                                            >
-                                                                <MoreVertical className="h-4 w-4" />
-                                                            </Button>
-                                                        </DropdownMenuTrigger>
-                                                        <DropdownMenuContent
-                                                            align="end"
-                                                            className="w-48"
-                                                        >
-                                                            <DropdownMenuItem className="gap-2 cursor-pointer">
-                                                                <Edit className="h-4 w-4" />
-                                                                Edit Patient
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="gap-2 cursor-pointer">
-                                                                <FileText className="h-4 w-4" />
-                                                                View Medical
-                                                                History
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="gap-2 cursor-pointer">
-                                                                <Calendar className="h-4 w-4" />
-                                                                Schedule
-                                                                Appointment
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuItem className="gap-2 cursor-pointer">
-                                                                <Bell className="h-4 w-4" />
-                                                                Send Reminder
-                                                            </DropdownMenuItem>
-                                                            <DropdownMenuSeparator />
-                                                            <DropdownMenuItem className="gap-2 cursor-pointer text-destructive">
-                                                                <Trash2 className="h-4 w-4" />
-                                                                Remove Patient
-                                                            </DropdownMenuItem>
-                                                        </DropdownMenuContent>
-                                                    </DropdownMenu>
-                                                </div>
-                                            </TableCell>
-                                        </TableRow>
-                                    );
-                                })}
+                                {({ row }) => (
+                                    <TableRow key={row.id} row={row}>
+                                        {({ cell }) => (
+                                            <TableCell
+                                                cell={cell}
+                                                key={cell.id}
+                                            />
+                                        )}
+                                    </TableRow>
+                                )}
                             </TableBody>
-                        </Table>
+                        </TableProvider>
                     )}
                 </div>
 
                 {/* Footer Stats */}
                 {filteredPatients.length > 0 && (
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <Card className="bg-gradient-to-r from-primary/5 to-primary/10 border-primary/20">
+                        <Card className="bg-linear-to-r from-primary/5 to-primary/10 border-primary/20">
                             <CardContent className="p-6">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 rounded-full bg-primary/20">
@@ -862,7 +801,7 @@ export default function PatientListPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-gradient-to-r from-green-500/5 to-green-500/10 border-green-500/20">
+                        <Card className="bg-linear-to-r from-green-500/5 to-green-500/10 border-green-500/20">
                             <CardContent className="p-6">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 rounded-full bg-green-500/20">
@@ -889,7 +828,7 @@ export default function PatientListPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="bg-gradient-to-r from-amber-500/5 to-amber-500/10 border-amber-500/20">
+                        <Card className="bg-linear-to-r from-amber-500/5 to-amber-500/10 border-amber-500/20">
                             <CardContent className="p-6">
                                 <div className="flex items-center gap-4">
                                     <div className="p-3 rounded-full bg-amber-500/20">

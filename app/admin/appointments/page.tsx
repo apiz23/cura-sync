@@ -17,6 +17,7 @@ import {
     AlertCircle,
     RefreshCw,
     FileText,
+    ChevronRightIcon,
 } from "lucide-react";
 import {
     Card,
@@ -25,14 +26,6 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import {
-    Table,
-    TableBody,
-    TableCell,
-    TableHead,
-    TableHeader,
-    TableRow,
-} from "@/components/ui/table";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -47,7 +40,18 @@ import { toast } from "sonner";
 import { AppointmentSheet } from "./AppointmentSheet";
 import { Appointment } from "@/app/types";
 import { useAuth } from "@/components/authprovideradmin";
-import Image from "next/image";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import type { ColumnDef } from "@/components/kibo-ui/table";
+import {
+    TableBody,
+    TableCell,
+    TableColumnHeader,
+    TableHead,
+    TableHeader,
+    TableHeaderGroup,
+    TableProvider,
+    TableRow,
+} from "@/components/kibo-ui/table";
 
 export default function AppointmentsPage() {
     const [appointments, setAppointments] = useState<Appointment[]>([]);
@@ -82,7 +86,7 @@ export default function AppointmentsPage() {
             if (!res.ok) throw new Error("Failed to fetch");
 
             const data: Appointment[] = await res.json();
-
+            console.log(data);
             setAppointments(data);
             setFilteredAppointments(data);
         } catch (err) {
@@ -194,14 +198,6 @@ export default function AppointmentsPage() {
         }
     };
 
-    const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const endIndex = startIndex + itemsPerPage;
-    const currentAppointments = filteredAppointments.slice(
-        startIndex,
-        endIndex
-    );
-
     const getPriority = (appt: Appointment) => {
         const today = new Date().toISOString().split("T")[0];
         const isToday = appt.appointment_date === today;
@@ -215,6 +211,151 @@ export default function AppointmentsPage() {
         return "normal";
     };
 
+    const columns: ColumnDef<Appointment>[] = [
+        {
+            id: "index",
+            header: ({ column }) => (
+                <TableColumnHeader
+                    column={column}
+                    title="No"
+                    className="text-center"
+                />
+            ),
+            cell: ({ row }) => {
+                const index = row.index + 1 + (currentPage - 1) * itemsPerPage;
+                return <div className="text-center font-medium">{index}</div>;
+            },
+        },
+        {
+            accessorKey: "patient_name",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Patient" />
+            ),
+            cell: ({ row }) => {
+                const priority = getPriority(row.original);
+                const statusConfig = getStatusConfig(row.original.status);
+
+                return (
+                    <div
+                        className="flex items-center gap-3 cursor-pointer group/patient"
+                        onClick={() => {
+                            setSelectedAppointment(row.original);
+                            setSheetOpen(true);
+                        }}
+                    >
+                        <div className="relative">
+                            <Avatar className="size-11 border border-border bg-gradient-to-br from-primary/20 to-primary/10">
+                                {row.original.patient_avatar ? (
+                                    <>
+                                        <AvatarImage
+                                            src={row.original.patient_avatar}
+                                            alt={row.original.patient_name}
+                                            className="object-cover"
+                                        />
+                                        <AvatarFallback>
+                                            <User className="w-5 h-5 text-primary" />
+                                        </AvatarFallback>
+                                    </>
+                                ) : (
+                                    <AvatarFallback>
+                                        <User className="w-5 h-5 text-primary" />
+                                    </AvatarFallback>
+                                )}
+                            </Avatar>
+                            <div
+                                className="absolute -right-1 -bottom-1 h-4 w-4 rounded-full ring-2 ring-background flex items-center justify-center"
+                                style={{
+                                    backgroundColor: statusConfig.dotColor,
+                                }}
+                            >
+                                {priority === "high" && (
+                                    <AlertCircle className="w-2 h-2 text-white" />
+                                )}
+                            </div>
+                        </div>
+                        <div>
+                            <div className="font-medium text-foreground group-hover/patient:text-primary transition-colors">
+                                {row.original.patient_name}
+                            </div>
+                            <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                                <span className="font-mono">
+                                    ID: {row.original.id.slice(0, 8)}...
+                                </span>
+                                <ChevronRightIcon size={10} />
+                                <span>Priority: {priority}</span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            },
+        },
+        {
+            id: "datetime",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Date & Time" />
+            ),
+            cell: ({ row }) => (
+                <div className="space-y-1.5">
+                    <div className="flex items-center gap-2">
+                        <Calendar className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm font-medium text-foreground">
+                            {formatDate(row.original.appointment_date)}
+                        </span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                        <Clock className="w-4 h-4 text-muted-foreground" />
+                        <span className="text-sm text-muted-foreground">
+                            {formatTime(row.original.start_time)}
+                        </span>
+                    </div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "reason_for_visit",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Reason" />
+            ),
+            cell: ({ row }) => (
+                <div className="flex items-start gap-2 max-w-xs">
+                    <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-foreground line-clamp-2">
+                        {row.original.reason_for_visit || "No reason provided"}
+                    </div>
+                </div>
+            ),
+        },
+        {
+            accessorKey: "status",
+            header: ({ column }) => (
+                <TableColumnHeader column={column} title="Status" />
+            ),
+            cell: ({ row }) => {
+                const statusConfig = getStatusConfig(row.original.status);
+                const StatusIcon = statusConfig.icon;
+                const priority = getPriority(row.original);
+
+                return (
+                    <div className="flex items-center gap-2">
+                        <Badge
+                            variant="outline"
+                            className={`gap-2 px-3 py-1.5 text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor} rounded-lg`}
+                        >
+                            <div
+                                className={`w-2 h-2 rounded-full ${statusConfig.dotColor}`}
+                            />
+                            <StatusIcon className="w-3 h-3" />
+                            <span>{statusConfig.label}</span>
+                        </Badge>
+                        {priority === "high" && (
+                            <AlertCircle className="w-4 h-4 text-destructive" />
+                        )}
+                    </div>
+                );
+            },
+        },
+    ];
+
     if (loading) {
         return (
             <div className="flex flex-col items-center justify-center min-h-[500px] space-y-4">
@@ -225,6 +366,14 @@ export default function AppointmentsPage() {
             </div>
         );
     }
+
+    const totalPages = Math.ceil(filteredAppointments.length / itemsPerPage);
+    const startIndex = (currentPage - 1) * itemsPerPage;
+    const endIndex = startIndex + itemsPerPage;
+    const currentAppointments = filteredAppointments.slice(
+        startIndex,
+        endIndex
+    );
 
     return (
         <div className="space-y-6 p-4 md:p-6 font-sans">
@@ -435,283 +584,177 @@ export default function AppointmentsPage() {
                     </div>
                 </CardHeader>
                 <CardContent className="p-0">
-                    <div className="overflow-x-auto">
-                        <Table>
-                            <TableHeader>
-                                <TableRow className="bg-sidebar hover:bg-sidebar border-border">
-                                    <TableHead className="font-semibold text-center text-sidebar-foreground">
-                                        No
-                                    </TableHead>
-                                    <TableHead className="font-semibold text-sidebar-foreground">
-                                        Patient
-                                    </TableHead>
-                                    <TableHead className="font-semibold text-sidebar-foreground">
-                                        Date & Time
-                                    </TableHead>
-                                    <TableHead className="font-semibold text-sidebar-foreground">
-                                        Reason
-                                    </TableHead>
-                                    <TableHead className="font-semibold text-sidebar-foreground">
-                                        Status
-                                    </TableHead>
-                                </TableRow>
-                            </TableHeader>
-                            <TableBody>
-                                {currentAppointments.length === 0 ? (
-                                    <TableRow>
-                                        <TableCell
-                                            colSpan={5}
-                                            className="h-64 text-center py-12"
-                                        >
-                                            <div className="flex flex-col items-center justify-center space-y-4">
-                                                <div className="p-4 bg-muted rounded-full">
-                                                    <Calendar className="w-12 h-12 text-muted-foreground/60" />
-                                                </div>
-                                                <div className="text-center">
-                                                    <h3 className="font-medium text-foreground text-lg">
-                                                        No appointments found
-                                                    </h3>
-                                                    <p className="text-sm text-muted-foreground mt-2 max-w-md mx-auto">
-                                                        {searchTerm ||
-                                                        statusFilter !==
-                                                            "all" ||
-                                                        dateFilter
-                                                            ? "No appointments match your filters. Try adjusting your search criteria."
-                                                            : "You don't have any appointments scheduled yet."}
-                                                    </p>
-                                                </div>
-                                            </div>
-                                        </TableCell>
-                                    </TableRow>
-                                ) : (
-                                    currentAppointments.map((appt, index) => {
-                                        const statusConfig = getStatusConfig(
-                                            appt.status
-                                        );
-                                        const priority = getPriority(appt);
-                                        const StatusIcon = statusConfig.icon;
-
-                                        return (
-                                            <TableRow
-                                                key={appt.id}
-                                                className={`group hover:bg-accent/50 transition-colors border-border ${
-                                                    priority === "high"
-                                                        ? "bg-red-50/20 dark:bg-red-950/10"
-                                                        : priority === "medium"
-                                                        ? "bg-amber-50/20 dark:bg-amber-950/10"
-                                                        : ""
-                                                }`}
-                                            >
-                                                <TableCell className="py-4 text-center">
-                                                    <p>{index + 1}</p>
-                                                </TableCell>
-                                                <TableCell className="py-4">
-                                                    <div
-                                                        className="flex items-center gap-3 cursor-pointer group/patient"
-                                                        onClick={() => {
-                                                            setSelectedAppointment(
-                                                                appt
-                                                            );
-                                                            setSheetOpen(true);
-                                                        }}
-                                                    >
-                                                        <div className="relative">
-                                                            <div className="h-11 w-11 rounded-full bg-linear-to-br from-primary/20 to-primary/10 flex items-center justify-center overflow-hidden border border-border">
-                                                                {appt.patient_avatar ? (
-                                                                    <Image
-                                                                        src={
-                                                                            appt.patient_avatar
-                                                                        }
-                                                                        alt={
-                                                                            appt.patient_name
-                                                                        }
-                                                                        width={
-                                                                            44
-                                                                        }
-                                                                        height={
-                                                                            44
-                                                                        }
-                                                                        className="object-cover"
-                                                                    />
-                                                                ) : (
-                                                                    <User className="w-5 h-5 text-primary" />
-                                                                )}
-                                                            </div>
-                                                            {priority ===
-                                                                "high" && (
-                                                                <div className="absolute -top-1 -right-1">
-                                                                    <AlertCircle className="w-4 h-4 text-destructive" />
-                                                                </div>
-                                                            )}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-medium text-foreground group-hover/patient:text-primary transition-colors">
-                                                                {
-                                                                    appt.patient_name
-                                                                }
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground font-mono">
-                                                                ID:{" "}
-                                                                {appt.id.slice(
-                                                                    0,
-                                                                    8
-                                                                )}
-                                                                ...
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="py-4">
-                                                    <div className="space-y-1.5">
-                                                        <div className="flex items-center gap-2">
-                                                            <Calendar className="w-4 h-4 text-muted-foreground" />
-                                                            <span className="text-sm font-medium text-foreground">
-                                                                {formatDate(
-                                                                    appt.appointment_date
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                        <div className="flex items-center gap-2">
-                                                            <Clock className="w-4 h-4 text-muted-foreground" />
-                                                            <span className="text-sm text-muted-foreground">
-                                                                {formatTime(
-                                                                    appt.start_time
-                                                                )}
-                                                            </span>
-                                                        </div>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="py-4">
-                                                    <div className="flex items-center gap-2 max-w-xs">
-                                                        <FileText className="w-4 h-4 text-muted-foreground flex-shrink-0" />
-                                                        <p className="text-sm text-foreground line-clamp-2">
-                                                            {appt.reason_for_visit ||
-                                                                "No reason provided"}
-                                                        </p>
-                                                    </div>
-                                                </TableCell>
-                                                <TableCell className="py-4">
-                                                    <Badge
-                                                        variant="outline"
-                                                        className={`gap-2 px-3 py-1.5 text-xs font-medium ${statusConfig.bgColor} ${statusConfig.textColor} ${statusConfig.borderColor} rounded-lg`}
-                                                    >
-                                                        <div
-                                                            className={`w-2 h-2 rounded-full ${statusConfig.dotColor}`}
-                                                        />
-                                                        <StatusIcon className="w-3 h-3" />
-                                                        <span>
-                                                            {statusConfig.label}
-                                                        </span>
-                                                    </Badge>
-                                                </TableCell>
-                                            </TableRow>
-                                        );
-                                    })
-                                )}
-                            </TableBody>
-                        </Table>
-                    </div>
-
-                    {/* Pagination */}
-                    {filteredAppointments.length > 0 && (
-                        <div className="border-t border-border px-5 py-4 bg-sidebar">
-                            <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                                <div className="text-sm text-muted-foreground">
-                                    Showing{" "}
-                                    <span className="font-medium text-foreground">
-                                        {startIndex + 1}
-                                    </span>{" "}
-                                    to{" "}
-                                    <span className="font-medium text-foreground">
-                                        {Math.min(
-                                            endIndex,
-                                            filteredAppointments.length
-                                        )}
-                                    </span>{" "}
-                                    of{" "}
-                                    <span className="font-medium text-foreground">
-                                        {filteredAppointments.length}
-                                    </span>{" "}
-                                    results
-                                </div>
-                                <div className="flex items-center gap-2">
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            setCurrentPage((prev) =>
-                                                Math.max(prev - 1, 1)
-                                            )
-                                        }
-                                        disabled={currentPage === 1}
-                                        className="h-8 w-8 p-0 border-border hover:bg-accent"
-                                    >
-                                        <ChevronLeft className="w-4 h-4" />
-                                    </Button>
-                                    <div className="flex items-center gap-1">
-                                        {Array.from(
-                                            { length: Math.min(5, totalPages) },
-                                            (_, i) => {
-                                                let pageNum;
-                                                if (totalPages <= 5) {
-                                                    pageNum = i + 1;
-                                                } else if (currentPage <= 3) {
-                                                    pageNum = i + 1;
-                                                } else if (
-                                                    currentPage >=
-                                                    totalPages - 2
-                                                ) {
-                                                    pageNum =
-                                                        totalPages - 4 + i;
-                                                } else {
-                                                    pageNum =
-                                                        currentPage - 2 + i;
-                                                }
-
-                                                return (
-                                                    <Button
-                                                        key={pageNum}
-                                                        variant={
-                                                            currentPage ===
-                                                            pageNum
-                                                                ? "default"
-                                                                : "outline"
-                                                        }
-                                                        size="sm"
-                                                        className={`h-8 w-8 p-0 font-medium ${
-                                                            currentPage ===
-                                                            pageNum
-                                                                ? "bg-primary text-primary-foreground border-primary"
-                                                                : "border-border hover:bg-accent"
-                                                        }`}
-                                                        onClick={() =>
-                                                            setCurrentPage(
-                                                                pageNum
-                                                            )
-                                                        }
-                                                    >
-                                                        {pageNum}
-                                                    </Button>
-                                                );
-                                            }
-                                        )}
-                                    </div>
-                                    <Button
-                                        variant="outline"
-                                        size="sm"
-                                        onClick={() =>
-                                            setCurrentPage((prev) =>
-                                                Math.min(prev + 1, totalPages)
-                                            )
-                                        }
-                                        disabled={currentPage === totalPages}
-                                        className="h-8 w-8 p-0 border-border hover:bg-accent"
-                                    >
-                                        <ChevronRight className="w-4 h-4" />
-                                    </Button>
-                                </div>
+                    {currentAppointments.length === 0 ? (
+                        <div className="h-64 flex flex-col items-center justify-center text-center py-12">
+                            <div className="p-4 bg-muted rounded-full mb-4">
+                                <Calendar className="w-12 h-12 text-muted-foreground/60" />
                             </div>
+                            <h3 className="font-medium text-foreground text-lg mb-2">
+                                No appointments found
+                            </h3>
+                            <p className="text-sm text-muted-foreground max-w-md mx-auto">
+                                {searchTerm ||
+                                statusFilter !== "all" ||
+                                dateFilter
+                                    ? "No appointments match your filters. Try adjusting your search criteria."
+                                    : "You don't have any appointments scheduled yet."}
+                            </p>
                         </div>
+                    ) : (
+                        <>
+                            <div className="overflow-x-auto">
+                                <TableProvider
+                                    columns={columns}
+                                    data={currentAppointments}
+                                >
+                                    <TableHeader>
+                                        {({ headerGroup }) => (
+                                            <TableHeaderGroup
+                                                headerGroup={headerGroup}
+                                                key={headerGroup.id}
+                                            >
+                                                {({ header }) => (
+                                                    <TableHead
+                                                        header={header}
+                                                        key={header.id}
+                                                    />
+                                                )}
+                                            </TableHeaderGroup>
+                                        )}
+                                    </TableHeader>
+                                    <TableBody>
+                                        {({ row }) => (
+                                            <TableRow key={row.id} row={row}>
+                                                {({ cell }) => (
+                                                    <TableCell
+                                                        cell={cell}
+                                                        key={cell.id}
+                                                    />
+                                                )}
+                                            </TableRow>
+                                        )}
+                                    </TableBody>
+                                </TableProvider>
+                            </div>
+
+                            {/* Pagination */}
+                            {filteredAppointments.length > itemsPerPage && (
+                                <div className="border-t border-border px-5 py-4 bg-sidebar">
+                                    <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                                        <div className="text-sm text-muted-foreground">
+                                            Showing{" "}
+                                            <span className="font-medium text-foreground">
+                                                {startIndex + 1}
+                                            </span>{" "}
+                                            to{" "}
+                                            <span className="font-medium text-foreground">
+                                                {Math.min(
+                                                    endIndex,
+                                                    filteredAppointments.length
+                                                )}
+                                            </span>{" "}
+                                            of{" "}
+                                            <span className="font-medium text-foreground">
+                                                {filteredAppointments.length}
+                                            </span>{" "}
+                                            results
+                                        </div>
+                                        <div className="flex items-center gap-2">
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setCurrentPage((prev) =>
+                                                        Math.max(prev - 1, 1)
+                                                    )
+                                                }
+                                                disabled={currentPage === 1}
+                                                className="h-8 w-8 p-0 border-border hover:bg-accent"
+                                            >
+                                                <ChevronLeft className="w-4 h-4" />
+                                            </Button>
+                                            <div className="flex items-center gap-1">
+                                                {Array.from(
+                                                    {
+                                                        length: Math.min(
+                                                            5,
+                                                            totalPages
+                                                        ),
+                                                    },
+                                                    (_, i) => {
+                                                        let pageNum;
+                                                        if (totalPages <= 5) {
+                                                            pageNum = i + 1;
+                                                        } else if (
+                                                            currentPage <= 3
+                                                        ) {
+                                                            pageNum = i + 1;
+                                                        } else if (
+                                                            currentPage >=
+                                                            totalPages - 2
+                                                        ) {
+                                                            pageNum =
+                                                                totalPages -
+                                                                4 +
+                                                                i;
+                                                        } else {
+                                                            pageNum =
+                                                                currentPage -
+                                                                2 +
+                                                                i;
+                                                        }
+
+                                                        return (
+                                                            <Button
+                                                                key={pageNum}
+                                                                variant={
+                                                                    currentPage ===
+                                                                    pageNum
+                                                                        ? "default"
+                                                                        : "outline"
+                                                                }
+                                                                size="sm"
+                                                                className={`h-8 w-8 p-0 font-medium ${
+                                                                    currentPage ===
+                                                                    pageNum
+                                                                        ? "bg-primary text-primary-foreground border-primary"
+                                                                        : "border-border hover:bg-accent"
+                                                                }`}
+                                                                onClick={() =>
+                                                                    setCurrentPage(
+                                                                        pageNum
+                                                                    )
+                                                                }
+                                                            >
+                                                                {pageNum}
+                                                            </Button>
+                                                        );
+                                                    }
+                                                )}
+                                            </div>
+                                            <Button
+                                                variant="outline"
+                                                size="sm"
+                                                onClick={() =>
+                                                    setCurrentPage((prev) =>
+                                                        Math.min(
+                                                            prev + 1,
+                                                            totalPages
+                                                        )
+                                                    )
+                                                }
+                                                disabled={
+                                                    currentPage === totalPages
+                                                }
+                                                className="h-8 w-8 p-0 border-border hover:bg-accent"
+                                            >
+                                                <ChevronRight className="w-4 h-4" />
+                                            </Button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                        </>
                     )}
                 </CardContent>
             </Card>
