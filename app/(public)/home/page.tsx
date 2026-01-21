@@ -1,217 +1,365 @@
 "use client";
 
 import {
-    ArrowDown,
     Mail,
     Sparkles,
     Zap,
     CheckCircle,
     Shield,
+    Activity,
+    Users,
+    Brain,
+    Cloud,
+    Lock,
+    BarChart,
+    ArrowRight,
+    Heart,
 } from "lucide-react";
-import { motion } from "motion/react";
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
 import PageTitle from "@/components/page-title";
-import { Marquee } from "@/components/ui/marquee";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 export default function Page() {
     const featureCards = [
         {
+            icon: <Activity className="h-6 w-6" />,
+            title: "Real-time Sync",
+            description:
+                "Instant patient data synchronization across all devices",
+            bgColor: "bg-chart-1/10",
+            textColor: "text-chart-1",
+        },
+        {
+            icon: <Brain className="h-6 w-6" />,
+            title: "AI Insights",
+            description: "Clinical decision support powered by advanced AI",
+            bgColor: "bg-chart-2/10",
+            textColor: "text-chart-2",
+        },
+        {
+            icon: <Users className="h-6 w-6" />,
+            title: "Team Collaboration",
+            description: "Seamless communication between healthcare providers",
+            bgColor: "bg-chart-3/10",
+            textColor: "text-chart-3",
+        },
+        {
+            icon: <Cloud className="h-6 w-6" />,
+            title: "Cloud Native",
+            description: "Secure, scalable infrastructure built for healthcare",
+            bgColor: "bg-chart-4/10",
+            textColor: "text-chart-4",
+        },
+    ];
+
+    const benefits = [
+        {
+            icon: <Lock className="h-5 w-5" />,
+            title: "HIPAA Compliant",
+            description: "Enterprise-grade security and compliance",
+        },
+        {
             icon: <Zap className="h-5 w-5" />,
-            text: "Real-time Collaboration",
+            title: "Fast Implementation",
+            description: "Get started in days, not months",
         },
         {
-            icon: <Sparkles className="h-5 w-5" />,
-            text: "AI-Powered Clinical Insights",
+            icon: <BarChart className="h-5 w-5" />,
+            title: "Analytics Dashboard",
+            description: "Comprehensive insights and reporting",
         },
         {
-            icon: <Shield className="h-5 w-5" />,
-            text: "Secure & HIPAA Compliant",
-        },
-        {
-            icon: <CheckCircle className="h-5 w-5" />,
-            text: "Enterprise-Grade Reliability",
+            icon: <Heart className="h-5 w-5" />,
+            title: "Patient Focused",
+            description: "Designed for better patient outcomes",
         },
     ];
 
     return (
-        <section className="flex justify-center items-center h-screen w-full bg-background">
-            <PageTitle title={"Home"} />
-            {/* Enhanced Background with Theme Colors */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                <div className="absolute top-[-10%] left-[-10%] w-[500px] h-[500px] bg-primary/10 rounded-full blur-[100px] opacity-50" />
-                <div className="absolute bottom-[-10%] right-[-10%] w-[500px] h-[500px] bg-chart-2/10 rounded-full blur-[100px] opacity-50" />
-                <div className="absolute top-[20%] right-[10%] w-[300px] h-[300px] bg-chart-4/10 rounded-full blur-[80px] opacity-30" />
-            </div>
+        <div className="min-h-screen bg-linear-to-b from-background via-background to-muted/5">
+            <PageTitle title="Home" />
 
-            {/* Animated background grid */}
-            <div className="absolute inset-0 bg-[linear-linear(to_right,var(--color-border)_1px,transparent_1px),linear-linear(to_bottom,var(--color-border)_1px,transparent_1px)] bg-size-24px_24px] opacity-20" />
+            {/* Hero Section */}
+            <section className="relative py-28 px-4 sm:px-6 lg:px-8">
+                {/* Background Elements */}
+                <div className="absolute inset-0 overflow-hidden">
+                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
+                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-chart-2/5 rounded-full blur-3xl" />
+                    <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-chart-4/5 rounded-full blur-3xl opacity-30" />
+                </div>
 
-            <div className="relative z-10 mx-auto max-w-6xl text-center">
-                <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6 }}
-                >
-                    {/* Professional Badge */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.3, duration: 0.5 }}
-                        className="inline-flex items-center gap-2 bg-primary/10 text-primary px-4 py-2 rounded-full text-sm font-medium border border-primary/20 backdrop-blur-sm mb-6"
-                    >
-                        <Sparkles className="h-4 w-4" />
-                        <span className="bg-linear-to-r from-primary to-chart-2 bg-clip-text text-transparent font-bold">
-                            Next Generation Healthcare Platform
-                        </span>
-                    </motion.div>
+                <div className="relative z-10 max-w-7xl mx-auto">
+                    <div className="text-center space-y-8">
+                        {/* Badge */}
+                        <div className="inline-flex items-center gap-2 bg-primary/10 backdrop-blur-sm px-4 py-2 rounded-full border border-primary/20">
+                            <Sparkles className="h-4 w-4 text-primary" />
+                            <span className="text-sm font-medium text-primary">
+                                Next Generation Healthcare Platform
+                            </span>
+                        </div>
 
-                    <motion.h1
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.4, duration: 0.6 }}
-                        className="mb-6 text-5xl font-bold text-foreground md:text-7xl lg:text-8xl leading-tight"
-                    >
-                        Cura Sync
-                        <span className="block text-transparent bg-clip-text bg-linear-to-r from-primary via-chart-2 to-chart-4 pb-2">
-                            Platform
-                        </span>
-                    </motion.h1>
+                        {/* Main Title */}
+                        <div className="space-y-6">
+                            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight serif">
+                                CuraSync
+                                <span className="block bg-linear-to-r from-primary to-chart-2 bg-clip-text text-transparent">
+                                    Platform
+                                </span>
+                            </h1>
+                            <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
+                                Revolutionizing healthcare collaboration with
+                                real-time patient data synchronization and
+                                AI-powered clinical insights
+                            </p>
+                        </div>
 
-                    <motion.p
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.5, duration: 0.6 }}
-                        className="mx-auto mb-8 max-w-3xl text-xl text-muted-foreground md:text-2xl leading-relaxed bg-card/50 backdrop-blur-sm rounded-2xl p-6 border border-border"
-                    >
-                        Revolutionizing healthcare collaboration with real-time
-                        patient data synchronization, AI-powered clinical
-                        insights, and seamless provider communication for better
-                        patient outcomes.
-                    </motion.p>
-
-                    {/* Animated Features */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.6, duration: 0.6 }}
-                        className="relative w-full mb-8"
-                    >
-                        <Marquee pauseOnHover className="[--duration:20s]">
+                        {/* Feature Cards Grid */}
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
                             {featureCards.map((feature, index) => (
-                                <FeatureCard key={index} {...feature} />
+                                <Card
+                                    key={index}
+                                    className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300 rounded-2xl"
+                                >
+                                    <CardContent className="p-6">
+                                        <div className="space-y-4">
+                                            <div
+                                                className={`p-3 rounded-xl ${feature.bgColor} w-fit`}
+                                            >
+                                                <div
+                                                    className={
+                                                        feature.textColor
+                                                    }
+                                                >
+                                                    {feature.icon}
+                                                </div>
+                                            </div>
+                                            <div>
+                                                <h3 className="text-lg font-semibold mb-2 text-foreground">
+                                                    {feature.title}
+                                                </h3>
+                                                <p className="text-sm text-muted-foreground">
+                                                    {feature.description}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    </CardContent>
+                                </Card>
                             ))}
-                        </Marquee>
+                        </div>
 
-                        {/* Gradient fade edges */}
-                        <div className="pointer-events-none absolute inset-y-0 left-0 w-1/4 bg-linear-to-r from-background to-transparent" />
-                        <div className="pointer-events-none absolute inset-y-0 right-0 w-1/4 bg-linear-to-l from-background to-transparent" />
-                    </motion.div>
-
-                    {/* Enhanced CTA Buttons */}
-                    <motion.div
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ delay: 0.7, duration: 0.6 }}
-                        className="mb-12 flex flex-col sm:flex-row justify-center gap-4"
-                    >
-                        <Button
-                            size="lg"
-                            className="gap-2 text-lg py-6 px-8 overflow-y-hidden bg-linear-to-r from-primary to-chart-2 hover:from-primary/90 hover:to-chart-2/90 text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 rounded-xl border-0"
-                        >
-                            <Mail className="h-5 w-5" />
-                            Get Started
-                        </Button>
-                        <Link href="/symptom-analyzer">
+                        {/* CTA Buttons */}
+                        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
                             <Button
                                 size="lg"
-                                variant="outline"
-                                className="gap-2 text-lg py-6 px-8 overflow-y-hidden border-2 border-border bg-background/50 backdrop-blur-sm hover:bg-accent hover:text-accent-foreground rounded-xl transition-all duration-300"
+                                className="gap-2 px-8 py-6 text-base rounded-xl bg-linear-to-r from-primary to-primary/90 hover:from-primary hover:to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl transition-all"
                             >
-                                View Demo
-                                <ArrowDown className="h-5 w-5" />
+                                <Mail className="h-5 w-5" />
+                                Get Started for Free
                             </Button>
-                        </Link>
-                    </motion.div>
+                            <Link href="/symptom-analyzer">
+                                <Button
+                                    size="lg"
+                                    variant="outline"
+                                    className="gap-2 px-8 py-6 text-base rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition-all"
+                                >
+                                    View Live Demo
+                                    <ArrowRight className="h-5 w-5" />
+                                </Button>
+                            </Link>
+                        </div>
 
-                    {/* Trust Indicators */}
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 0.8, duration: 0.6 }}
-                        className="flex flex-wrap items-center justify-center gap-6 text-sm text-muted-foreground mb-8"
-                    >
-                        <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm rounded-full px-4 py-2 border border-border">
-                            <div className="p-1 bg-primary/10 rounded-full">
-                                <CheckCircle className="h-4 w-4 text-primary" />
-                            </div>
-                            <span>HIPAA Compliant</span>
+                        {/* Trust Indicators */}
+                        <div className="flex flex-wrap justify-center gap-3 pt-12">
+                            {benefits.map((benefit, index) => (
+                                <div
+                                    key={index}
+                                    className="flex items-center gap-3 bg-card/40 backdrop-blur-sm rounded-full px-4 py-2 border border-border/30"
+                                >
+                                    <div className="p-1.5 bg-primary/10 rounded-full">
+                                        <div className="text-primary">
+                                            {benefit.icon}
+                                        </div>
+                                    </div>
+                                    <div className="text-left">
+                                        <p className="text-sm font-semibold text-foreground">
+                                            {benefit.title}
+                                        </p>
+                                        <p className="text-xs text-muted-foreground">
+                                            {benefit.description}
+                                        </p>
+                                    </div>
+                                </div>
+                            ))}
                         </div>
-                        <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm rounded-full px-4 py-2 border border-border">
-                            <div className="p-1 bg-chart-2/10 rounded-full">
-                                <Zap className="h-4 w-4 text-chart-2" />
-                            </div>
-                            <span>Real-time Sync</span>
-                        </div>
-                        <div className="flex items-center gap-2 bg-card/50 backdrop-blur-sm rounded-full px-4 py-2 border border-border">
-                            <div className="p-1 bg-chart-4/10 rounded-full">
-                                <Shield className="h-4 w-4 text-chart-4" />
-                            </div>
-                            <span>Enterprise Secure</span>
-                        </div>
-                    </motion.div>
-                </motion.div>
-            </div>
-
-            {/* Enhanced Scroll Indicator */}
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1, y: [0, 10, 0] }}
-                transition={{
-                    opacity: { delay: 1.5, duration: 0.6 },
-                    y: {
-                        delay: 1.5,
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut",
-                    },
-                }}
-                className="absolute bottom-8 left-1/2 -translate-x-1/2 transform"
-            >
-                <div className="flex flex-col items-center gap-2">
-                    <motion.div
-                        animate={{ y: [0, 5, 0] }}
-                        transition={{
-                            duration: 1.5,
-                            repeat: Infinity,
-                            ease: "easeInOut",
-                        }}
-                    >
-                        <ArrowDown className="h-6 w-6 text-muted-foreground" />
-                    </motion.div>
-                    <motion.p
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ delay: 2 }}
-                        className="text-xs text-muted-foreground/70 font-medium"
-                    >
-                        Scroll to explore
-                    </motion.p>
+                    </div>
                 </div>
-            </motion.div>
-        </section>
-    );
-}
+            </section>
 
-function FeatureCard({ icon, text }: { icon: React.ReactNode; text: string }) {
-    return (
-        <div className="flex items-center gap-3 bg-card/80 backdrop-blur-md rounded-xl px-6 py-3 border min-w-[260px]">
-            <div className="text-primary p-2 bg-primary/10 rounded-lg">
-                {icon}
+            {/* Stats Section */}
+            <section className="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-linear-to-b from-muted/5 to-transparent">
+                <div className="max-w-7xl mx-auto">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        {[
+                            {
+                                label: "Healthcare Providers",
+                                value: "500+",
+                                color: "text-chart-1",
+                            },
+                            {
+                                label: "Patient Records",
+                                value: "1M+",
+                                color: "text-chart-2",
+                            },
+                            {
+                                label: "AI Insights",
+                                value: "99.9%",
+                                color: "text-chart-3",
+                            },
+                            {
+                                label: "Uptime",
+                                value: "99.99%",
+                                color: "text-chart-4",
+                            },
+                        ].map((stat, index) => (
+                            <Card
+                                key={index}
+                                className="bg-card/60 backdrop-blur-sm border border-border/30 shadow-xs rounded-xl"
+                            >
+                                <CardContent className="p-6 text-center">
+                                    <div
+                                        className={`text-2xl md:text-3xl font-bold mb-1 ${stat.color}`}
+                                    >
+                                        {stat.value}
+                                    </div>
+                                    <p className="text-xs md:text-sm text-muted-foreground">
+                                        {stat.label}
+                                    </p>
+                                </CardContent>
+                            </Card>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Value Proposition */}
+            <section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8">
+                <div className="max-w-4xl mx-auto text-center space-y-8">
+                    <div className="space-y-4">
+                        <Badge
+                            variant="outline"
+                            className="px-4 py-2 bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
+                        >
+                            Why Choose CuraSync
+                        </Badge>
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+                            Transform Your Healthcare Practice
+                        </h2>
+                        <p className="text-base md:text-lg text-muted-foreground">
+                            Our platform brings together the best of technology
+                            and healthcare to deliver unparalleled efficiency
+                            and patient care
+                        </p>
+                    </div>
+
+                    <div className="grid md:grid-cols-3 gap-6">
+                        {[
+                            {
+                                title: "Save Time",
+                                description:
+                                    "Reduce administrative tasks by 40% with automated workflows",
+                                icon: <Zap className="h-7 w-7 text-chart-1" />,
+                                bgColor: "bg-chart-1/10",
+                            },
+                            {
+                                title: "Improve Care",
+                                description:
+                                    "Access comprehensive patient data instantly for better decisions",
+                                icon: (
+                                    <Heart className="h-7 w-7 text-chart-2" />
+                                ),
+                                bgColor: "bg-chart-2/10",
+                            },
+                            {
+                                title: "Ensure Security",
+                                description:
+                                    "Bank-level security with full HIPAA compliance",
+                                icon: (
+                                    <Shield className="h-7 w-7 text-chart-3" />
+                                ),
+                                bgColor: "bg-chart-3/10",
+                            },
+                        ].map((item, index) => (
+                            <div
+                                key={index}
+                                className="space-y-4 p-6 rounded-2xl bg-card/60 backdrop-blur-sm border border-border/30 shadow-sm"
+                            >
+                                <div
+                                    className={`p-3 rounded-xl ${item.bgColor} w-fit mx-auto`}
+                                >
+                                    {item.icon}
+                                </div>
+                                <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                                    {item.title}
+                                </h3>
+                                <p className="text-sm text-muted-foreground">
+                                    {item.description}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </section>
+
+            {/* Final CTA */}
+            <section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-linear-to-r from-primary/5 via-chart-2/5 to-chart-4/5">
+                <div className="max-w-4xl mx-auto text-center space-y-8">
+                    <div className="space-y-4">
+                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
+                            Ready to Transform Your Practice?
+                        </h2>
+                        <p className="text-base md:text-lg text-muted-foreground">
+                            Join thousands of healthcare providers who trust
+                            CuraSync
+                        </p>
+                    </div>
+
+                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
+                        <Button
+                            size="lg"
+                            className="gap-2 px-8 py-6 text-base rounded-xl bg-linear-to-r from-primary to-chart-2 hover:from-primary/90 hover:to-chart-2/90 text-primary-foreground shadow-lg hover:shadow-xl"
+                        >
+                            <Mail className="h-5 w-5" />
+                            Schedule a Demo
+                        </Button>
+                        <Button
+                            size="lg"
+                            variant="outline"
+                            className="gap-2 px-8 py-6 text-base rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent"
+                        >
+                            Learn More
+                        </Button>
+                    </div>
+
+                    <p className="text-sm text-muted-foreground">
+                        No credit card required • 14-day free trial • Cancel
+                        anytime
+                    </p>
+                </div>
+            </section>
+
+            {/* Scroll Indicator */}
+            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 hidden md:block">
+                <div className="flex flex-col items-center gap-1">
+                    <div className="animate-bounce">
+                        <ArrowRight className="h-5 w-5 text-muted-foreground rotate-90" />
+                    </div>
+                    <p className="text-xs text-muted-foreground/70 font-medium">
+                        Scroll to explore
+                    </p>
+                </div>
             </div>
-            <span className="font-medium text-card-foreground text-lg">
-                {text}
-            </span>
         </div>
     );
 }

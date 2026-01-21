@@ -137,9 +137,13 @@ export default function FacilitiesMapPage() {
                 const res = await fetch("/api/facility");
                 if (!res.ok) throw new Error("Failed to fetch facilities");
 
-                const data: Facility[] = await res.json();
+                const json = await res.json();
 
-                const enhancedData = data.map((facility, index) => ({
+                const facilities: Facility[] = Array.isArray(json.facility)
+                    ? json.facility
+                    : [];
+
+                const enhancedData = facilities.map((facility, index) => ({
                     ...facility,
                     waitTime: [
                         "15-30 min",

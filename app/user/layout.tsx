@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Space_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "../globals.css";
 import { Toaster } from "@/components/ui/sonner";
 import { ThemeProvider } from "@/components/theme-provider";
@@ -8,15 +8,15 @@ import { SidebarInset, SidebarProvider } from "@/components/ui/sidebar";
 import { UserHeader } from "@/components/user-header";
 import { ClerkProvider } from "@clerk/nextjs";
 
-const dmSans = DM_Sans({
+const inter = Inter({
     subsets: ["latin"],
     weight: ["400", "500", "600", "700"],
     variable: "--font-sans",
 });
 
-const spaceMono = Space_Mono({
+const jetbrainsMono = JetBrains_Mono({
     subsets: ["latin"],
-    weight: ["400", "700"],
+    weight: ["400", "500", "700"],
     variable: "--font-mono",
 });
 
@@ -34,7 +34,7 @@ export default function UserLayout({
         <ClerkProvider>
             <html lang="en" suppressHydrationWarning>
                 <body
-                    className={`${dmSans.className} ${spaceMono.variable} antialiased bg-background text-foreground`}
+                    className={`${inter.className} ${jetbrainsMono.variable} antialiased bg-background text-foreground`}
                 >
                     <ThemeProvider
                         attribute="class"

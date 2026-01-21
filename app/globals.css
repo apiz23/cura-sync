@@ -36,9 +36,6 @@
     --sidebar-accent-foreground: oklch(0.55 0.18 155);
     --sidebar-border: oklch(0.9 0.015 150);
     --sidebar-ring: oklch(0.55 0.18 155);
-    --font-sans: DM Sans, sans-serif;
-    --font-serif: DM Sans, sans-serif;
-    --font-mono: Space Mono, monospace;
     --radius: 1rem;
     --shadow-2xs: 0px 1px 1px 0px hsl(150 30% 20% / 0.05);
     --shadow-xs: 0px 1px 2px 0px hsl(150 30% 20% / 0.08);
@@ -90,9 +87,6 @@
     --sidebar-accent-foreground: oklch(0.98 0.01 155);
     --sidebar-border: oklch(0.3 0.04 155);
     --sidebar-ring: oklch(0.65 0.18 155);
-    --font-sans: DM Sans, sans-serif;
-    --font-serif: DM Sans, sans-serif;
-    --font-mono: Space Mono, monospace;
     --radius: 1rem;
     --shadow-2xs: 0px 1px 1px 0px hsl(155 50% 10% / 0.1);
     --shadow-xs: 0px 1px 2px 0px hsl(155 50% 10% / 0.15);
@@ -178,14 +172,8 @@
     body {
         @apply bg-background text-foreground;
         letter-spacing: var(--tracking-normal);
-        font-family: var(--font-sans);
-    }
-    .serif {
-        font-family: var(--font-serif);
-    }
-
-    .mono {
-        font-family: var(--font-mono);
+        @apply font-sans bg-background text-foreground;
+        letter-spacing: var(--tracking-normal);
     }
 
     .leaflet-container {

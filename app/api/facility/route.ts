@@ -1,22 +1,11 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
 
-export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const facilityId = searchParams.get("facilityId");
-
-    if (!facilityId) {
-        return NextResponse.json(
-            { error: "facilityId is required" },
-            { status: 400 }
-        );
-    }
-
+export async function GET() {
     const { data, error } = await supabase
         .from("cura_facilities")
         .select("*")
-        .eq("id", facilityId)
-        .single();
+        .eq("is_active", true);
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });

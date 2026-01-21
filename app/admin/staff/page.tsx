@@ -54,12 +54,23 @@ export default function StaffPage() {
 
     async function fetchStaff() {
         setLoading(true);
+
         try {
-            const res = await fetch("/api/staff");
+            const facilityId = sessionStorage.getItem("facilityId");
+
+            if (!facilityId) {
+                toast.error("Facility not selected");
+                return;
+            }
+
+            const res = await fetch(
+                `/api/staff/by-facility?facilityId=${facilityId}`
+            );
+
             const data = await res.json();
 
             if (!res.ok) {
-                toast.error("Failed to load staff");
+                toast.error(data.error || "Failed to load staff");
             } else {
                 setStaff(data.staff);
             }
@@ -196,17 +207,11 @@ export default function StaffPage() {
                         onClick={() => handleViewStaff(row.original)}
                     >
                         <div className="relative">
-                            <Avatar className="size-10 bg-gradient-to-br from-primary/10 to-primary/20">
+                            <Avatar className="size-10 bg-linear-to-br from-primary/10 to-primary/20">
                                 <AvatarFallback className="text-primary font-semibold">
                                     {row.original.full_name.charAt(0)}
                                 </AvatarFallback>
                             </Avatar>
-                            <div
-                                className="absolute -right-1 -bottom-1 h-3 w-3 rounded-full ring-2 ring-background"
-                                style={{
-                                    backgroundColor: roleColor.dot,
-                                }}
-                            />
                         </div>
                         <div>
                             <div className="font-medium text-foreground group-hover/patient:text-primary transition-colors">

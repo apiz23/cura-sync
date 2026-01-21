@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { DM_Sans, Space_Mono } from "next/font/google";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "../globals.css";
 import { Toaster } from "sonner";
 import Navbar from "@/components/navbar";
@@ -8,15 +8,15 @@ import ChatbotLauncher from "@/components/chatbot-launcher";
 import { ClerkProvider } from "@clerk/nextjs";
 import IntroGate from "./intro-gate";
 
-const dmSans = DM_Sans({
+const inter = Inter({
     subsets: ["latin"],
-    weight: ["500", "600", "700"],
+    weight: ["400", "500", "600", "700"],
     variable: "--font-sans",
 });
 
-const spaceMono = Space_Mono({
+const jetbrainsMono = JetBrains_Mono({
     subsets: ["latin"],
-    weight: ["400", "700"],
+    weight: ["400", "500", "700"],
     variable: "--font-mono",
 });
 
@@ -34,7 +34,7 @@ export default function RootLayout({
         <ClerkProvider>
             <html lang="en" suppressHydrationWarning>
                 <body
-                    className={`${dmSans.className} ${spaceMono.className} antialiased`}
+                    className={`${inter.variable} ${jetbrainsMono.variable} antialiased`}
                 >
                     <ThemeProvider
                         attribute="class"
@@ -46,8 +46,6 @@ export default function RootLayout({
                         <ChatbotLauncher />
                         {children}
                         <Toaster richColors />
-
-                        {/* Intro overlay */}
                         <IntroGate />
                     </ThemeProvider>
                 </body>

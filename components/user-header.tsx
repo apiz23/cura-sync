@@ -11,7 +11,7 @@ import { useEffect } from "react";
 import { SidebarTrigger } from "@/components/ui/sidebar";
 import { usePathname } from "next/navigation";
 import { getPageTitle } from "@/lib/getPageTitle";
-import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
+import { ModeToggle } from "./mode-toggle";
 import { Separator } from "./ui/separator";
 
 export function UserHeader() {
@@ -59,7 +59,7 @@ export function UserHeader() {
             </div>
 
             <div className="flex items-center gap-3">
-                <AnimatedThemeToggler />
+                <ModeToggle />
             </div>
         </header>
     );

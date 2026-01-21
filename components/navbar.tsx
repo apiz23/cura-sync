@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Menu, Stethoscope } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Drawer, DrawerContent, DrawerTrigger } from "@/components/ui/drawer";
-import { AnimatedThemeToggler } from "./ui/animated-theme-toggler";
+import { ModeToggle } from './mode-toggle';
 
 export default function Navbar() {
     const pathname = usePathname();
@@ -58,7 +58,7 @@ export default function Navbar() {
 
                     {/* Right actions desktop */}
                     <div className="hidden md:flex items-center space-x-2 ml-6">
-                        <AnimatedThemeToggler />
+                        <ModeToggle />
                         <Link href="/auth/login">
                             <Button
                                 variant="ghost"
@@ -71,7 +71,7 @@ export default function Navbar() {
                     </div>
 
                     <div className="md:hidden flex items-center space-x-2">
-                        <AnimatedThemeToggler />
+                        <ModeToggle />
 
                         {/* Drawer menu */}
                         <Drawer>

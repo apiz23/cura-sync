@@ -5,12 +5,6 @@ import { Moon, Sun } from "lucide-react";
 import { flushSync } from "react-dom";
 
 import { cn } from "@/lib/utils";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
 
 interface AnimatedThemeTogglerProps
     extends React.ComponentPropsWithoutRef<"button"> {
@@ -19,7 +13,7 @@ interface AnimatedThemeTogglerProps
     variant?: "default" | "ghost" | "outline";
 }
 
-export const AnimatedThemeToggler = ({
+export const ModeToggle = ({
     className,
     duration = 400,
     size = "md",
@@ -141,105 +135,62 @@ export const AnimatedThemeToggler = ({
     };
 
     return (
-        <TooltipProvider>
-            <Tooltip delayDuration={300}>
-                <TooltipTrigger asChild>
-                    <button
-                        ref={buttonRef}
-                        onClick={toggleTheme}
-                        disabled={isTransitioning}
+        <button
+            ref={buttonRef}
+            onClick={toggleTheme}
+            disabled={isTransitioning}
+            className={cn(
+                "relative inline-flex items-center justify-center rounded-full transition-all duration-300",
+                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
+                sizeClasses[size],
+                variantClasses[variant],
+                isDark ? "text-amber-300" : "text-indigo-600",
+                isTransitioning && "opacity-50 cursor-not-allowed",
+                className
+            )}
+            aria-label={`Switch to ${isDark ? "light" : "dark"} theme`}
+            aria-disabled={isTransitioning}
+            {...props}
+        >
+            {/* Icon container with animation */}
+            <div className="relative flex items-center justify-center overflow-hidden">
+                {/* Sun Icon */}
+                <Sun
+                    className={cn(
+                        "transition-all duration-500 ease-in-out",
+                        iconSize[size],
+                        isDark
+                            ? "translate-y-0 rotate-0 opacity-100"
+                            : "-translate-y-6 rotate-90 opacity-0"
+                    )}
+                />
+
+                {/* Moon Icon */}
+                <Moon
+                    className={cn(
+                        "absolute transition-all duration-500 ease-in-out",
+                        iconSize[size],
+                        isDark
+                            ? "translate-y-6 rotate-90 opacity-0"
+                            : "translate-y-0 rotate-0 opacity-100"
+                    )}
+                />
+            </div>
+
+            {/* Loading indicator */}
+            {isTransitioning && (
+                <div className="absolute inset-0 flex items-center justify-center">
+                    <div
                         className={cn(
-                            "relative inline-flex items-center justify-center rounded-full transition-all duration-300",
-                            "transform hover:scale-105 active:scale-95",
-                            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
-                            "touch-manipulation", // Disable double-tap zoom on mobile
-                            sizeClasses[size],
-                            variantClasses[variant],
-                            isDark ? "text-amber-300" : "text-indigo-600",
-                            isTransitioning && "opacity-50 cursor-not-allowed",
-                            className
+                            "rounded-full border-2 border-t-transparent animate-spin",
+                            isDark ? "border-amber-300" : "border-indigo-600",
+                            size === "sm" && "w-4 h-4",
+                            size === "md" && "w-5 h-5",
+                            size === "lg" && "w-6 h-6"
                         )}
-                        aria-label={`Switch to ${
-                            isDark ? "light" : "dark"
-                        } theme`}
-                        aria-disabled={isTransitioning}
-                        {...props}
-                    >
-                        {/* Background linear effect */}
-                        <div className="absolute inset-0 rounded-full overflow-hidden">
-                            {isDark ? (
-                                <div className="absolute inset-0 rounded-full bg-linear-to-br from-amber-500/10 via-orange-500/5 to-yellow-500/10" />
-                            ) : (
-                                <div className="absolute inset-0 rounded-full bg-linear-to-br from-blue-500/10 via-indigo-500/5 to-purple-500/10" />
-                            )}
-                        </div>
-
-                        {/* Icon container with animation */}
-                        <div className="relative flex items-center justify-center overflow-hidden">
-                            {/* Sun Icon */}
-                            <Sun
-                                className={cn(
-                                    "transition-all duration-500 ease-in-out",
-                                    iconSize[size],
-                                    isDark
-                                        ? "translate-y-0 rotate-0 opacity-100"
-                                        : "-translate-y-6 rotate-90 opacity-0"
-                                )}
-                            />
-
-                            {/* Moon Icon */}
-                            <Moon
-                                className={cn(
-                                    "absolute transition-all duration-500 ease-in-out",
-                                    iconSize[size],
-                                    isDark
-                                        ? "translate-y-6 rotate-90 opacity-0"
-                                        : "translate-y-0 rotate-0 opacity-100"
-                                )}
-                            />
-                        </div>
-
-                        {/* Glow effect */}
-                        <div
-                            className={cn(
-                                "absolute inset-0 rounded-full blur-md transition-opacity duration-300",
-                                isDark ? "bg-amber-400/20" : "bg-blue-400/20",
-                                "opacity-0 hover:opacity-100",
-                                isTransitioning && "opacity-0"
-                            )}
-                        />
-
-                        {/* Loading indicator */}
-                        {isTransitioning && (
-                            <div className="absolute inset-0 flex items-center justify-center">
-                                <div
-                                    className={cn(
-                                        "rounded-full border-2 border-t-transparent animate-spin",
-                                        isDark
-                                            ? "border-amber-300"
-                                            : "border-indigo-600",
-                                        size === "sm" && "w-4 h-4",
-                                        size === "md" && "w-5 h-5",
-                                        size === "lg" && "w-6 h-6"
-                                    )}
-                                />
-                            </div>
-                        )}
-                    </button>
-                </TooltipTrigger>
-                <TooltipContent side="bottom" className="px-2 py-1 text-xs">
-                    <span
-                        className={cn(
-                            "font-medium",
-                            isDark ? "text-amber-600" : "text-blue-600"
-                        )}
-                    >
-                        {isTransitioning
-                            ? "Switching theme..."
-                            : `Switch to ${isDark ? "light" : "dark"} mode`}
-                    </span>
-                </TooltipContent>
-            </Tooltip>
-        </TooltipProvider>
+                    />
+                </div>
+            )}
+        </button>
     );
 };
