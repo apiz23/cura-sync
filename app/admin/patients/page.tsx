@@ -64,6 +64,7 @@ export interface Patient {
     emergency_contact?: string;
     age?: number;
     created_at?: string;
+    last_visit?: string;
 }
 
 type RecordStatus = "complete" | "partial" | "basic";

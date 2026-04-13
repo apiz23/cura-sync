@@ -1,5 +1,4 @@
 import { NextResponse } from "next/server";
-import { Resend } from "resend";
 
 type ContactPayload = {
     name?: string;
@@ -42,33 +41,51 @@ export async function POST(req: Request) {
             );
         }
 
-        const resend = new Resend(apiKey);
-
-        await resend.emails.send({
-            from: fromEmail,
-            to: [toEmail],
-            replyTo: email.trim(),
-            subject: `[CuraSync Contact] ${subject.trim()}`,
-            text: [
-                `Name: ${name.trim()}`,
-                `Email: ${email.trim()}`,
-                `Subject: ${subject.trim()}`,
-                "",
-                "Message:",
-                message.trim(),
-            ].join("\n"),
-            html: `
-                <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #081e24;">
-                    <h2>New CuraSync Contact Form Submission</h2>
-                    <p><strong>Name:</strong> ${escapeHtml(name.trim())}</p>
-                    <p><strong>Email:</strong> ${escapeHtml(email.trim())}</p>
-                    <p><strong>Subject:</strong> ${escapeHtml(subject.trim())}</p>
-                    <hr />
-                    <p><strong>Message:</strong></p>
-                    <p>${escapeHtml(message.trim()).replace(/\n/g, "<br />")}</p>
-                </div>
-            `,
+        const resendResponse = await fetch("https://api.resend.com/emails", {
+            method: "POST",
+            headers: {
+                Authorization: `Bearer ${apiKey}`,
+                "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+                from: fromEmail,
+                to: [toEmail],
+                reply_to: email.trim(),
+                subject: `[CuraSync Contact] ${subject.trim()}`,
+                text: [
+                    `Name: ${name.trim()}`,
+                    `Email: ${email.trim()}`,
+                    `Subject: ${subject.trim()}`,
+                    "",
+                    "Message:",
+                    message.trim(),
+                ].join("\n"),
+                html: `
+                    <div style="font-family: Arial, sans-serif; line-height: 1.6; color: #081e24;">
+                        <h2>New CuraSync Contact Form Submission</h2>
+                        <p><strong>Name:</strong> ${escapeHtml(name.trim())}</p>
+                        <p><strong>Email:</strong> ${escapeHtml(email.trim())}</p>
+                        <p><strong>Subject:</strong> ${escapeHtml(subject.trim())}</p>
+                        <hr />
+                        <p><strong>Message:</strong></p>
+                        <p>${escapeHtml(message.trim()).replace(/\n/g, "<br />")}</p>
+                    </div>
+                `,
+            }),
         });
+
+        if (!resendResponse.ok) {
+            const resendError = await resendResponse.json().catch(() => null);
+            return NextResponse.json(
+                {
+                    error:
+                        resendError?.message ||
+                        resendError?.error ||
+                        "Failed to send message",
+                },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json({ success: true });
     } catch (error) {

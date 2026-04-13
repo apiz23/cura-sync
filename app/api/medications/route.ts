@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
-import { requireAnySession } from "@/lib/authz";
+import {
+    requireAnySession,
+    type AnySession,
+    type StaffSession,
+} from "@/lib/authz";
 
-function canManagePrescriptions(session: Awaited<ReturnType<typeof requireAnySession>>) {
+function canManagePrescriptions(
+    session: AnySession | NextResponse
+): session is StaffSession {
     return (
         !(session instanceof NextResponse) &&
         session.kind === "staff" &&

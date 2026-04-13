@@ -89,8 +89,9 @@ export async function requireStaffSession(
             );
         }
 
-        expectedVersion = data?.session_version ?? 1;
-        setCachedStaffSessionVersion(claims.staffId, expectedVersion);
+        const verifiedVersion = data?.session_version ?? 1;
+        expectedVersion = verifiedVersion;
+        setCachedStaffSessionVersion(claims.staffId, verifiedVersion);
     }
 
     if (claims.sessionVersion !== expectedVersion) {

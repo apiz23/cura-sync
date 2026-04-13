@@ -1,21 +1,8 @@
 import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
-import { Inter, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
-
-const inter = Inter({
-    subsets: ["latin"],
-    weight: ["400", "500", "600", "700"],
-    variable: "--font-sans",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-    subsets: ["latin"],
-    weight: ["400", "500", "700"],
-    variable: "--font-mono",
-});
 
 export const metadata: Metadata = {
     title: "CuraSync",
@@ -30,9 +17,7 @@ export default function RootLayout({
     return (
         <ClerkProvider>
             <html lang="en" suppressHydrationWarning>
-                <body
-                    className={`${inter.variable} ${jetbrainsMono.variable} bg-background text-foreground antialiased`}
-                >
+                <body className="bg-background text-foreground antialiased">
                     <ThemeProvider
                         attribute="class"
                         defaultTheme="dark"
