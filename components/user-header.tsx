@@ -29,7 +29,7 @@ export function UserHeader() {
 
     if (!isLoaded) {
         return (
-            <header className="flex h-16 items-center justify-between gap-4 border-b bg-background/95 backdrop-blur sticky top-0 z-50 px-6">
+            <header className="flex h-(--header-height) shrink-0 items-center justify-between gap-4 border-b bg-background/95 px-4 md:px-6">
                 <div className="h-4 w-48 bg-muted animate-pulse rounded-lg" />
                 <div className="flex items-center gap-3">
                     <div className="h-9 w-9 bg-muted animate-pulse rounded-lg" />
@@ -40,7 +40,7 @@ export function UserHeader() {
     }
 
     return (
-        <header className="flex h-(--header-height) shrink-0 rounded-t-3xl items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) justify-between bg-background/90 p-3">
+        <header className="flex h-(--header-height) shrink-0 items-center justify-between gap-2 border-b bg-background/95 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) md:px-6">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="h-9 w-9" />
                 <Separator

@@ -36,12 +36,7 @@ type Facility = {
     type: string | null;
     latitude: string | null;
     longitude: string | null;
-    phone?: string;
-    hours?: string;
-    description?: string;
     distance?: number;
-    waitTime?: string;
-    services?: string[];
 };
 
 function useUserLocation() {
@@ -129,7 +124,7 @@ function Map3DController() {
 export default function FacilitiesMapPage() {
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [loading, setLoading] = useState(true);
-    const { location: userLocation } = useUserLocation();
+    const { location: userLocation, error: locationError } = useUserLocation();
 
     useEffect(() => {
         async function loadFacilities() {
@@ -143,21 +138,7 @@ export default function FacilitiesMapPage() {
                     ? json.facility
                     : [];
 
-                const enhancedData = facilities.map((facility, index) => ({
-                    ...facility,
-                    waitTime: [
-                        "15-30 min",
-                        "30-45 min",
-                        "1-2 hours",
-                        "Immediate",
-                    ][index % 4],
-                    services: ["Emergency", "OPD", "ICU", "Surgery"].slice(
-                        0,
-                        (index % 3) + 1
-                    ),
-                }));
-
-                setFacilities(enhancedData);
+                setFacilities(facilities);
             } catch (err) {
                 console.error(err);
                 setFacilities([]);
@@ -287,6 +268,16 @@ export default function FacilitiesMapPage() {
             <PageTitle title={"Facility"} />
             {/* Map View */}
             <div className="flex-1 relative">
+                {locationError ? (
+                    <div className="absolute left-4 right-4 top-4 z-20 rounded-xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur-sm md:left-auto md:right-4 md:w-[360px]">
+                        <p className="font-medium text-foreground">
+                            Using default map location
+                        </p>
+                        <p className="mt-1 text-sm text-muted-foreground">
+                            Live geolocation was unavailable, so the map is using a fallback center. You can still browse facilities normally.
+                        </p>
+                    </div>
+                ) : null}
                 <Map center={center} zoom={14}>
                     {/* 3D Controls */}
                     <Map3DController />
@@ -401,14 +392,10 @@ export default function FacilitiesMapPage() {
                                                                     </span>
                                                                 </div>
                                                             )}
-                                                            {facility.waitTime && (
-                                                                <Badge className="bg-white/20 text-white border-white/30 gap-2">
-                                                                    <Clock className="size-3" />
-                                                                    {
-                                                                        facility.waitTime
-                                                                    }
-                                                                </Badge>
-                                                            )}
+                                                            <Badge className="bg-white/20 text-white border-white/30 gap-2">
+                                                                <Clock className="size-3" />
+                                                                Location available
+                                                            </Badge>
                                                         </div>
                                                     </div>
                                                 </div>
@@ -429,68 +416,8 @@ export default function FacilitiesMapPage() {
                                                     </p>
                                                 </div>
 
-                                                {/* Services */}
-                                                {facility.services && (
-                                                    <div className="space-y-3">
-                                                        <div className="flex items-center gap-3">
-                                                            <Clock className="size-5 text-primary" />
-                                                            <p className="text-sm font-medium text-foreground">
-                                                                Available
-                                                                Services
-                                                            </p>
-                                                        </div>
-                                                        <div className="flex flex-wrap gap-2 pl-8">
-                                                            {facility.services.map(
-                                                                (
-                                                                    service,
-                                                                    idx
-                                                                ) => (
-                                                                    <Badge
-                                                                        key={
-                                                                            idx
-                                                                        }
-                                                                        variant="outline"
-                                                                        className="text-xs"
-                                                                    >
-                                                                        {
-                                                                            service
-                                                                        }
-                                                                    </Badge>
-                                                                )
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                )}
-
-                                                {/* Contact & Hours */}
-                                                <div className="grid grid-cols-2 gap-6">
-                                                    {facility.phone && (
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center gap-3">
-                                                                <Phone className="size-4 text-muted-foreground" />
-                                                                <p className="text-xs font-medium text-muted-foreground">
-                                                                    Contact
-                                                                </p>
-                                                            </div>
-                                                            <p className="text-sm font-semibold text-foreground pl-7">
-                                                                {facility.phone}
-                                                            </p>
-                                                        </div>
-                                                    )}
-                                                    {facility.hours && (
-                                                        <div className="space-y-2">
-                                                            <div className="flex items-center gap-3">
-                                                                <Clock className="size-4 text-muted-foreground" />
-                                                                <p className="text-xs font-medium text-muted-foreground">
-                                                                    Operating
-                                                                    Hours
-                                                                </p>
-                                                            </div>
-                                                            <p className="text-sm font-semibold text-foreground pl-7">
-                                                                {facility.hours}
-                                                            </p>
-                                                        </div>
-                                                    )}
+                                                <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
+                                                    Only verified facility fields from the current database are shown here. Waiting times and service lists are not displayed unless they are stored in the system.
                                                 </div>
 
                                                 {/* Action Buttons */}

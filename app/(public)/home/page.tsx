@@ -1,54 +1,55 @@
 "use client";
 
+import { Link } from "@/i18n/navigation";
 import {
-    Mail,
-    Sparkles,
-    Zap,
-    CheckCircle,
-    Shield,
     Activity,
-    Users,
+    ArrowRight,
+    BarChart,
     Brain,
     Cloud,
-    Lock,
-    BarChart,
-    ArrowRight,
     Heart,
+    Lock,
+    Mail,
+    Shield,
+    Sparkles,
+    Users,
+    Zap,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+
 import PageTitle from "@/components/page-title";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent } from "@/components/ui/card";
 
 export default function Page() {
+    const t = useTranslations("HomePage");
     const featureCards = [
         {
             icon: <Activity className="h-6 w-6" />,
-            title: "Real-time Sync",
-            description:
-                "Instant patient data synchronization across all devices",
+            title: t("featureCards.syncTitle"),
+            description: t("featureCards.syncDescription"),
             bgColor: "bg-chart-1/10",
             textColor: "text-chart-1",
         },
         {
             icon: <Brain className="h-6 w-6" />,
-            title: "AI Insights",
-            description: "Clinical decision support powered by advanced AI",
+            title: t("featureCards.aiTitle"),
+            description: t("featureCards.aiDescription"),
             bgColor: "bg-chart-2/10",
             textColor: "text-chart-2",
         },
         {
             icon: <Users className="h-6 w-6" />,
-            title: "Team Collaboration",
-            description: "Seamless communication between healthcare providers",
+            title: t("featureCards.rolesTitle"),
+            description: t("featureCards.rolesDescription"),
             bgColor: "bg-chart-3/10",
             textColor: "text-chart-3",
         },
         {
             icon: <Cloud className="h-6 w-6" />,
-            title: "Cloud Native",
-            description: "Secure, scalable infrastructure built for healthcare",
+            title: t("featureCards.accessTitle"),
+            description: t("featureCards.accessDescription"),
             bgColor: "bg-chart-4/10",
             textColor: "text-chart-4",
         },
@@ -57,86 +58,78 @@ export default function Page() {
     const benefits = [
         {
             icon: <Lock className="h-5 w-5" />,
-            title: "HIPAA Compliant",
-            description: "Enterprise-grade security and compliance",
+            title: t("benefits.privacyTitle"),
+            description: t("benefits.privacyDescription"),
         },
         {
             icon: <Zap className="h-5 w-5" />,
-            title: "Fast Implementation",
-            description: "Get started in days, not months",
+            title: t("benefits.workflowTitle"),
+            description: t("benefits.workflowDescription"),
         },
         {
             icon: <BarChart className="h-5 w-5" />,
-            title: "Analytics Dashboard",
-            description: "Comprehensive insights and reporting",
+            title: t("benefits.visibilityTitle"),
+            description: t("benefits.visibilityDescription"),
         },
         {
             icon: <Heart className="h-5 w-5" />,
-            title: "Patient Focused",
-            description: "Designed for better patient outcomes",
+            title: t("benefits.patientTitle"),
+            description: t("benefits.patientDescription"),
         },
+    ];
+
+    const productStats = [
+        { label: t("stats.modules"), value: "4", color: "text-chart-1" },
+        { label: t("stats.roles"), value: "3", color: "text-chart-2" },
+        { label: t("stats.ai"), value: "2", color: "text-chart-3" },
+        { label: t("stats.journeys"), value: "2", color: "text-chart-4" },
     ];
 
     return (
         <div className="min-h-screen bg-linear-to-b from-background via-background to-muted/5">
             <PageTitle title="Home" />
 
-            {/* Hero Section */}
-            <section className="relative py-28 px-4 sm:px-6 lg:px-8">
-                {/* Background Elements */}
+            <section className="relative px-4 py-28 sm:px-6 lg:px-8">
                 <div className="absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-40 -right-40 w-80 h-80 bg-primary/5 rounded-full blur-3xl" />
-                    <div className="absolute -bottom-40 -left-40 w-80 h-80 bg-chart-2/5 rounded-full blur-3xl" />
-                    <div className="absolute top-1/3 left-1/3 w-96 h-96 bg-chart-4/5 rounded-full blur-3xl opacity-30" />
+                    <div className="absolute -right-40 -top-40 h-80 w-80 rounded-full bg-primary/5 blur-3xl" />
+                    <div className="absolute -bottom-40 -left-40 h-80 w-80 rounded-full bg-chart-2/5 blur-3xl" />
+                    <div className="absolute left-1/3 top-1/3 h-96 w-96 rounded-full bg-chart-4/5 opacity-30 blur-3xl" />
                 </div>
 
-                <div className="relative z-10 max-w-7xl mx-auto">
-                    <div className="text-center space-y-8">
-                        {/* Badge */}
-                        <div className="inline-flex items-center gap-2 bg-primary/10 backdrop-blur-sm px-4 py-2 rounded-full border border-primary/20">
+                <div className="relative z-10 mx-auto max-w-7xl">
+                    <div className="space-y-8 text-center">
+                        <div className="inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/10 px-4 py-2 backdrop-blur-sm">
                             <Sparkles className="h-4 w-4 text-primary" />
                             <span className="text-sm font-medium text-primary">
-                                Next Generation Healthcare Platform
+                                {t("eyebrow")}
                             </span>
                         </div>
 
-                        {/* Main Title */}
                         <div className="space-y-6">
-                            <h1 className="text-4xl sm:text-5xl md:text-6xl lg:text-7xl font-bold tracking-tight serif">
+                            <h1 className="serif text-4xl font-bold tracking-tight sm:text-5xl md:text-6xl lg:text-7xl">
                                 CuraSync
-                                <span className="block bg-linear-to-r from-primary to-chart-2 bg-clip-text text-transparent">
+                                <span className="block bg-linear-to-r from-primary to-chart-2 bg-clip-text tracking-wide text-transparent">
                                     Platform
                                 </span>
                             </h1>
-                            <p className="text-lg sm:text-xl md:text-2xl text-muted-foreground max-w-3xl mx-auto leading-relaxed">
-                                Revolutionizing healthcare collaboration with
-                                real-time patient data synchronization and
-                                AI-powered clinical insights
+                            <p className="mx-auto max-w-3xl text-lg leading-relaxed text-muted-foreground sm:text-xl md:text-2xl">
+                                {t("description")}
                             </p>
                         </div>
 
-                        {/* Feature Cards Grid */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 max-w-5xl mx-auto">
-                            {featureCards.map((feature, index) => (
+                        <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
+                            {featureCards.map((feature) => (
                                 <Card
-                                    key={index}
-                                    className="bg-card/60 backdrop-blur-sm border border-border/50 shadow-sm hover:shadow-md hover:border-primary/30 transition-all duration-300 rounded-2xl"
+                                    key={feature.title}
+                                    className="rounded-2xl border border-border/50 bg-card/60 shadow-sm backdrop-blur-sm transition-all duration-300 hover:border-primary/30 hover:shadow-md"
                                 >
                                     <CardContent className="p-6">
                                         <div className="space-y-4">
-                                            <div
-                                                className={`p-3 rounded-xl ${feature.bgColor} w-fit`}
-                                            >
-                                                <div
-                                                    className={
-                                                        feature.textColor
-                                                    }
-                                                >
-                                                    {feature.icon}
-                                                </div>
+                                            <div className={`w-fit rounded-xl p-3 ${feature.bgColor}`}>
+                                                <div className={feature.textColor}>{feature.icon}</div>
                                             </div>
                                             <div>
-                                                <h3 className="text-lg font-semibold mb-2 text-foreground">
+                                                <h3 className="mb-2 text-lg font-semibold text-foreground">
                                                     {feature.title}
                                                 </h3>
                                                 <p className="text-sm text-muted-foreground">
@@ -149,38 +142,36 @@ export default function Page() {
                             ))}
                         </div>
 
-                        {/* CTA Buttons */}
-                        <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-                            <Button
-                                size="lg"
-                                className="gap-2 px-8 py-6 text-base rounded-xl bg-linear-to-r from-primary to-primary/90 hover:from-primary hover:to-primary/80 text-primary-foreground shadow-lg hover:shadow-xl transition-all"
-                            >
-                                <Mail className="h-5 w-5" />
-                                Get Started for Free
-                            </Button>
+                        <div className="flex flex-col justify-center gap-4 pt-8 sm:flex-row">
+                            <Link href="/contact">
+                                <Button
+                                    size="lg"
+                                    className="gap-2 rounded-xl bg-linear-to-r from-primary to-primary/90 px-8 py-6 text-base text-primary-foreground shadow-lg transition-all hover:from-primary hover:to-primary/80 hover:shadow-xl"
+                                >
+                                    <Mail className="h-5 w-5" />
+                                    {t("contactCta")}
+                                </Button>
+                            </Link>
                             <Link href="/symptom-analyzer">
                                 <Button
                                     size="lg"
                                     variant="outline"
-                                    className="gap-2 px-8 py-6 text-base rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent transition-all"
+                                    className="gap-2 rounded-xl border-2 border-border px-8 py-6 text-base transition-all hover:border-primary/40 hover:bg-accent"
                                 >
-                                    View Live Demo
+                                    {t("demoCta")}
                                     <ArrowRight className="h-5 w-5" />
                                 </Button>
                             </Link>
                         </div>
 
-                        {/* Trust Indicators */}
                         <div className="flex flex-wrap justify-center gap-3 pt-12">
-                            {benefits.map((benefit, index) => (
+                            {benefits.map((benefit) => (
                                 <div
-                                    key={index}
-                                    className="flex items-center gap-3 bg-card/40 backdrop-blur-sm rounded-full px-4 py-2 border border-border/30"
+                                    key={benefit.title}
+                                    className="flex items-center gap-3 rounded-full border border-border/30 bg-card/40 px-4 py-2 backdrop-blur-sm"
                                 >
-                                    <div className="p-1.5 bg-primary/10 rounded-full">
-                                        <div className="text-primary">
-                                            {benefit.icon}
-                                        </div>
+                                    <div className="rounded-full bg-primary/10 p-1.5 text-primary">
+                                        {benefit.icon}
                                     </div>
                                     <div className="text-left">
                                         <p className="text-sm font-semibold text-foreground">
@@ -197,43 +188,19 @@ export default function Page() {
                 </div>
             </section>
 
-            {/* Stats Section */}
-            <section className="py-12 md:py-16 px-4 sm:px-6 lg:px-8 bg-linear-to-b from-muted/5 to-transparent">
-                <div className="max-w-7xl mx-auto">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        {[
-                            {
-                                label: "Healthcare Providers",
-                                value: "500+",
-                                color: "text-chart-1",
-                            },
-                            {
-                                label: "Patient Records",
-                                value: "1M+",
-                                color: "text-chart-2",
-                            },
-                            {
-                                label: "AI Insights",
-                                value: "99.9%",
-                                color: "text-chart-3",
-                            },
-                            {
-                                label: "Uptime",
-                                value: "99.99%",
-                                color: "text-chart-4",
-                            },
-                        ].map((stat, index) => (
+            <section className="bg-linear-to-b from-muted/5 to-transparent px-4 py-12 sm:px-6 md:py-16 lg:px-8">
+                <div className="mx-auto max-w-7xl">
+                    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                        {productStats.map((stat) => (
                             <Card
-                                key={index}
-                                className="bg-card/60 backdrop-blur-sm border border-border/30 shadow-xs rounded-xl"
+                                key={stat.label}
+                                className="rounded-xl border border-border/30 bg-card/60 shadow-xs backdrop-blur-sm"
                             >
                                 <CardContent className="p-6 text-center">
-                                    <div
-                                        className={`text-2xl md:text-3xl font-bold mb-1 ${stat.color}`}
-                                    >
+                                    <div className={`mb-1 text-2xl font-bold md:text-3xl ${stat.color}`}>
                                         {stat.value}
                                     </div>
-                                    <p className="text-xs md:text-sm text-muted-foreground">
+                                    <p className="text-xs text-muted-foreground md:text-sm">
                                         {stat.label}
                                     </p>
                                 </CardContent>
@@ -243,64 +210,52 @@ export default function Page() {
                 </div>
             </section>
 
-            {/* Value Proposition */}
-            <section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8">
-                <div className="max-w-4xl mx-auto text-center space-y-8">
+            <section className="px-4 py-16 sm:px-6 md:py-20 lg:px-8">
+                <div className="mx-auto max-w-4xl space-y-8 text-center">
                     <div className="space-y-4">
                         <Badge
                             variant="outline"
-                            className="px-4 py-2 bg-primary/10 border-primary/20 text-primary hover:bg-primary/20"
-                        >
-                            Why Choose CuraSync
+                            className="border-primary/20 bg-primary/10 px-4 py-2 text-primary hover:bg-primary/20"
+                            >
+                            {t("whyBadge")}
                         </Badge>
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
-                            Transform Your Healthcare Practice
+                        <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
+                            {t("whyTitle")}
                         </h2>
-                        <p className="text-base md:text-lg text-muted-foreground">
-                            Our platform brings together the best of technology
-                            and healthcare to deliver unparalleled efficiency
-                            and patient care
+                        <p className="text-base text-muted-foreground md:text-lg">
+                            {t("whyDescription")}
                         </p>
                     </div>
 
-                    <div className="grid md:grid-cols-3 gap-6">
+                    <div className="grid gap-6 md:grid-cols-3">
                         {[
                             {
-                                title: "Save Time",
-                                description:
-                                    "Reduce administrative tasks by 40% with automated workflows",
+                                title: t("journeyCards.timeTitle"),
+                                description: t("journeyCards.timeDescription"),
                                 icon: <Zap className="h-7 w-7 text-chart-1" />,
                                 bgColor: "bg-chart-1/10",
                             },
                             {
-                                title: "Improve Care",
-                                description:
-                                    "Access comprehensive patient data instantly for better decisions",
-                                icon: (
-                                    <Heart className="h-7 w-7 text-chart-2" />
-                                ),
+                                title: t("journeyCards.continuityTitle"),
+                                description: t("journeyCards.continuityDescription"),
+                                icon: <Heart className="h-7 w-7 text-chart-2" />,
                                 bgColor: "bg-chart-2/10",
                             },
                             {
-                                title: "Ensure Security",
-                                description:
-                                    "Bank-level security with full HIPAA compliance",
-                                icon: (
-                                    <Shield className="h-7 w-7 text-chart-3" />
-                                ),
+                                title: t("journeyCards.accessTitle"),
+                                description: t("journeyCards.accessDescription"),
+                                icon: <Shield className="h-7 w-7 text-chart-3" />,
                                 bgColor: "bg-chart-3/10",
                             },
-                        ].map((item, index) => (
+                        ].map((item) => (
                             <div
-                                key={index}
-                                className="space-y-4 p-6 rounded-2xl bg-card/60 backdrop-blur-sm border border-border/30 shadow-sm"
+                                key={item.title}
+                                className="space-y-4 rounded-2xl border border-border/30 bg-card/60 p-6 shadow-sm backdrop-blur-sm"
                             >
-                                <div
-                                    className={`p-3 rounded-xl ${item.bgColor} w-fit mx-auto`}
-                                >
+                                <div className={`mx-auto w-fit rounded-xl p-3 ${item.bgColor}`}>
                                     {item.icon}
                                 </div>
-                                <h3 className="text-lg md:text-xl font-semibold text-foreground">
+                                <h3 className="text-lg font-semibold text-foreground md:text-xl">
                                     {item.title}
                                 </h3>
                                 <p className="text-sm text-muted-foreground">
@@ -312,51 +267,51 @@ export default function Page() {
                 </div>
             </section>
 
-            {/* Final CTA */}
-            <section className="py-16 md:py-20 px-4 sm:px-6 lg:px-8 bg-linear-to-r from-primary/5 via-chart-2/5 to-chart-4/5">
-                <div className="max-w-4xl mx-auto text-center space-y-8">
+            <section className="bg-linear-to-r from-primary/5 via-chart-2/5 to-chart-4/5 px-4 py-16 sm:px-6 md:py-20 lg:px-8">
+                <div className="mx-auto max-w-4xl space-y-8 text-center">
                     <div className="space-y-4">
-                        <h2 className="text-2xl sm:text-3xl md:text-4xl font-bold text-foreground">
-                            Ready to Transform Your Practice?
+                        <h2 className="text-2xl font-bold text-foreground sm:text-3xl md:text-4xl">
+                            {t("exploreTitle")}
                         </h2>
-                        <p className="text-base md:text-lg text-muted-foreground">
-                            Join thousands of healthcare providers who trust
-                            CuraSync
+                        <p className="text-base text-muted-foreground md:text-lg">
+                            {t("exploreDescription")}
                         </p>
                     </div>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                        <Button
-                            size="lg"
-                            className="gap-2 px-8 py-6 text-base rounded-xl bg-linear-to-r from-primary to-chart-2 hover:from-primary/90 hover:to-chart-2/90 text-primary-foreground shadow-lg hover:shadow-xl"
-                        >
-                            <Mail className="h-5 w-5" />
-                            Schedule a Demo
-                        </Button>
-                        <Button
-                            size="lg"
-                            variant="outline"
-                            className="gap-2 px-8 py-6 text-base rounded-xl border-2 border-border hover:border-primary/40 hover:bg-accent"
-                        >
-                            Learn More
-                        </Button>
+                    <div className="flex flex-col justify-center gap-4 sm:flex-row">
+                        <Link href="/contact">
+                            <Button
+                                size="lg"
+                                className="gap-2 rounded-xl bg-linear-to-r from-primary to-chart-2 px-8 py-6 text-base text-primary-foreground shadow-lg hover:from-primary/90 hover:to-chart-2/90 hover:shadow-xl"
+                            >
+                                <Mail className="h-5 w-5" />
+                                {t("contactProjectTeam")}
+                            </Button>
+                        </Link>
+                        <Link href="/facilities">
+                            <Button
+                                size="lg"
+                                variant="outline"
+                                className="gap-2 rounded-xl border-2 border-border px-8 py-6 text-base hover:border-primary/40 hover:bg-accent"
+                            >
+                                {t("exploreFacilities")}
+                            </Button>
+                        </Link>
                     </div>
 
                     <p className="text-sm text-muted-foreground">
-                        No credit card required • 14-day free trial • Cancel
-                        anytime
+                        {t("footerNote")}
                     </p>
                 </div>
             </section>
 
-            {/* Scroll Indicator */}
-            <div className="fixed bottom-8 left-1/2 -translate-x-1/2 hidden md:block">
+            <div className="fixed bottom-8 left-1/2 hidden -translate-x-1/2 md:block">
                 <div className="flex flex-col items-center gap-1">
                     <div className="animate-bounce">
-                        <ArrowRight className="h-5 w-5 text-muted-foreground rotate-90" />
+                        <ArrowRight className="h-5 w-5 rotate-90 text-muted-foreground" />
                     </div>
-                    <p className="text-xs text-muted-foreground/70 font-medium">
-                        Scroll to explore
+                    <p className="text-xs font-medium text-muted-foreground/70">
+                        {t("scroll")}
                     </p>
                 </div>
             </div>

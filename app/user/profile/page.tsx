@@ -1,11 +1,14 @@
 "use client";
 
+import { zodResolver } from "@hookform/resolvers/zod";
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
+import { useForm } from "react-hook-form";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
     Card,
@@ -14,19 +17,38 @@ import {
     CardHeader,
     CardTitle,
 } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import {
     Loader2,
     Save,
     User,
     Mail,
-    ShieldCheck,
-    MapPin,
     Phone,
     Edit3,
     Camera,
+    HeartPulse,
+    CalendarDays,
+    Ruler,
+    Weight,
+    AlertTriangle,
+    ClipboardList,
+    Users,
 } from "lucide-react";
 import { toast } from "sonner";
+import { z } from "zod";
+import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
+import { FieldError } from "@/components/ui/field";
+
+interface PatientProfile {
+    profile_id: string;
+    date_of_birth?: string | null;
+    gender?: string | null;
+    blood_type?: string | null;
+    height_cm?: number | null;
+    weight_kg?: number | null;
+    allergies?: string | null;
+    chronic_conditions?: string | null;
+    emergency_contact?: string | null;
+}
 
 interface UserProfile {
     id: string;
@@ -35,8 +57,93 @@ interface UserProfile {
     role: string;
     avatar_url: string;
     created_at?: string;
-    location?: string;
-    phone?: string;
+    phone?: string | null;
+    phone_number?: string | null;
+    patient_profile?: PatientProfile | null;
+}
+
+type ProfileFormState = {
+    full_name: string;
+    phone_number: string;
+    patient_profile: {
+        date_of_birth: string;
+        gender: string;
+        blood_type: string;
+        height_cm: string;
+        weight_kg: string;
+        allergies: string;
+        chronic_conditions: string;
+        emergency_contact: string;
+    };
+};
+
+const optionalText = z.string().trim();
+
+const profileFormSchema = z.object({
+    full_name: z.string().trim().min(1, "Full name is required"),
+    phone_number: optionalText,
+    patient_profile: z.object({
+        date_of_birth: optionalText,
+        gender: optionalText,
+        blood_type: optionalText,
+        height_cm: z
+            .string()
+            .trim()
+            .refine(
+                (value: string) => value === "" || !Number.isNaN(Number(value)),
+                "Height must be a valid number"
+            ),
+        weight_kg: z
+            .string()
+            .trim()
+            .refine(
+                (value: string) => value === "" || !Number.isNaN(Number(value)),
+                "Weight must be a valid number"
+            ),
+        allergies: optionalText,
+        chronic_conditions: optionalText,
+        emergency_contact: optionalText,
+    }),
+});
+
+function emptyPatientProfileForm() {
+    return {
+        date_of_birth: "",
+        gender: "",
+        blood_type: "",
+        height_cm: "",
+        weight_kg: "",
+        allergies: "",
+        chronic_conditions: "",
+        emergency_contact: "",
+    };
+}
+
+function buildFormData(profile: UserProfile | null): ProfileFormState {
+    return {
+        full_name: profile?.full_name || "",
+        phone_number: profile?.phone_number || profile?.phone || "",
+        patient_profile: {
+            date_of_birth: profile?.patient_profile?.date_of_birth || "",
+            gender: profile?.patient_profile?.gender || "",
+            blood_type: profile?.patient_profile?.blood_type || "",
+            height_cm:
+                profile?.patient_profile?.height_cm !== null &&
+                profile?.patient_profile?.height_cm !== undefined
+                    ? String(profile.patient_profile.height_cm)
+                    : "",
+            weight_kg:
+                profile?.patient_profile?.weight_kg !== null &&
+                profile?.patient_profile?.weight_kg !== undefined
+                    ? String(profile.patient_profile.weight_kg)
+                    : "",
+            allergies: profile?.patient_profile?.allergies || "",
+            chronic_conditions:
+                profile?.patient_profile?.chronic_conditions || "",
+            emergency_contact:
+                profile?.patient_profile?.emergency_contact || "",
+        },
+    };
 }
 
 export default function ProfilePage() {
@@ -44,11 +151,41 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [formData, setFormData] = useState({
-        full_name: "",
-        location: "",
-        phone: "",
+    const form = useForm<ProfileFormState>({
+        resolver: zodResolver(profileFormSchema),
+        defaultValues: {
+            full_name: "",
+            phone_number: "",
+            patient_profile: emptyPatientProfileForm(),
+        },
+        mode: "onTouched",
     });
+    const {
+        register,
+        handleSubmit,
+        reset,
+        formState: { errors },
+    } = form;
+
+    useEffect(() => {
+        reset({
+            full_name: "",
+            phone_number: "",
+            patient_profile: emptyPatientProfileForm(),
+        });
+    }, [reset]);
+
+    useEffect(() => {
+        if (profile) {
+            reset(buildFormData(profile));
+        }
+    }, [profile, reset]);
+
+    const defaultFormData: ProfileFormState = {
+        full_name: "",
+        phone_number: "",
+        patient_profile: emptyPatientProfileForm(),
+    };
 
     useEffect(() => {
         const fetchProfile = async () => {
@@ -57,13 +194,8 @@ export default function ProfilePage() {
             try {
                 const res = await fetch("/api/user/profile");
                 if (res.ok) {
-                    const data = await res.json();
+                    const data = (await res.json()) as UserProfile;
                     setProfile(data);
-                    setFormData({
-                        full_name: data.full_name || "",
-                        location: data.location || "",
-                        phone: data.phone || "",
-                    });
                 } else {
                     console.error("Failed to fetch profile");
                 }
@@ -77,24 +209,51 @@ export default function ProfilePage() {
         fetchProfile();
     }, [isClerkLoaded, user]);
 
-    const handleUpdate = async (e: React.FormEvent) => {
-        e.preventDefault();
+    const handleUpdate = async (values: ProfileFormState) => {
         setIsSaving(true);
 
-        try {
+        const updatePromise = (async () => {
             const res = await fetch("/api/user/profile", {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(formData),
+                body: JSON.stringify({
+                    full_name: values.full_name,
+                    phone_number: values.phone_number,
+                    patient_profile: {
+                        ...values.patient_profile,
+                        height_cm: values.patient_profile.height_cm
+                            ? Number(values.patient_profile.height_cm)
+                            : null,
+                        weight_kg: values.patient_profile.weight_kg
+                            ? Number(values.patient_profile.weight_kg)
+                            : null,
+                    },
+                }),
             });
 
-            if (!res.ok) throw new Error("Failed to update");
+            const data = await res.json().catch(() => null);
 
-            const updatedData = await res.json();
+            if (!res.ok) {
+                throw new Error(data?.error || "Failed to update profile");
+            }
+
+            return data as UserProfile;
+        })();
+
+        toast.promise(updatePromise, {
+            loading: "Saving profile...",
+            success: "Profile updated successfully",
+            error: (error) =>
+                error instanceof Error
+                    ? error.message
+                    : "Failed to update profile",
+        });
+
+        try {
+            const updatedData = await updatePromise;
             setProfile(updatedData);
-            toast.success("Profile updated successfully");
+            reset(buildFormData(updatedData));
         } catch (error) {
-            toast.error("Failed to update profile");
             console.error(error);
         } finally {
             setIsSaving(false);
@@ -103,24 +262,31 @@ export default function ProfilePage() {
 
     if (!isClerkLoaded || isLoading) {
         return (
-            <div className="flex h-[50vh] w-full items-center justify-center">
-                <div className="flex flex-col items-center gap-4">
-                    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                    <p className="text-sm text-muted-foreground">
-                        Loading profile...
-                    </p>
+            <UserPageShell contentClassName="justify-center">
+                <div className="flex h-[50vh] w-full items-center justify-center">
+                    <div className="flex flex-col items-center gap-4">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="text-sm text-muted-foreground">
+                            Loading profile...
+                        </p>
+                    </div>
                 </div>
-            </div>
+            </UserPageShell>
         );
     }
 
     return (
-        <div className="container mx-auto p-4 md:p-6 space-y-6">
+        <UserPageShell>
+            <UserPageHeader
+                icon={User}
+                title="Profile Settings"
+                description="Review your account details and keep your personal and patient information up to date."
+            />
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 {/* Left Column - Profile Card */}
                 <div className="lg:col-span-1 space-y-6">
                     {/* Profile Overview */}
-                    <Card className="border-border">
+                    <Card className="border-border py-0">
                         <CardContent className="p-6">
                             <div className="flex flex-col items-center space-y-5">
                                 {/* Avatar with edit button */}
@@ -191,20 +357,7 @@ export default function ProfilePage() {
 
                                 {/* Contact Details */}
                                 <div className="w-full space-y-3 pt-4">
-                                    {profile?.location && (
-                                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20">
-                                            <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
-                                            <div className="min-w-0">
-                                                <p className="text-xs text-muted-foreground">
-                                                    Location
-                                                </p>
-                                                <p className="text-sm font-medium truncate">
-                                                    {profile.location}
-                                                </p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    {profile?.phone && (
+                                    {(profile?.phone_number || profile?.phone) && (
                                         <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20">
                                             <Phone className="h-4 w-4 text-primary flex-shrink-0" />
                                             <div className="min-w-0">
@@ -212,48 +365,45 @@ export default function ProfilePage() {
                                                     Phone
                                                 </p>
                                                 <p className="text-sm font-medium">
-                                                    {profile.phone}
+                                                    {profile.phone_number ||
+                                                        profile.phone}
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {profile?.patient_profile?.blood_type && (
+                                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20">
+                                            <HeartPulse className="h-4 w-4 text-primary flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-muted-foreground">
+                                                    Blood Type
+                                                </p>
+                                                <p className="text-sm font-medium">
+                                                    {
+                                                        profile.patient_profile
+                                                            .blood_type
+                                                    }
+                                                </p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    {profile?.patient_profile?.emergency_contact && (
+                                        <div className="flex items-center gap-3 p-3 rounded-lg bg-muted/20">
+                                            <Users className="h-4 w-4 text-primary flex-shrink-0" />
+                                            <div className="min-w-0">
+                                                <p className="text-xs text-muted-foreground">
+                                                    Emergency Contact
+                                                </p>
+                                                <p className="text-sm font-medium">
+                                                    {
+                                                        profile.patient_profile
+                                                            .emergency_contact
+                                                    }
                                                 </p>
                                             </div>
                                         </div>
                                     )}
                                 </div>
-                            </div>
-                        </CardContent>
-                    </Card>
-
-                    {/* Account Status */}
-                    <Card className="border-border">
-                        <CardHeader className="pb-3">
-                            <CardTitle className="text-sm font-medium flex items-center gap-2">
-                                <ShieldCheck className="h-4 w-4" />
-                                Account Status
-                            </CardTitle>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">
-                                    Status
-                                </span>
-                                <Badge className="bg-green-500/10 text-green-600 border-green-200">
-                                    Active
-                                </Badge>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">
-                                    Email
-                                </span>
-                                <Badge variant="outline" className="text-xs">
-                                    Verified
-                                </Badge>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm text-muted-foreground">
-                                    2FA
-                                </span>
-                                <Badge variant="outline" className="text-xs">
-                                    Enabled
-                                </Badge>
                             </div>
                         </CardContent>
                     </Card>
@@ -270,13 +420,20 @@ export default function ProfilePage() {
                                         Edit Profile
                                     </CardTitle>
                                     <CardDescription>
-                                        Update your personal information
+                                        Patients can fill these details now, and
+                                        health center staff can also update the
+                                        patient profile later from the admin
+                                        side.
                                     </CardDescription>
                                 </div>
                             </div>
                         </CardHeader>
                         <CardContent>
-                            <form onSubmit={handleUpdate} className="space-y-6">
+                            <form
+                                onSubmit={handleSubmit(handleUpdate)}
+                                className="space-y-6"
+                                noValidate
+                            >
                                 {/* Personal Information */}
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-medium text-foreground">
@@ -316,18 +473,13 @@ export default function ProfilePage() {
                                                 <User className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                                 <Input
                                                     id="full_name"
-                                                    value={formData.full_name}
-                                                    onChange={(e) =>
-                                                        setFormData({
-                                                            ...formData,
-                                                            full_name:
-                                                                e.target.value,
-                                                        })
-                                                    }
+                                                    {...register("full_name")}
                                                     className="pl-9"
                                                     placeholder="Your full name"
+                                                    aria-invalid={!!errors.full_name}
                                                 />
                                             </div>
+                                            <FieldError errors={[errors.full_name]} />
                                         </div>
                                     </div>
                                 </div>
@@ -342,32 +494,7 @@ export default function ProfilePage() {
                                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                         <div className="space-y-2">
                                             <Label
-                                                htmlFor="location"
-                                                className="text-sm"
-                                            >
-                                                Location
-                                            </Label>
-                                            <div className="relative">
-                                                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    id="location"
-                                                    value={formData.location}
-                                                    onChange={(e) =>
-                                                        setFormData({
-                                                            ...formData,
-                                                            location:
-                                                                e.target.value,
-                                                        })
-                                                    }
-                                                    className="pl-9"
-                                                    placeholder="City, Country"
-                                                />
-                                            </div>
-                                        </div>
-
-                                        <div className="space-y-2">
-                                            <Label
-                                                htmlFor="phone"
+                                                htmlFor="phone_number"
                                                 className="text-sm"
                                             >
                                                 Phone Number
@@ -375,19 +502,194 @@ export default function ProfilePage() {
                                             <div className="relative">
                                                 <Phone className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                                                 <Input
-                                                    id="phone"
-                                                    value={formData.phone}
-                                                    onChange={(e) =>
-                                                        setFormData({
-                                                            ...formData,
-                                                            phone: e.target
-                                                                .value,
-                                                        })
-                                                    }
+                                                    id="phone_number"
+                                                    {...register("phone_number")}
                                                     className="pl-9"
-                                                    placeholder="+1 (555) 000-0000"
+                                                    placeholder="+60 12-345 6789"
+                                                    aria-invalid={!!errors.phone_number}
                                                 />
                                             </div>
+                                            <FieldError errors={[errors.phone_number]} />
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <Separator />
+
+                                <div className="space-y-4">
+                                    <h3 className="text-sm font-medium text-foreground">
+                                        Patient Profile
+                                    </h3>
+                                    <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="date_of_birth"
+                                                className="text-sm"
+                                            >
+                                                Date of Birth
+                                            </Label>
+                                            <div className="relative">
+                                                <CalendarDays className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="date_of_birth"
+                                                    type="date"
+                                                    {...register("patient_profile.date_of_birth")}
+                                                    className="pl-9"
+                                                    aria-invalid={!!errors.patient_profile?.date_of_birth}
+                                                />
+                                            </div>
+                                            <FieldError
+                                                errors={[errors.patient_profile?.date_of_birth]}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="gender"
+                                                className="text-sm"
+                                            >
+                                                Gender
+                                            </Label>
+                                            <Input
+                                                id="gender"
+                                                {...register("patient_profile.gender")}
+                                                placeholder="Male, Female, Non-binary"
+                                                aria-invalid={!!errors.patient_profile?.gender}
+                                            />
+                                            <FieldError errors={[errors.patient_profile?.gender]} />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="blood_type"
+                                                className="text-sm"
+                                            >
+                                                Blood Type
+                                            </Label>
+                                            <Input
+                                                id="blood_type"
+                                                {...register("patient_profile.blood_type")}
+                                                placeholder="A+, O-, AB+"
+                                                aria-invalid={!!errors.patient_profile?.blood_type}
+                                            />
+                                            <FieldError
+                                                errors={[errors.patient_profile?.blood_type]}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="emergency_contact"
+                                                className="text-sm"
+                                            >
+                                                Emergency Contact
+                                            </Label>
+                                            <div className="relative">
+                                                <Users className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="emergency_contact"
+                                                    {...register("patient_profile.emergency_contact")}
+                                                    className="pl-9"
+                                                    placeholder="Name and phone number"
+                                                    aria-invalid={!!errors.patient_profile?.emergency_contact}
+                                                />
+                                            </div>
+                                            <FieldError
+                                                errors={[errors.patient_profile?.emergency_contact]}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="height_cm"
+                                                className="text-sm"
+                                            >
+                                                Height (cm)
+                                            </Label>
+                                            <div className="relative">
+                                                <Ruler className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="height_cm"
+                                                    type="number"
+                                                    {...register("patient_profile.height_cm")}
+                                                    className="pl-9"
+                                                    placeholder="170"
+                                                    aria-invalid={!!errors.patient_profile?.height_cm}
+                                                />
+                                            </div>
+                                            <FieldError
+                                                errors={[errors.patient_profile?.height_cm]}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="weight_kg"
+                                                className="text-sm"
+                                            >
+                                                Weight (kg)
+                                            </Label>
+                                            <div className="relative">
+                                                <Weight className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Input
+                                                    id="weight_kg"
+                                                    type="number"
+                                                    step="0.1"
+                                                    {...register("patient_profile.weight_kg")}
+                                                    className="pl-9"
+                                                    placeholder="65.5"
+                                                    aria-invalid={!!errors.patient_profile?.weight_kg}
+                                                />
+                                            </div>
+                                            <FieldError
+                                                errors={[errors.patient_profile?.weight_kg]}
+                                            />
+                                        </div>
+                                    </div>
+
+                                    <div className="grid grid-cols-1 gap-4">
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="allergies"
+                                                className="text-sm"
+                                            >
+                                                Allergies
+                                            </Label>
+                                            <div className="relative">
+                                                <AlertTriangle className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Textarea
+                                                    id="allergies"
+                                                    {...register("patient_profile.allergies")}
+                                                    className="min-h-[96px] pl-9"
+                                                    placeholder="List known allergies"
+                                                    aria-invalid={!!errors.patient_profile?.allergies}
+                                                />
+                                            </div>
+                                            <FieldError
+                                                errors={[errors.patient_profile?.allergies]}
+                                            />
+                                        </div>
+
+                                        <div className="space-y-2">
+                                            <Label
+                                                htmlFor="chronic_conditions"
+                                                className="text-sm"
+                                            >
+                                                Chronic Conditions
+                                            </Label>
+                                            <div className="relative">
+                                                <ClipboardList className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                                                <Textarea
+                                                    id="chronic_conditions"
+                                                    {...register("patient_profile.chronic_conditions")}
+                                                    className="min-h-[96px] pl-9"
+                                                    placeholder="List ongoing medical conditions"
+                                                    aria-invalid={!!errors.patient_profile?.chronic_conditions}
+                                                />
+                                            </div>
+                                            <FieldError
+                                                errors={[errors.patient_profile?.chronic_conditions]}
+                                            />
                                         </div>
                                     </div>
                                 </div>
@@ -400,13 +702,7 @@ export default function ProfilePage() {
                                         type="button"
                                         variant="outline"
                                         onClick={() =>
-                                            setFormData({
-                                                full_name:
-                                                    profile?.full_name || "",
-                                                location:
-                                                    profile?.location || "",
-                                                phone: profile?.phone || "",
-                                            })
+                                            reset(profile ? buildFormData(profile) : defaultFormData)
                                         }
                                         className="md:flex-1"
                                         disabled={isSaving}
@@ -436,6 +732,6 @@ export default function ProfilePage() {
                     </Card>
                 </div>
             </div>
-        </div>
+        </UserPageShell>
     );
 }

@@ -86,7 +86,7 @@ export default function PricingPage() {
                 "Team management",
                 "API access",
                 "White-label solutions",
-                "HIPAA compliance guarantee",
+                "Admin controls",
                 "Custom integrations",
                 "Dedicated account manager",
             ],
@@ -179,13 +179,13 @@ export default function PricingPage() {
                     enterprise: true,
                 },
                 {
-                    name: "HIPAA Compliance",
+                    name: "Access Controls",
                     basic: true,
                     pro: true,
                     enterprise: true,
                 },
                 {
-                    name: "Data Encryption",
+                    name: "Deployment guidance",
                     basic: true,
                     pro: true,
                     enterprise: true,
@@ -245,7 +245,7 @@ export default function PricingPage() {
         },
         {
             question: "How secure is my health data?",
-            answer: "All plans include end-to-end encryption and HIPAA compliance. We never share your data without explicit consent.",
+            answer: "We design the product with privacy and controlled access in mind. Contact us if you need details about your deployment and security setup.",
         },
         {
             question: "What payment methods do you accept?",
@@ -642,26 +642,25 @@ export default function PricingPage() {
                         <div className="flex items-center gap-2">
                             <Shield className="h-4 w-4" />
                             <span className="text-sm font-medium">
-                                HIPAA Compliant
+                                Privacy-minded setup
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <BadgeCheck className="h-4 w-4" />
                             <span className="text-sm font-medium">
-                                Bank-Level Security
+                                Team admin controls
                             </span>
                         </div>
                         <div className="flex items-center gap-2">
                             <Clock className="h-4 w-4" />
                             <span className="text-sm font-medium">
-                                99.9% Uptime
+                                Ongoing support
                             </span>
                         </div>
                     </div>
                     <p className="text-xs text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                        All plans include end-to-end encryption, regular
-                        security audits, and compliance with healthcare
-                        regulations. Your health data is always protected.
+                        Contact us for details about deployment, access control,
+                        and operational support for your team.
                     </p>
                 </div>
             </div>

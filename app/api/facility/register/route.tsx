@@ -1,5 +1,3 @@
-"use server";
-
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
 import bcrypt from "bcryptjs";
@@ -33,46 +31,44 @@ export async function POST(req: Request) {
             );
         }
 
-        const { data: facilityData, error: facilityError } = await supabase
-            .from("cura_facilities")
-            .insert({
-                name,
-                type: type ?? null,
-                specialty: specialty ?? null,
-                phone: phone ?? null,
-                address,
-                latitude: latitude ?? null,
-                longitude: longitude ?? null,
-                is_active: false,
-            })
-            .select()
-            .single();
+        const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-        if (facilityError) {
-            console.error("Facility insert error:", facilityError);
+        const { data, error } = await supabase.rpc(
+            "cura_register_facility_with_admin",
+            {
+                p_facility_name: name,
+                p_facility_type: type ?? "",
+                p_facility_specialty: specialty ?? "",
+                p_facility_phone: phone ?? "",
+                p_facility_address: address,
+                p_facility_latitude: latitude ?? "",
+                p_facility_longitude: longitude ?? "",
+                p_admin_name: adminName,
+                p_admin_email: adminEmail,
+                p_admin_password_hash: hashedPassword,
+            }
+        );
+
+        if (error) {
+            console.error("Facility register RPC error:", error);
             return NextResponse.json(
-                { error: facilityError.message },
+                {
+                    error:
+                        error.message ||
+                        "Registration failed (missing RPC function?)",
+                },
                 { status: 500 }
             );
         }
 
-        const hashedPassword = await bcrypt.hash(adminPassword, 10);
+        const facilityId =
+            Array.isArray(data) && data.length > 0
+                ? (data[0] as { facility_id: string }).facility_id
+                : null;
 
-        const { error: adminError } = await supabase
-            .from("cura_staff_profiles")
-            .insert({
-                full_name: adminName,
-                email: adminEmail,
-                password: hashedPassword,
-                role: "admin",
-                specialization: "Facility Manager",
-                facility_id: facilityData.id,
-            });
-
-        if (adminError) {
-            console.error("Admin insert error:", adminError);
+        if (!facilityId) {
             return NextResponse.json(
-                { error: "Facility created but admin creation failed." },
+                { error: "Registration failed" },
                 { status: 500 }
             );
         }
@@ -80,7 +76,8 @@ export async function POST(req: Request) {
         return NextResponse.json(
             {
                 success: true,
-                facilityId: facilityData.id,
+                facilityId,
+                facility: { name },
             },
             { status: 201 }
         );

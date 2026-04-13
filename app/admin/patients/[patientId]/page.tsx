@@ -82,6 +82,8 @@ export default function PatientDetailPage() {
 
     const staffId = user?.id ?? null;
     const staffName = user?.full_name || user?.email || "Unknown User";
+    const canManagePrescriptions =
+        user?.role === "doctor" || user?.role === "admin";
 
     useEffect(() => {
         async function fetchPatient() {
@@ -640,7 +642,7 @@ export default function PatientDetailPage() {
                                                     medications recorded
                                                 </p>
                                             </div>
-                                            {staffId && (
+                                            {staffId && canManagePrescriptions && (
                                                 <AddMedicationSheet
                                                     profileId={patient.id}
                                                     doctorName={staffName}
@@ -672,6 +674,9 @@ export default function PatientDetailPage() {
                                                             medication={
                                                                 medication
                                                             }
+                                                            canEdit={
+                                                                canManagePrescriptions
+                                                            }
                                                             onUpdate={
                                                                 fetchMedications
                                                             }
@@ -690,7 +695,7 @@ export default function PatientDetailPage() {
                                                     prescribed to this patient
                                                     yet
                                                 </p>
-                                                {staffId && (
+                                                {staffId && canManagePrescriptions && (
                                                     <AddMedicationSheet
                                                         profileId={patient.id}
                                                         doctorName={staffName}

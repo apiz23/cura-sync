@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
+import { requireAdminStaffSession } from "@/lib/authz";
+import bcrypt from "bcryptjs";
+import { normalizeStaffRole } from "@/lib/staff-role";
 
 interface Availability {
     available?: boolean;
@@ -9,7 +12,7 @@ interface Availability {
 
 interface UpdateStaffBody {
     full_name?: string;
-    role?: "doctor" | "nurse" | "admin";
+    role?: "doctor" | "staff" | "admin" | "nurse" | "user";
     specialization?: string;
     license_number?: string;
     facility_id?: string;
@@ -23,6 +26,9 @@ export async function GET(
     req: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
+    const session = await requireAdminStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const { id } = await context.params;
 
@@ -30,6 +36,7 @@ export async function GET(
             .from("cura_staff_profiles")
             .select("*")
             .eq("id", id)
+            .eq("facility_id", session.facilityId)
             .single();
 
         if (error) {
@@ -53,11 +60,22 @@ export async function PUT(
     req: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
+    const session = await requireAdminStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const { id } = await context.params;
         const body = (await req.json()) as UpdateStaffBody;
 
         const updateData: Partial<UpdateStaffBody> = { ...body };
+
+        if (updateData.role) {
+            updateData.role = normalizeStaffRole(updateData.role);
+        }
+
+        if (updateData.password) {
+            updateData.password = await bcrypt.hash(updateData.password, 10);
+        }
 
         // Remove undefined values
         (Object.keys(updateData) as (keyof UpdateStaffBody)[]).forEach(
@@ -72,6 +90,7 @@ export async function PUT(
             .from("cura_staff_profiles")
             .update(updateData)
             .eq("id", id)
+            .eq("facility_id", session.facilityId)
             .select()
             .single();
 
@@ -96,13 +115,17 @@ export async function DELETE(
     req: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
+    const session = await requireAdminStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const { id } = await context.params;
 
         const { error } = await supabase
             .from("cura_staff_profiles")
             .delete()
-            .eq("id", id);
+            .eq("id", id)
+            .eq("facility_id", session.facilityId);
 
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 400 });
@@ -125,14 +148,26 @@ export async function PATCH(
     req: NextRequest,
     context: { params: Promise<{ id: string }> }
 ) {
+    const session = await requireAdminStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const { id } = await context.params;
         const body = (await req.json()) as Partial<UpdateStaffBody>;
+
+        if (body.role) {
+            body.role = normalizeStaffRole(body.role);
+        }
+
+        if (body.password) {
+            body.password = await bcrypt.hash(body.password, 10);
+        }
 
         const { data, error } = await supabase
             .from("cura_staff_profiles")
             .update(body)
             .eq("id", id)
+            .eq("facility_id", session.facilityId)
             .select()
             .single();
 

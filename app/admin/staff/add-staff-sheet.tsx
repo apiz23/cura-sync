@@ -35,14 +35,16 @@ import {
 } from "lucide-react";
 import { Label } from "@/components/ui/label";
 import { cn } from "@/lib/utils";
+import { useAuth } from "@/components/authprovideradmin";
 
-type StaffRole = "doctor" | "nurse" | "admin";
+type StaffRole = "doctor" | "staff" | "admin";
 
 export default function AddStaffSheet({
     onSuccess,
 }: {
     onSuccess: () => void;
 }) {
+    const { user } = useAuth();
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
     const [showPassword, setShowPassword] = useState(false);
@@ -82,7 +84,7 @@ export default function AddStaffSheet({
     async function submit() {
         if (!validateForm()) return;
 
-        const facilityId = sessionStorage.getItem("facilityId");
+        const facilityId = user?.facility_id ?? null;
         if (!facilityId) {
             toast.error("Facility not found");
             return;
@@ -279,17 +281,17 @@ export default function AddStaffSheet({
                                             </div>
                                         </div>
                                     </SelectItem>
-                                    <SelectItem value="nurse" className="py-3">
+                                    <SelectItem value="staff" className="py-3">
                                         <div className="flex items-center gap-3">
                                             <div className="p-1.5 rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
                                                 <Shield className="w-4 h-4" />
                                             </div>
                                             <div>
                                                 <p className="font-medium">
-                                                    Nurse
+                                                    Staff
                                                 </p>
                                                 <p className="text-xs text-muted-foreground">
-                                                    Healthcare professional
+                                                    Facility staff member
                                                 </p>
                                             </div>
                                         </div>

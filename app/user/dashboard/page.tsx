@@ -1,498 +1,548 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { useUser } from "@clerk/nextjs";
 import {
+    Activity,
+    ArrowRight,
+    Brain,
     Calendar,
-    FileText,
-    HeartPulse,
+    ClipboardList,
+    Pill,
     ShieldCheck,
     Sparkles,
-    TrendingUp,
     User,
-    Activity,
-    Pill,
-    Stethoscope,
-    Bell,
-    ChevronRight,
-    ArrowUpRight,
-    Brain,
-    Database,
-    Thermometer,
-    Moon,
-    Zap,
 } from "lucide-react";
-import type { LucideIcon } from "lucide-react";
 
+import type { Appointment, Medication } from "@/app/types";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import {
     Card,
     CardContent,
+    CardDescription,
     CardHeader,
     CardTitle,
-    CardDescription,
 } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 
-interface UserProfile {
-    full_name: string;
-}
+type UserProfile = {
+    full_name: string | null;
+    patient_profile?: {
+        date_of_birth?: string | null;
+        gender?: string | null;
+        blood_type?: string | null;
+        allergies?: string | null;
+        emergency_contact?: string | null;
+    } | null;
+};
+
+type DashboardState = {
+    profile: UserProfile | null;
+    appointments: Appointment[];
+    medications: Medication[];
+};
+
+type DashboardRequestResult<T> = {
+    data: T;
+    ok: boolean;
+    label: string;
+};
+
+const emptyState: DashboardState = {
+    profile: null,
+    appointments: [],
+    medications: [],
+};
 
 export default function UserDashboardPage() {
     const { user, isLoaded } = useUser();
-    const [profile, setProfile] = useState<UserProfile | null>(null);
+    const [state, setState] = useState<DashboardState>(emptyState);
     const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         if (!isLoaded || !user) return;
 
-        const fetchProfile = async () => {
+        let cancelled = false;
+
+        async function loadDashboard() {
+            setLoading(true);
+            setError(null);
+
             try {
-                const res = await fetch("/api/user/profile");
-                if (res.ok) {
-                    const data = await res.json();
-                    setProfile(data);
+                const [profileResult, appointmentsResult, medicationsResult] =
+                    await Promise.all([
+                        loadDashboardResource<UserProfile | null>(
+                            "/api/user/profile",
+                            "profile"
+                        ),
+                        loadDashboardResource<{ data?: Appointment[] }>(
+                            "/api/appointments",
+                            "appointments"
+                        ),
+                        loadDashboardResource<Medication[]>(
+                            "/api/user/medications",
+                            "medications"
+                        ),
+                    ]);
+
+                const failedSources = [
+                    profileResult,
+                    appointmentsResult,
+                    medicationsResult,
+                ]
+                    .filter((result) => !result.ok)
+                    .map((result) => result.label);
+
+                if (!cancelled) {
+                    setState({
+                        profile: profileResult.data,
+                        appointments: Array.isArray(appointmentsResult.data?.data)
+                            ? appointmentsResult.data.data
+                            : [],
+                        medications: Array.isArray(medicationsResult.data)
+                            ? medicationsResult.data
+                            : [],
+                    });
+
+                    setError(
+                        failedSources.length
+                            ? `Some dashboard sections could not be loaded: ${failedSources.join(
+                                  ", "
+                              )}.`
+                            : null
+                    );
                 }
             } catch (err) {
-                console.error("Failed to fetch profile", err);
+                console.error("Failed to load user dashboard", err);
+                if (!cancelled) {
+                    setError("Unable to load your dashboard right now.");
+                    setState(emptyState);
+                }
             } finally {
-                setLoading(false);
+                if (!cancelled) {
+                    setLoading(false);
+                }
             }
-        };
+        }
 
-        fetchProfile();
+        loadDashboard();
+
+        return () => {
+            cancelled = true;
+        };
     }, [isLoaded, user]);
 
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    const upcomingAppointments = useMemo(
+        () =>
+            state.appointments
+                .filter(
+                    (appointment) =>
+                        appointment.appointment_date >= todayIso &&
+                        appointment.status !== "CANCELLED"
+                )
+                .sort((a, b) =>
+                    `${a.appointment_date}T${a.start_time}`.localeCompare(
+                        `${b.appointment_date}T${b.start_time}`
+                    )
+                ),
+        [state.appointments, todayIso]
+    );
+
+    const nextAppointment = upcomingAppointments[0] ?? null;
+    const activeMedications = state.medications.filter(
+        (medication) => medication.status === "ACTIVE"
+    );
+    const completedMedications = state.medications.filter(
+        (medication) => medication.status === "COMPLETED"
+    );
+
+    const profileFields = [
+        state.profile?.full_name,
+        state.profile?.patient_profile?.date_of_birth,
+        state.profile?.patient_profile?.gender,
+        state.profile?.patient_profile?.blood_type,
+        state.profile?.patient_profile?.emergency_contact,
+    ];
+    const completedProfileFields = profileFields.filter(Boolean).length;
+    const profileCompletion = Math.round(
+        (completedProfileFields / profileFields.length) * 100
+    );
+
+    const activityItems = [
+        ...upcomingAppointments.slice(0, 2).map((appointment) => ({
+            title: `Appointment with ${appointment.facility_name}`,
+            detail: `${formatDate(appointment.appointment_date)} at ${formatTime(
+                appointment.start_time
+            )}`,
+            badge: appointment.status,
+            href: "/user/appointments",
+            icon: Calendar,
+        })),
+        ...activeMedications.slice(0, 2).map((medication) => ({
+            title: medication.name,
+            detail: [medication.dosage, medication.frequency].join(" | "),
+            badge: medication.status,
+            href: "/user/medications",
+            icon: Pill,
+        })),
+    ].slice(0, 4);
+
     return (
-        <div className="flex flex-1 flex-col gap-8 p-6">
-            {/* ================= HEADER ================= */}
-            <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                    <div className="space-y-2">
-                        {loading ? (
-                            <>
-                                <Skeleton className="h-10 w-72" />
-                                <Skeleton className="h-4 w-96" />
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-3">
-                                    <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-                                        <User className="w-6 h-6 text-white" />
-                                    </div>
-                                    <div>
-                                        <h1 className="text-3xl font-bold tracking-tight">
-                                            Welcome back,{" "}
-                                            <span className="text-3xl bg-gradient-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-                                                {profile?.full_name ?? "User"}
-                                            </span>
-                                            <span className="text-3xl ml-2">
-                                                👋
-                                            </span>
-                                        </h1>
-                                        <p className="text-muted-foreground">
-                                            Your health dashboard is updated in
-                                            real-time
-                                        </p>
-                                    </div>
-                                </div>
-                            </>
-                        )}
+        <UserPageShell>
+            {loading ? (
+                <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm sm:p-8">
+                    <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="space-y-3">
+                            <Skeleton className="h-12 w-12 rounded-2xl" />
+                            <Skeleton className="h-10 w-72" />
+                            <Skeleton className="h-4 w-96 max-w-full" />
+                        </div>
+                        <Skeleton className="h-9 w-40 rounded-full" />
                     </div>
-                    <Badge variant="outline" className="gap-2 px-3 py-1.5">
-                        <Activity className="w-3 h-3 text-green-500" />
-                        <span>Last updated: Today</span>
-                    </Badge>
                 </div>
-            </div>
+            ) : (
+                <UserPageHeader
+                    icon={User}
+                    title={`Welcome back, ${state.profile?.full_name ?? "User"}`}
+                    description="This dashboard summarizes your real appointments, medications, and profile information."
+                    meta={
+                        <>
+                            <Badge variant="outline" className="gap-2 px-3 py-1.5">
+                                <Calendar className="h-3 w-3" />
+                                <span>
+                                    {upcomingAppointments.length} upcoming appointment
+                                    {upcomingAppointments.length === 1 ? "" : "s"}
+                                </span>
+                            </Badge>
+                            <Badge variant="outline" className="gap-2 px-3 py-1.5">
+                                <Pill className="h-3 w-3" />
+                                <span>
+                                    {activeMedications.length} active medication
+                                    {activeMedications.length === 1 ? "" : "s"}
+                                </span>
+                            </Badge>
+                        </>
+                    }
+                />
+            )}
 
-            {/* ================= STATS ================= */}
+            {error ? (
+                <Card className="border-destructive/30 bg-destructive/5">
+                    <CardContent className="flex items-center justify-between gap-4 p-5">
+                        <div>
+                            <p className="font-medium text-foreground">Dashboard unavailable</p>
+                            <p className="text-sm text-muted-foreground">{error}</p>
+                        </div>
+                        <Link href="/user/profile">
+                            <Button variant="outline">Open profile</Button>
+                        </Link>
+                    </CardContent>
+                </Card>
+            ) : null}
+
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <StatCard
-                    title="AI Predictions"
-                    value="5"
-                    icon={Brain}
-                    description="Last 7 days symptom checks"
-                    trend="+2 this week"
-                    color="from-purple-500 to-purple-600"
-                />
-                <StatCard
-                    title="Health Records"
-                    value="12"
-                    icon={Database}
-                    description="Secured via blockchain"
-                    trend="100% secure"
-                    color="from-blue-500 to-blue-600"
-                />
-                <StatCard
-                    title="Appointments"
-                    value="2"
+                <SummaryCard
+                    title="Upcoming Appointments"
+                    value={String(upcomingAppointments.length)}
+                    description={
+                        nextAppointment
+                            ? `Next: ${formatDate(nextAppointment.appointment_date)}`
+                            : "No upcoming appointments"
+                    }
                     icon={Calendar}
-                    description="Next: Tomorrow, 10:00 AM"
-                    trend="1 upcoming"
-                    color="from-amber-500 to-amber-600"
                 />
-                <StatCard
-                    title="Health Status"
-                    value="Excellent"
-                    icon={HeartPulse}
-                    description="All vitals normal"
-                    trend="Stable"
-                    color="from-emerald-500 to-emerald-600"
-                    highlight
+                <SummaryCard
+                    title="Active Medications"
+                    value={String(activeMedications.length)}
+                    description={
+                        activeMedications.length
+                            ? `${completedMedications.length} completed in history`
+                            : "Add medication reminders to track treatment"
+                    }
+                    icon={Pill}
+                />
+                <SummaryCard
+                    title="Profile Completion"
+                    value={`${profileCompletion}%`}
+                    description="Keep your health profile complete for safer care"
+                    icon={ClipboardList}
+                />
+                <SummaryCard
+                    title="Symptom Analyzer"
+                    value="Ready"
+                    description="AI triage is available when you need to summarize symptoms"
+                    icon={Brain}
                 />
             </div>
 
-            {/* ================= HEALTH OVERVIEW ================= */}
-            <div className="grid gap-6 lg:grid-cols-3">
-                {/* Recent Activity */}
-                <Card className="lg:col-span-2 border-2 shadow-sm">
-                    <CardHeader className="pb-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <div className="p-2 rounded-lg bg-primary/10">
-                                    <Activity className="w-5 h-5 text-primary" />
-                                </div>
-                                <div>
-                                    <CardTitle className="text-xl font-bold">
-                                        Recent Activity
-                                    </CardTitle>
-                                    <CardDescription>
-                                        Your latest health activities
-                                    </CardDescription>
-                                </div>
-                            </div>
+            <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+                <Card className="border shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between gap-4">
+                        <div>
+                            <CardTitle>Recent activity</CardTitle>
+                            <CardDescription>
+                                Based on your real appointments and medications
+                            </CardDescription>
+                        </div>
+                        <Link href="/user/appointments">
                             <Button variant="ghost" size="sm" className="gap-2">
-                                View All
-                                <ChevronRight className="w-4 h-4" />
+                                View appointments
+                                <ArrowRight className="h-4 w-4" />
                             </Button>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        {[
-                            {
-                                icon: Brain,
-                                color: "bg-purple-100 text-purple-600",
-                                time: "10 min ago",
-                                text: "AI analysis completed for flu symptoms",
-                                status: "Completed",
-                            },
-                            {
-                                icon: Stethoscope,
-                                color: "bg-blue-100 text-blue-600",
-                                time: "2 hours ago",
-                                text: "Virtual consultation with Dr. Aisyah",
-                                status: "Completed",
-                            },
-                            {
-                                icon: Pill,
-                                color: "bg-green-100 text-green-600",
-                                time: "5 hours ago",
-                                text: "Medication reminder: Take antibiotics",
-                                status: "Upcoming",
-                            },
-                            {
-                                icon: ShieldCheck,
-                                color: "bg-emerald-100 text-emerald-600",
-                                time: "Yesterday",
-                                text: "Health data synced to blockchain",
-                                status: "Secure",
-                            },
-                            {
-                                icon: Bell,
-                                color: "bg-amber-100 text-amber-600",
-                                time: "2 days ago",
-                                text: "Annual health checkup reminder",
-                                status: "Pending",
-                            },
-                        ].map((item, index) => (
-                            <div
-                                key={index}
-                                className="flex items-center gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                            >
-                                <div
-                                    className={`p-2.5 rounded-lg ${item.color} flex-shrink-0 group-hover:scale-105 transition-transform`}
-                                >
-                                    <item.icon className="w-4 h-4" />
-                                </div>
-                                <div className="flex-1 min-w-0">
-                                    <p className="font-medium text-foreground">
-                                        {item.text}
-                                    </p>
-                                    <div className="flex items-center gap-3 mt-1">
-                                        <span className="text-xs text-muted-foreground">
-                                            {item.time}
-                                        </span>
-                                        <Badge
-                                            variant="outline"
-                                            className="text-xs"
-                                        >
-                                            {item.status}
-                                        </Badge>
-                                    </div>
-                                </div>
-                                <ChevronRight className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
-                            </div>
-                        ))}
-                    </CardContent>
-                </Card>
-
-                {/* Health Metrics */}
-                <Card className="border-2 shadow-sm">
-                    <CardHeader className="pb-4">
-                        <div className="flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                                <TrendingUp className="w-5 h-5 text-primary" />
-                            </div>
-                            <div>
-                                <CardTitle className="text-xl font-bold">
-                                    Health Metrics
-                                </CardTitle>
-                                <CardDescription>
-                                    Current vital signs
-                                </CardDescription>
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent className="space-y-5">
-                        <MetricWithProgress
-                            label="Heart Rate"
-                            value="76"
-                            unit="bpm"
-                            icon={Activity}
-                            status="Normal"
-                        />
-                        <MetricWithProgress
-                            label="Blood Pressure"
-                            value="118/79"
-                            unit="mmHg"
-                            icon={Zap}
-                            status="Optimal"
-                        />
-                        <MetricWithProgress
-                            label="Body Temperature"
-                            value="36.7"
-                            unit="°C"
-                            icon={Thermometer}
-                            status="Normal"
-                        />
-                        <MetricWithProgress
-                            label="Sleep Quality"
-                            value="7.2"
-                            unit="hrs"
-                            icon={Moon}
-                            status="Good"
-                        />
-                    </CardContent>
-                </Card>
-            </div>
-
-            {/* ================= QUICK ACTIONS & INSIGHTS ================= */}
-            <div className="grid gap-6 md:grid-cols-2">
-                {/* Quick Actions */}
-                <Card className="border-2 shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-bold flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                                <Zap className="w-5 h-5 text-primary" />
-                            </div>
-                            <span>Quick Actions</span>
-                        </CardTitle>
+                        </Link>
                     </CardHeader>
                     <CardContent className="space-y-3">
-                        <Button className="w-full h-12 justify-start gap-3 rounded-xl hover:shadow-md transition-all">
-                            <Sparkles className="w-5 h-5" />
-                            <span className="font-medium">
-                                Check Symptoms with AI
-                            </span>
-                            <ArrowUpRight className="w-4 h-4 ml-auto" />
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full h-12 justify-start gap-3 rounded-xl hover:bg-primary/5 hover:border-primary/30 transition-all"
-                        >
-                            <FileText className="w-5 h-5" />
-                            <span className="font-medium">
-                                View Medical Records
-                            </span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full h-12 justify-start gap-3 rounded-xl hover:bg-primary/5 hover:border-primary/30 transition-all"
-                        >
-                            <Calendar className="w-5 h-5" />
-                            <span className="font-medium">
-                                Book Appointment
-                            </span>
-                        </Button>
-                        <Button
-                            variant="outline"
-                            className="w-full h-12 justify-start gap-3 rounded-xl hover:bg-primary/5 hover:border-primary/30 transition-all"
-                        >
-                            <Pill className="w-5 h-5" />
-                            <span className="font-medium">
-                                Medication Schedule
-                            </span>
-                        </Button>
+                        {activityItems.length ? (
+                            activityItems.map((item) => (
+                                <Link
+                                    key={`${item.title}-${item.detail}`}
+                                    href={item.href}
+                                    className="flex items-center justify-between rounded-xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
+                                >
+                                    <div className="flex items-start gap-3">
+                                        <div className="rounded-xl bg-primary/10 p-2 text-primary">
+                                            <item.icon className="h-4 w-4" />
+                                        </div>
+                                        <div>
+                                            <p className="font-medium text-foreground">
+                                                {item.title}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {item.detail}
+                                            </p>
+                                        </div>
+                                    </div>
+                                    <Badge variant="outline">{item.badge}</Badge>
+                                </Link>
+                            ))
+                        ) : (
+                            <EmptyState
+                                title="Nothing to show yet"
+                                description="Book your first appointment or add your medications to populate this dashboard."
+                                href="/user/appointments"
+                                action="Browse facilities"
+                            />
+                        )}
                     </CardContent>
                 </Card>
 
-                {/* Health Insights */}
-                <Card className="border-2 shadow-sm">
-                    <CardHeader>
-                        <CardTitle className="text-xl font-bold flex items-center gap-3">
-                            <div className="p-2 rounded-lg bg-primary/10">
-                                <Brain className="w-5 h-5 text-primary" />
-                            </div>
-                            <span>Health Insights</span>
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-4">
-                        <div className="p-4 rounded-xl bg-gradient-to-r from-blue-50 to-blue-100/50 border border-blue-200">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-blue-100">
-                                    <TrendingUp className="w-4 h-4 text-blue-600" />
-                                </div>
-                                <div>
-                                    <p className="font-medium text-blue-800">
-                                        Sleep Improvement
-                                    </p>
-                                    <p className="text-sm text-blue-600 mt-1">
-                                        Your sleep duration has increased by 15%
-                                        this week
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-4 rounded-xl bg-gradient-to-r from-emerald-50 to-emerald-100/50 border border-emerald-200">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-emerald-100">
-                                    <HeartPulse className="w-4 h-4 text-emerald-600" />
-                                </div>
-                                <div>
-                                    <p className="font-medium text-emerald-800">
-                                        Heart Health
-                                    </p>
-                                    <p className="text-sm text-emerald-600 mt-1">
-                                        Resting heart rate is within optimal
-                                        range
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="p-4 rounded-xl bg-gradient-to-r from-amber-50 to-amber-100/50 border border-amber-200">
-                            <div className="flex items-start gap-3">
-                                <div className="p-2 rounded-lg bg-amber-100">
-                                    <Bell className="w-4 h-4 text-amber-600" />
-                                </div>
-                                <div>
-                                    <p className="font-medium text-amber-800">
-                                        Upcoming Checkup
-                                    </p>
-                                    <p className="text-sm text-amber-600 mt-1">
-                                        Annual physical exam recommended next
-                                        month
-                                    </p>
-                                </div>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
+                <div className="space-y-6">
+                    <Card className="border shadow-sm">
+                        <CardHeader>
+                            <CardTitle>Quick actions</CardTitle>
+                            <CardDescription>
+                                Shortcuts into the patient journey
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="grid gap-3">
+                            <ActionLink
+                                href="/user/appointments"
+                                icon={Calendar}
+                                label="Book or view appointments"
+                            />
+                            <ActionLink
+                                href="/user/medications"
+                                icon={Pill}
+                                label="Manage medications"
+                            />
+                            <ActionLink
+                                href="/user/symptom-analyzer"
+                                icon={Sparkles}
+                                label="Use symptom analyzer"
+                            />
+                            <ActionLink
+                                href="/user/profile"
+                                icon={ShieldCheck}
+                                label="Update health profile"
+                            />
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border shadow-sm">
+                        <CardHeader>
+                            <CardTitle>Care summary</CardTitle>
+                            <CardDescription>
+                                Current state of your account and treatment data
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-4 text-sm">
+                            <SummaryRow
+                                label="Next appointment"
+                                value={
+                                    nextAppointment
+                                        ? `${formatDate(
+                                              nextAppointment.appointment_date
+                                          )}, ${formatTime(nextAppointment.start_time)}`
+                                        : "Not scheduled"
+                                }
+                            />
+                            <SummaryRow
+                                label="Medication records"
+                                value={String(state.medications.length)}
+                            />
+                            <SummaryRow
+                                label="Allergies recorded"
+                                value={
+                                    state.profile?.patient_profile?.allergies
+                                        ? "Yes"
+                                        : "Not added"
+                                }
+                            />
+                            <SummaryRow
+                                label="Emergency contact"
+                                value={
+                                    state.profile?.patient_profile?.emergency_contact ??
+                                    "Missing"
+                                }
+                            />
+                        </CardContent>
+                    </Card>
+                </div>
             </div>
-        </div>
+        </UserPageShell>
     );
 }
 
-/* ================= SUB COMPONENTS ================= */
+async function loadDashboardResource<T>(
+    url: string,
+    label: string
+): Promise<DashboardRequestResult<T>> {
+    try {
+        const response = await fetch(url, { cache: "no-store" });
+        const data = (await response.json().catch(() => null)) as T;
 
-function StatCard({
+        if (!response.ok) {
+            console.error(`Dashboard ${label} request failed`, {
+                status: response.status,
+                data,
+            });
+        }
+
+        return {
+            data,
+            ok: response.ok,
+            label,
+        };
+    } catch (error) {
+        console.error(`Dashboard ${label} request threw`, error);
+        return {
+            data: null as T,
+            ok: false,
+            label,
+        };
+    }
+}
+
+function SummaryCard({
     title,
     value,
     description,
-    trend,
     icon: Icon,
-    color,
-    highlight,
 }: {
     title: string;
     value: string;
     description: string;
-    trend: string;
-    icon: LucideIcon;
-    color: string;
-    highlight?: boolean;
+    icon: typeof Activity;
 }) {
     return (
-        <Card className="border-2 shadow-sm hover:shadow-md transition-shadow duration-300 group">
+        <Card className="border shadow-sm">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-semibold text-muted-foreground">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
                         {title}
                     </CardTitle>
-                    <div
-                        className={`p-2 rounded-lg bg-gradient-to-br ${color}/10`}
-                    >
-                        <Icon
-                            className={`w-4 h-4 bg-gradient-to-br ${color} bg-clip-text text-transparent`}
-                        />
+                    <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                        <Icon className="h-4 w-4" />
                     </div>
                 </div>
             </CardHeader>
             <CardContent>
-                <div
-                    className={`text-3xl font-bold ${
-                        highlight ? "text-emerald-600" : ""
-                    }`}
-                >
-                    {value}
-                </div>
-                <p className="text-sm text-muted-foreground mt-2">
-                    {description}
-                </p>
-                <div className="flex items-center gap-2 mt-3">
-                    <ArrowUpRight className="w-3 h-3 text-green-500" />
-                    <span className="text-xs font-medium text-green-600">
-                        {trend}
-                    </span>
-                </div>
+                <p className="text-3xl font-semibold text-foreground">{value}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{description}</p>
             </CardContent>
         </Card>
     );
 }
 
-function MetricWithProgress({
-    label,
-    value,
-    unit,
+function ActionLink({
+    href,
     icon: Icon,
-    status,
+    label,
 }: {
+    href: string;
+    icon: typeof Activity;
     label: string;
-    value: string;
-    unit: string;
-    icon: LucideIcon;
-    status: string;
 }) {
     return (
-        <div className="space-y-2">
-            <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                    <Icon className="w-4 h-4 text-primary" />
-                    <span className="text-sm font-medium">{label}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                    <span className="font-bold text-lg">{value}</span>
-                    <span className="text-sm text-muted-foreground">
-                        {unit}
-                    </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-3">
-                <Badge variant="outline" className="text-xs">
-                    {status}
-                </Badge>
-            </div>
+        <Link href={href}>
+            <Button
+                variant="outline"
+                className="h-12 w-full justify-between gap-3 rounded-xl"
+            >
+                <span className="flex items-center gap-3">
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                </span>
+                <ArrowRight className="h-4 w-4" />
+            </Button>
+        </Link>
+    );
+}
+
+function SummaryRow({ label, value }: { label: string; value: string }) {
+    return (
+        <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/40 px-3 py-2">
+            <span className="text-muted-foreground">{label}</span>
+            <span className="text-right font-medium text-foreground">{value}</span>
         </div>
     );
+}
+
+function EmptyState({
+    title,
+    description,
+    href,
+    action,
+}: {
+    title: string;
+    description: string;
+    href: string;
+    action: string;
+}) {
+    return (
+        <div className="rounded-xl border border-dashed p-6 text-center">
+            <p className="font-medium text-foreground">{title}</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                {description}
+            </p>
+            <Link href={href} className="mt-4 inline-flex">
+                <Button>{action}</Button>
+            </Link>
+        </div>
+    );
+}
+
+function formatDate(date: string) {
+    return new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function formatTime(time: string) {
+    const [hours = "00", minutes = "00"] = time.split(":");
+    const date = new Date();
+    date.setHours(Number(hours), Number(minutes), 0, 0);
+
+    return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+    }).format(date);
 }

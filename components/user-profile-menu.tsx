@@ -24,7 +24,7 @@ export default function UserProfileMenu() {
     const { isMobile } = useSidebar();
 
     if (!isSignedIn || !user) {
-        return null; // Or show a sign-in button
+        return null;
     }
 
     const initials = (

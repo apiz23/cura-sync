@@ -1,9 +1,6 @@
 import {
     LayoutDashboard,
-    BarChart3,
     Users,
-    FileCheck,
-    Pill,
     ClipboardList,
     UserPlus,
     Shield,
@@ -21,11 +18,6 @@ export const adminMenu = [
                 url: "/admin/dashboard",
                 icon: LayoutDashboard,
             },
-            {
-                title: "Analytics & Reports",
-                url: "/admin/analytics",
-                icon: BarChart3,
-            },
         ],
     },
     {
@@ -36,16 +28,6 @@ export const adminMenu = [
                 title: "Patient Management",
                 url: "/admin/patients",
                 icon: Users,
-            },
-            {
-                title: "Record Verification",
-                url: "/admin/records/verify",
-                icon: FileCheck,
-            },
-            {
-                title: "Prescription Queue",
-                url: "/admin/prescriptions",
-                icon: Pill,
             },
             {
                 title: "Appointments",
@@ -74,7 +56,12 @@ export const adminMenu = [
                 icon: Hospital,
             },
             {
-                title: "System Settings",
+                title: "Security",
+                url: "/admin/security",
+                icon: Shield,
+            },
+            {
+                title: "Preferences",
                 url: "/admin/settings",
                 icon: Settings,
             },

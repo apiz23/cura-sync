@@ -35,11 +35,6 @@ export const userMenu = [
                 icon: CalendarDays,
             },
             {
-                title: "Find Doctors",
-                url: "/user/doctors",
-                icon: Stethoscope,
-            },
-            {
                 title: "Medication Manager",
                 url: "/user/medications",
                 icon: Pill,

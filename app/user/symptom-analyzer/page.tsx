@@ -1,667 +1,670 @@
 "use client";
 
 import {
-    Loader2,
-    AlertCircle,
-    Sparkles,
-    Check,
-    Shield,
-    Activity,
-    RefreshCcw,
-    X,
-    Search,
-    Brain,
-    Stethoscope,
-    HeartPulse,
-    ChevronRight,
-    AlertTriangle,
-    Info,
-    Clock,
-    Thermometer,
-    FileText,
-    ArrowRight,
+	AlertCircle,
+	AlertTriangle,
+	Brain,
+	Check,
+	Clock,
+	FileText,
+	MapPin,
+	HeartPulse,
+	Hospital,
+	Loader2,
+	Shield,
+	Sparkles,
+	Stethoscope,
+	User,
 } from "lucide-react";
-import { useState, useCallback, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import Link from "next/link";
+import AnimatedTags from "@/components/smoothui/animated-tags";
+import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import { cn } from "@/lib/utils";
-import AnimatedTags from "@/components/smoothui/animated-tags";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
-interface AnalysisResult {
-    possible_disease: string;
-    confidence_level: string;
-    suggested_action: string;
+type AnalysisResult = {
+	possible_disease: string;
+	confidence_level: string;
+	urgency: "emergency" | "high" | "medium" | "low" | "unknown";
+	suggested_action: string;
+	disclaimer?: string;
+	normalized_symptoms?: string[];
+};
+
+type UserProfile = {
+	full_name?: string | null;
+	patient_profile?: {
+		date_of_birth?: string | null;
+		gender?: string | null;
+		blood_type?: string | null;
+		height_cm?: number | null;
+		weight_kg?: number | null;
+		allergies?: string | null;
+		chronic_conditions?: string | null;
+	} | null;
+};
+
+type PatientContext = {
+	age?: number;
+	date_of_birth?: string;
+	gender?: string;
+	blood_type?: string;
+	height_cm?: number;
+	weight_kg?: number;
+	allergies?: string;
+	chronic_conditions?: string;
+};
+
+type Facility = {
+	id: string;
+	name: string;
+	type?: string | null;
+	specialty?: string | null;
+	address: string;
+	latitude?: string | null;
+	longitude?: string | null;
+};
+
+type Coordinates = {
+	latitude: number;
+	longitude: number;
+};
+
+const COMMON_SYMPTOMS = [
+	"Fever",
+	"Cough",
+	"Headache",
+	"Sore Throat",
+	"Fatigue",
+	"Chest Pain",
+	"Dizziness",
+	"Runny Nose",
+	"Nausea",
+	"Shortness of Breath",
+	"Muscle Aches",
+	"Sneezing",
+];
+
+function urgencyLabel(urgency: AnalysisResult["urgency"]) {
+	switch (urgency) {
+		case "emergency":
+			return "Immediate care";
+		case "high":
+			return "Prompt medical review";
+		case "medium":
+			return "Review soon";
+		case "low":
+			return "Monitor and follow up";
+		default:
+			return "Clinical judgment";
+	}
+}
+
+function urgencyBadgeClass(urgency: AnalysisResult["urgency"]) {
+	switch (urgency) {
+		case "emergency":
+			return "bg-red-600 text-white";
+		case "high":
+			return "bg-red-500 text-white";
+		case "medium":
+			return "bg-amber-500 text-white";
+		case "low":
+			return "bg-emerald-500 text-white";
+		default:
+			return "bg-muted text-foreground";
+	}
 }
 
 export default function SymptomsCheckPage() {
-    const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
-    const [textInput, setTextInput] = useState("");
-    const [result, setResult] = useState<AnalysisResult | null>(null);
-    const [loading, setLoading] = useState(false);
-    const [error, setError] = useState<string | null>(null);
-    const [activeTab, setActiveTab] = useState("symptoms");
+	const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
+	const [textInput, setTextInput] = useState("");
+	const [result, setResult] = useState<AnalysisResult | null>(null);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState<string | null>(null);
+	const [profile, setProfile] = useState<UserProfile | null>(null);
+	const [facilities, setFacilities] = useState<Facility[]>([]);
+	const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
 
-    const commonSymptoms = useMemo(
-        () => [
-            "Fever",
-            "Cough",
-            "Headache",
-            "Sore Throat",
-            "Fatigue",
-            "Chest Pain",
-            "Dizziness",
-            "Runny Nose",
-            "Body Chills",
-            "Nausea",
-            "Shortness of Breath",
-            "Muscle Aches",
-            "Sneezing",
-        ],
-        []
-    );
+	useEffect(() => {
+		let cancelled = false;
 
-    const handleTagChange = useCallback(
-        (items: string[]) => {
-            setSelectedSymptoms(items);
-            if (result) {
-                setResult(null);
-                setError(null);
-            }
-        },
-        [result]
-    );
+		const loadProfile = async () => {
+			try {
+				const res = await fetch("/api/user/profile");
+				if (!res.ok) return;
+				const data = (await res.json()) as UserProfile;
+				if (!cancelled) {
+					setProfile(data);
+				}
+			} catch (profileError) {
+				console.error("Profile context fetch error:", profileError);
+			}
+		};
 
-    const clearAll = useCallback(() => {
-        setSelectedSymptoms([]);
-        setTextInput("");
-        setResult(null);
-        setError(null);
-        setActiveTab("symptoms");
-    }, []);
+		void loadProfile();
 
-    const allSymptoms = useMemo(() => {
-        const symptomsList = [...selectedSymptoms];
-        if (textInput.trim()) {
-            const additionalSymptoms = textInput
-                .trim()
-                .split(/[.,]/)
-                .filter((s) => s.trim());
-            return [
-                ...symptomsList,
-                ...additionalSymptoms.map((s) => s.trim()),
-            ];
-        }
-        return symptomsList;
-    }, [selectedSymptoms, textInput]);
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
-    const handleAnalyze = async () => {
-        if (allSymptoms.length === 0) {
-            setError("Please select or describe at least one symptom.");
-            return;
-        }
+	useEffect(() => {
+		let cancelled = false;
 
-        setLoading(true);
-        setError(null);
+		const loadFacilities = async () => {
+			try {
+				const res = await fetch("/api/facilities");
+				if (!res.ok) return;
+				const data = (await res.json()) as Facility[];
+				if (!cancelled) {
+					setFacilities(Array.isArray(data) ? data : []);
+				}
+			} catch (facilityError) {
+				console.error("Facility suggestion fetch error:", facilityError);
+			}
+		};
 
-        try {
-            const res = await fetch("/api/analyze", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ symptoms: allSymptoms.join(", ") }),
-            });
+		void loadFacilities();
 
-            if (!res.ok) throw new Error("Analysis failed");
+		return () => {
+			cancelled = true;
+		};
+	}, []);
 
-            const data = await res.json();
-            setResult(data);
-            setActiveTab("results");
-        } catch (err) {
-            console.error(err);
-            setError("Something went wrong. Please try again.");
-        } finally {
-            setLoading(false);
-        }
-    };
+	useEffect(() => {
+		if (typeof window === "undefined" || !("geolocation" in navigator)) return;
 
-    const getConfidencePercentage = (level: string) => {
-        const levels: Record<string, number> = {
-            High: 85,
-            Moderate: 60,
-            Low: 40,
-            "Very Low": 20,
-        };
-        return levels[level] || 50;
-    };
+		navigator.geolocation.getCurrentPosition(
+			(position) => {
+				setUserLocation({
+					latitude: position.coords.latitude,
+					longitude: position.coords.longitude,
+				});
+			},
+			() => {
+				setUserLocation(null);
+			},
+			{ enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 },
+		);
+	}, []);
 
-    return (
-        <div className="min-h-screen bg-linear-to-b from-background via-background to-primary/5 p-4 md:p-6">
-            <div className="max-w-5xl mx-auto">
-                {/* Header */}
-                <div className="text-center mb-8">
-                    <div className="inline-flex items-center justify-center p-3 rounded-2xl bg-linear-to-br from-primary/10 to-primary/5 mb-4">
-                        <div className="p-3 rounded-xl bg-primary/20">
-                            <Brain className="h-8 w-8 text-primary" />
-                        </div>
-                    </div>
-                    <h1 className="text-4xl font-bold tracking-tight bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent mb-3">
-                        AI Symptom Analyzer
-                    </h1>
-                    <p className="text-muted-foreground text-lg max-w-2xl mx-auto">
-                        Get instant AI-powered insights about your symptoms and
-                        recommended next steps
-                    </p>
-                </div>
+	const allSymptoms = useMemo(() => {
+		const list = [...selectedSymptoms];
+		if (textInput.trim()) list.push(textInput.trim());
+		return list;
+	}, [selectedSymptoms, textInput]);
 
-                {/* Main Content */}
-                <div className="grid lg:grid-cols-3 gap-6">
-                    {/* Left Panel - Progress & Info */}
-                    <div className="space-y-6">
-                        <Card className="border-2">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Activity className="h-5 w-5 text-primary" />
-                                    Analysis Progress
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-4">
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-medium">
-                                            Symptom Input
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                "font-bold",
-                                                allSymptoms.length > 0
-                                                    ? "text-green-600"
-                                                    : "text-muted-foreground"
-                                            )}
-                                        >
-                                            {allSymptoms.length} symptoms added
-                                        </span>
-                                    </div>
-                                    <Progress
-                                        value={Math.min(
-                                            allSymptoms.length * 20,
-                                            100
-                                        )}
-                                    />
-                                </div>
-                                <div className="space-y-2">
-                                    <div className="flex justify-between text-sm">
-                                        <span className="font-medium">
-                                            AI Analysis
-                                        </span>
-                                        <span
-                                            className={cn(
-                                                "font-bold",
-                                                result
-                                                    ? "text-green-600"
-                                                    : "text-muted-foreground"
-                                            )}
-                                        >
-                                            {result ? "Complete" : "Pending"}
-                                        </span>
-                                    </div>
-                                    <Progress value={result ? 100 : 0} />
-                                </div>
-                            </CardContent>
-                        </Card>
+	const actions = useMemo(() => {
+		if (!result?.suggested_action) return [];
+		return result.suggested_action
+			.split("\n")
+			.map((line) => line.replace(/^[-*]\s*/, "").trim())
+			.filter(Boolean);
+	}, [result]);
 
-                        <Card className="border-2">
-                            <CardHeader>
-                                <CardTitle className="flex items-center gap-2">
-                                    <Shield className="h-5 w-5 text-primary" />
-                                    Safety Information
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                <div className="flex items-start gap-3 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/20 border border-amber-200">
-                                    <AlertTriangle className="h-5 w-5 text-amber-600 mt-0.5 shrink-0" />
-                                    <p className="text-sm text-amber-800 dark:text-amber-300">
-                                        <span className="font-bold">
-                                            Emergency Warning:
-                                        </span>{" "}
-                                        If experiencing chest pain, difficulty
-                                        breathing, or severe bleeding, seek
-                                        immediate medical attention.
-                                    </p>
-                                </div>
-                                <div className="flex items-start gap-3 p-3 rounded-lg bg-blue-50 dark:bg-blue-950/20 border border-blue-200">
-                                    <Info className="h-5 w-5 text-blue-600 mt-0.5 shrink-0" />
-                                    <p className="text-sm text-blue-800 dark:text-blue-300">
-                                        This AI tool is for informational
-                                        purposes only and does not replace
-                                        professional medical advice.
-                                    </p>
-                                </div>
-                            </CardContent>
-                        </Card>
-                    </div>
+	const patientContext = useMemo(() => {
+		const patientProfile = profile?.patient_profile;
+		if (!patientProfile) return null;
 
-                    {/* Center Panel - Main Content */}
-                    <div className="lg:col-span-2">
-                        <Card className="border-2 shadow-lg">
-                            <CardHeader className="border-b">
-                                <div className="flex items-center justify-between">
-                                    <div>
-                                        <CardTitle className="text-2xl">
-                                            Symptom Analysis
-                                        </CardTitle>
-                                        <CardDescription>
-                                            Select your symptoms and get
-                                            AI-powered insights
-                                        </CardDescription>
-                                    </div>
-                                    {allSymptoms.length > 0 && (
-                                        <Badge
-                                            variant="secondary"
-                                            className="gap-2"
-                                        >
-                                            <span className="font-bold">
-                                                {allSymptoms.length}
-                                            </span>
-                                            Symptoms
-                                        </Badge>
-                                    )}
-                                </div>
-                            </CardHeader>
+		const age = calculateAge(patientProfile.date_of_birth);
+		const context: PatientContext = {};
 
-                            <Tabs
-                                value={activeTab}
-                                onValueChange={setActiveTab}
-                                className="w-full"
-                            >
-                                <CardContent className="pt-6">
-                                    <TabsList className="grid grid-cols-2 mb-6">
-                                        <TabsTrigger
-                                            value="symptoms"
-                                            className="gap-2"
-                                        >
-                                            <Search className="h-4 w-4" />
-                                            Enter Symptoms
-                                        </TabsTrigger>
-                                        <TabsTrigger
-                                            value="results"
-                                            disabled={!result}
-                                            className="gap-2"
-                                        >
-                                            <FileText className="h-4 w-4" />
-                                            Analysis Results
-                                        </TabsTrigger>
-                                    </TabsList>
+		if (age !== null) context.age = age;
+		if (patientProfile.date_of_birth) {
+			context.date_of_birth = patientProfile.date_of_birth;
+		}
+		if (patientProfile.gender) context.gender = patientProfile.gender;
+		if (patientProfile.blood_type) context.blood_type = patientProfile.blood_type;
+		if (patientProfile.height_cm != null) context.height_cm = patientProfile.height_cm;
+		if (patientProfile.weight_kg != null) context.weight_kg = patientProfile.weight_kg;
+		if (patientProfile.allergies) context.allergies = patientProfile.allergies;
+		if (patientProfile.chronic_conditions) {
+			context.chronic_conditions = patientProfile.chronic_conditions;
+		}
 
-                                    <TabsContent
-                                        value="symptoms"
-                                        className="space-y-6"
-                                    >
-                                        {/* Error Alert */}
-                                        {error && (
-                                            <div className="p-4 rounded-lg bg-destructive/10 border border-destructive/20">
-                                                <div className="flex items-center gap-3">
-                                                    <AlertCircle className="h-5 w-5 text-destructive" />
-                                                    <div>
-                                                        <p className="font-medium text-destructive">
-                                                            {error}
-                                                        </p>
-                                                    </div>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={() =>
-                                                            setError(null)
-                                                        }
-                                                        className="ml-auto h-8 w-8 p-0"
-                                                    >
-                                                        <X className="h-4 w-4" />
-                                                    </Button>
-                                                </div>
-                                            </div>
-                                        )}
+		return Object.keys(context).length > 0 ? context : null;
+	}, [profile]);
 
-                                        {/* Symptoms Selection */}
-                                        <div className="space-y-4">
-                                            <div className="flex items-center justify-between">
-                                                <h3 className="text-lg font-semibold">
-                                                    Select Symptoms
-                                                </h3>
-                                                <span className="text-sm text-muted-foreground">
-                                                    {selectedSymptoms.length} of{" "}
-                                                    {commonSymptoms.length}{" "}
-                                                    selected
-                                                </span>
-                                            </div>
-                                            <AnimatedTags
-                                                initialTags={commonSymptoms}
-                                                onChange={handleTagChange}
-                                                selectedTags={selectedSymptoms}
-                                                className="w-full"
-                                            />
-                                        </div>
+	const patientContextItems = useMemo(() => {
+		if (!patientContext) return [];
 
-                                        {/* Additional Details */}
-                                        <div className="space-y-3">
-                                            <label className="text-sm font-semibold flex items-center gap-2">
-                                                <Stethoscope className="h-4 w-4" />
-                                                Additional Details
-                                            </label>
-                                            <Textarea
-                                                value={textInput}
-                                                onChange={(e) =>
-                                                    setTextInput(e.target.value)
-                                                }
-                                                placeholder="Describe specific pains, duration, severity, or any other relevant information..."
-                                                rows={4}
-                                                className="min-h-[120px] resize-none border-2"
-                                            />
-                                            {textInput && (
-                                                <p className="text-xs text-muted-foreground text-right">
-                                                    {textInput.length}{" "}
-                                                    characters
-                                                </p>
-                                            )}
-                                        </div>
+		return [
+			patientContext.age ? `${patientContext.age} years old` : null,
+			patientContext.gender ?? null,
+			patientContext.blood_type ? `Blood type ${patientContext.blood_type}` : null,
+			patientContext.height_cm ? `${patientContext.height_cm} cm` : null,
+			patientContext.weight_kg ? `${patientContext.weight_kg} kg` : null,
+			patientContext.allergies ? `Allergies: ${patientContext.allergies}` : null,
+			patientContext.chronic_conditions
+				? `Conditions: ${patientContext.chronic_conditions}`
+				: null,
+		].filter(Boolean) as string[];
+	}, [patientContext]);
 
-                                        {/* Selected Symptoms Preview */}
-                                        {allSymptoms.length > 0 && (
-                                            <div className="space-y-3">
-                                                <div className="flex items-center justify-between">
-                                                    <h4 className="text-sm font-semibold">
-                                                        Selected Symptoms
-                                                    </h4>
-                                                    <Button
-                                                        variant="ghost"
-                                                        size="sm"
-                                                        onClick={clearAll}
-                                                        className="h-8 text-xs"
-                                                    >
-                                                        Clear All
-                                                    </Button>
-                                                </div>
-                                                <div className="flex flex-wrap gap-2 p-3 rounded-lg bg-muted/50">
-                                                    {allSymptoms.map(
-                                                        (symptom, index) => (
-                                                            <Badge
-                                                                key={index}
-                                                                variant="secondary"
-                                                                className="gap-1.5 px-3 py-1.5"
-                                                            >
-                                                                <Check className="h-3 w-3" />
-                                                                {symptom}
-                                                            </Badge>
-                                                        )
-                                                    )}
-                                                </div>
-                                            </div>
-                                        )}
+	const recommendedFacilities = useMemo(() => {
+		const sorted = [...facilities].sort((left, right) => {
+			const leftDistance = distanceFromUser(left, userLocation);
+			const rightDistance = distanceFromUser(right, userLocation);
 
-                                        {/* Analyze Button */}
-                                        <div className="space-y-3 pt-4">
-                                            <Button
-                                                onClick={handleAnalyze}
-                                                disabled={
-                                                    loading ||
-                                                    allSymptoms.length === 0
-                                                }
-                                                size="lg"
-                                                className="w-full h-14 text-base gap-3"
-                                            >
-                                                {loading ? (
-                                                    <>
-                                                        <Loader2 className="h-5 w-5 animate-spin" />
-                                                        Analyzing with AI...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Sparkles className="h-5 w-5" />
-                                                        {allSymptoms.length >
-                                                        0 ? (
-                                                            <>
-                                                                Analyze{" "}
-                                                                {
-                                                                    allSymptoms.length
-                                                                }{" "}
-                                                                Symptoms
-                                                                <ArrowRight className="h-4 w-4 ml-2" />
-                                                            </>
-                                                        ) : (
-                                                            "Select Symptoms to Begin"
-                                                        )}
-                                                    </>
-                                                )}
-                                            </Button>
-                                            {allSymptoms.length === 0 && (
-                                                <p className="text-sm text-muted-foreground text-center">
-                                                    Select at least one symptom
-                                                    to begin analysis
-                                                </p>
-                                            )}
-                                        </div>
-                                    </TabsContent>
+			if (leftDistance !== null && rightDistance !== null) {
+				return leftDistance - rightDistance;
+			}
+			if (leftDistance !== null) return -1;
+			if (rightDistance !== null) return 1;
+			return left.name.localeCompare(right.name);
+		});
 
-                                    <TabsContent
-                                        value="results"
-                                        className="space-y-6 animate-in fade-in"
-                                    >
-                                        {result && (
-                                            <>
-                                                {/* Result Header */}
-                                                <div className="p-6 rounded-xl bg-linear-to-r from-primary/5 to-primary/10 border border-primary/20">
-                                                    <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                                                        <div className="p-3 rounded-lg bg-primary/20">
-                                                            <Sparkles className="h-8 w-8 text-primary" />
-                                                        </div>
-                                                        <div className="flex-1">
-                                                            <h3 className="text-2xl font-bold">
-                                                                Analysis
-                                                                Complete
-                                                            </h3>
-                                                            <p className="text-muted-foreground">
-                                                                Based on your{" "}
-                                                                {
-                                                                    allSymptoms.length
-                                                                }{" "}
-                                                                reported
-                                                                symptoms
-                                                            </p>
-                                                        </div>
-                                                        <Badge
-                                                            variant="outline"
-                                                            className="text-base px-4 py-2"
-                                                        >
-                                                            {new Date().toLocaleDateString()}
-                                                        </Badge>
-                                                    </div>
-                                                </div>
+		return sorted.slice(0, 3).map((facility) => ({
+			...facility,
+			distanceKm: distanceFromUser(facility, userLocation),
+		}));
+	}, [facilities, userLocation]);
 
-                                                {/* Diagnosis Section */}
-                                                <div className="grid gap-6 md:grid-cols-2">
-                                                    <Card>
-                                                        <CardHeader>
-                                                            <CardTitle className="flex items-center gap-2">
-                                                                <HeartPulse className="h-5 w-5 text-primary" />
-                                                                Possible
-                                                                Condition
-                                                            </CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent>
-                                                            <p className="text-3xl font-bold text-primary mb-2">
-                                                                {
-                                                                    result.possible_disease
-                                                                }
-                                                            </p>
-                                                            <p className="text-sm text-muted-foreground">
-                                                                AI-powered
-                                                                preliminary
-                                                                diagnosis
-                                                            </p>
-                                                        </CardContent>
-                                                    </Card>
+	const handleTagChange = useCallback((items: string[]) => {
+		setSelectedSymptoms(items);
+		setResult(null);
+		setError(null);
+	}, []);
 
-                                                    <Card>
-                                                        <CardHeader>
-                                                            <CardTitle className="flex items-center gap-2">
-                                                                <Thermometer className="h-5 w-5 text-primary" />
-                                                                Confidence Level
-                                                            </CardTitle>
-                                                        </CardHeader>
-                                                        <CardContent className="space-y-4">
-                                                            <div className="space-y-2">
-                                                                <div className="flex justify-between text-sm">
-                                                                    <span>
-                                                                        AI
-                                                                        Confidence
-                                                                    </span>
-                                                                    <span className="font-bold">
-                                                                        {
-                                                                            result.confidence_level
-                                                                        }
-                                                                    </span>
-                                                                </div>
-                                                                <Progress
-                                                                    value={getConfidencePercentage(
-                                                                        result.confidence_level
-                                                                    )}
-                                                                />
-                                                            </div>
-                                                            <Badge
-                                                                variant={
-                                                                    result.confidence_level ===
-                                                                    "High"
-                                                                        ? "default"
-                                                                        : "secondary"
-                                                                }
-                                                                className="w-fit"
-                                                            >
-                                                                {result.confidence_level ===
-                                                                "High"
-                                                                    ? "High Reliability"
-                                                                    : "Seek Professional Advice"}
-                                                            </Badge>
-                                                        </CardContent>
-                                                    </Card>
-                                                </div>
+	const clearAll = useCallback(() => {
+		setSelectedSymptoms([]);
+		setTextInput("");
+		setResult(null);
+		setError(null);
+	}, []);
 
-                                                {/* Recommended Actions */}
-                                                <Card>
-                                                    <CardHeader>
-                                                        <CardTitle className="flex items-center gap-2">
-                                                            <Check className="h-5 w-5 text-primary" />
-                                                            Recommended Actions
-                                                        </CardTitle>
-                                                    </CardHeader>
-                                                    <CardContent>
-                                                        <div className="space-y-3">
-                                                            {result.suggested_action
-                                                                .split("\n")
-                                                                .filter(
-                                                                    (line) =>
-                                                                        line
-                                                                            .trim()
-                                                                            .startsWith(
-                                                                                "-"
-                                                                            )
-                                                                )
-                                                                .map(
-                                                                    (
-                                                                        line,
-                                                                        index
-                                                                    ) => (
-                                                                        <div
-                                                                            key={
-                                                                                index
-                                                                            }
-                                                                            className="flex items-start gap-3 p-3 rounded-lg border hover:bg-muted/50 transition-colors"
-                                                                        >
-                                                                            <div className="p-1.5 rounded-md bg-primary/10 mt-0.5">
-                                                                                <ChevronRight className="h-4 w-4 text-primary" />
-                                                                            </div>
-                                                                            <span className="text-sm">
-                                                                                {line
-                                                                                    .replace(
-                                                                                        /^-/,
-                                                                                        ""
-                                                                                    )
-                                                                                    .trim()}
-                                                                            </span>
-                                                                        </div>
-                                                                    )
-                                                                )}
-                                                        </div>
-                                                    </CardContent>
-                                                </Card>
+	const handleAnalyze = async () => {
+		if (allSymptoms.length === 0) {
+			setError("Please select or describe at least one symptom.");
+			return;
+		}
 
-                                                {/* Action Buttons */}
-                                                <div className="flex flex-col sm:flex-row gap-3">
-                                                    <Button
-                                                        onClick={clearAll}
-                                                        variant="outline"
-                                                        className="flex-1 gap-2"
-                                                    >
-                                                        <RefreshCcw className="h-4 w-4" />
-                                                        Analyze New Symptoms
-                                                    </Button>
-                                                    <Button className="flex-1 gap-2">
-                                                        <Clock className="h-4 w-4" />
-                                                        Schedule Doctor Visit
-                                                    </Button>
-                                                </div>
+		setLoading(true);
+		setError(null);
 
-                                                {/* Disclaimer */}
-                                                <div className="p-4 rounded-lg bg-muted/50 border">
-                                                    <div className="flex items-start gap-3">
-                                                        <Shield className="h-5 w-5 text-muted-foreground mt-0.5 flex-shrink-0" />
-                                                        <div>
-                                                            <p className="text-sm font-medium mb-1">
-                                                                Important
-                                                                Disclaimer
-                                                            </p>
-                                                            <p className="text-xs text-muted-foreground">
-                                                                This analysis is
-                                                                generated by AI
-                                                                and is for
-                                                                informational
-                                                                purposes only.
-                                                                It is not a
-                                                                substitute for
-                                                                professional
-                                                                medical advice,
-                                                                diagnosis, or
-                                                                treatment.
-                                                                Always seek the
-                                                                advice of your
-                                                                physician or
-                                                                other qualified
-                                                                health provider
-                                                                with any
-                                                                questions you
-                                                                may have
-                                                                regarding a
-                                                                medical
-                                                                condition.
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </>
-                                        )}
-                                    </TabsContent>
-                                </CardContent>
-                            </Tabs>
-                        </Card>
-                    </div>
-                </div>
-            </div>
-        </div>
-    );
+		try {
+			const res = await fetch("/api/analyze", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					symptoms: allSymptoms.join(", "),
+					patient_context: patientContext,
+				}),
+			});
+
+			if (!res.ok) {
+				const err = await res.json().catch(() => null);
+				throw new Error(err?.error || "Analysis failed");
+			}
+
+			const data = await res.json();
+			setResult(data);
+		} catch (err) {
+			console.error(err);
+			setError("Something went wrong. Please try again.");
+		} finally {
+			setLoading(false);
+		}
+	};
+
+	return (
+		<UserPageShell>
+			<UserPageHeader
+				icon={Brain}
+				title="AI Symptom Analyzer"
+				description="Organize symptom details and review the summary with a qualified healthcare professional."
+				align="center"
+			/>
+
+			<div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
+				<Card className="border-2 shadow-sm">
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<Stethoscope className="h-5 w-5 text-primary" />
+							Symptom input
+						</CardTitle>
+						<CardDescription>
+							Detailed descriptions may improve the analysis summary.
+						</CardDescription>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						<div className="space-y-3">
+							<h3 className="text-sm font-semibold">Common symptoms</h3>
+							<AnimatedTags
+								initialTags={COMMON_SYMPTOMS}
+								onChange={handleTagChange}
+								selectedTags={selectedSymptoms}
+								className="w-full"
+							/>
+						</div>
+
+						<div className="space-y-3">
+							<label className="text-sm font-semibold">Additional details</label>
+							<Textarea
+								value={textInput}
+								onChange={(e) => setTextInput(e.target.value)}
+								placeholder="Describe duration, severity, or anything else that feels relevant..."
+								rows={4}
+								className="min-h-[120px] resize-none"
+							/>
+						</div>
+
+						{patientContextItems.length ? (
+							<div className="space-y-3 rounded-xl border bg-muted/30 p-4">
+								<div className="flex items-center gap-2">
+									<HeartPulse className="h-4 w-4 text-primary" />
+									<h3 className="text-sm font-semibold">
+										Profile context included
+									</h3>
+								</div>
+								<div className="flex flex-wrap gap-2">
+									{patientContextItems.map((item) => (
+										<Badge key={item} variant="outline">
+											{item}
+										</Badge>
+									))}
+								</div>
+								<p className="text-xs text-muted-foreground">
+									The analyzer will include your saved health profile details
+									when generating the summary.
+								</p>
+							</div>
+						) : null}
+
+						{allSymptoms.length > 0 ? (
+							<div className="space-y-3">
+								<div className="flex items-center justify-between">
+									<h4 className="text-sm font-semibold">Ready to analyze</h4>
+									<Button variant="ghost" size="sm" onClick={clearAll}>
+										Clear all
+									</Button>
+								</div>
+								<div className="flex flex-wrap gap-2 rounded-lg bg-muted/40 p-3">
+									{allSymptoms.map((symptom, index) => (
+										<Badge key={`${symptom}-${index}`} variant="secondary">
+											{symptom}
+										</Badge>
+									))}
+								</div>
+							</div>
+						) : null}
+
+						{error ? (
+							<div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
+								<div className="flex items-center gap-2 font-medium">
+									<AlertCircle className="h-4 w-4" />
+									{error}
+								</div>
+							</div>
+						) : null}
+
+						<Button
+							onClick={handleAnalyze}
+							disabled={loading || allSymptoms.length === 0}
+							className="h-12 w-full"
+						>
+							{loading ? (
+								<>
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									Analyzing symptoms...
+								</>
+							) : (
+								<>
+									<Sparkles className="mr-2 h-4 w-4" />
+									Analyze with AI
+								</>
+							)}
+						</Button>
+					</CardContent>
+				</Card>
+
+				<Card className="border-2 shadow-sm">
+					<CardHeader>
+						<CardTitle className="flex items-center gap-2">
+							<FileText className="h-5 w-5 text-primary" />
+							Safety information
+						</CardTitle>
+					</CardHeader>
+					<CardContent className="space-y-4 text-sm text-muted-foreground">
+						<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">
+							If you have chest pain, severe breathing difficulty, severe bleeding,
+							or loss of consciousness, seek urgent medical care now.
+						</div>
+						<p>This tool is informational and does not provide a diagnosis.</p>
+						<p>Use the summary to help explain symptoms during a clinical visit.</p>
+					</CardContent>
+				</Card>
+			</div>
+
+			{result ? (
+				<Card className="mt-6 border-2 shadow-sm">
+					<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+						<div>
+							<CardTitle className="text-2xl">Analysis summary</CardTitle>
+							<CardDescription>
+								Review this information with a healthcare professional if you need
+								medical advice.
+							</CardDescription>
+						</div>
+						<Badge className={urgencyBadgeClass(result.urgency)}>
+							{result.urgency.toUpperCase()}
+						</Badge>
+					</CardHeader>
+					<CardContent className="space-y-6">
+						<div className="grid gap-4 md:grid-cols-2">
+							<div className="rounded-xl border bg-muted/40 p-4">
+								<p className="text-sm font-semibold text-muted-foreground">
+									Possible condition
+								</p>
+								<p className="mt-2 text-2xl font-semibold text-primary">
+									{result.possible_disease}
+								</p>
+							</div>
+							<div className="rounded-xl border bg-muted/40 p-4">
+								<p className="text-sm font-semibold text-muted-foreground">
+									Suggested timeline
+								</p>
+								<div className="mt-2 flex items-center gap-2">
+									<Clock className="h-4 w-4 text-primary" />
+									<p className="font-medium">{urgencyLabel(result.urgency)}</p>
+								</div>
+							</div>
+						</div>
+
+						<div className="grid gap-4 md:grid-cols-2">
+							<div className="rounded-xl border bg-muted/40 p-4">
+								<p className="text-sm font-semibold text-muted-foreground">
+									Assessment confidence
+								</p>
+								<p className="mt-2 text-lg font-medium capitalize">
+									{result.confidence_level}
+								</p>
+							</div>
+							<div className="rounded-xl border bg-muted/40 p-4">
+								<p className="text-sm font-semibold text-muted-foreground">
+									Recommended follow-up
+								</p>
+								<div className="mt-2 flex items-center gap-2">
+									<User className="h-4 w-4 text-primary" />
+									<p className="text-sm text-muted-foreground">
+										Consult a qualified healthcare professional.
+									</p>
+								</div>
+							</div>
+						</div>
+
+						{result.normalized_symptoms?.length ? (
+							<div className="space-y-3">
+								<h3 className="text-sm font-semibold">Recognized symptoms</h3>
+								<div className="flex flex-wrap gap-2">
+									{result.normalized_symptoms.map((symptom) => (
+										<Badge key={symptom} variant="outline">
+											{symptom}
+										</Badge>
+									))}
+								</div>
+							</div>
+						) : null}
+
+						<div className="space-y-3">
+							<h3 className="flex items-center gap-2 text-lg font-semibold">
+								<AlertTriangle className="h-5 w-5 text-primary" />
+								Recommended actions
+							</h3>
+							<div className="space-y-3">
+								{actions.map((line, index) => (
+									<div
+										key={`${line}-${index}`}
+										className="flex items-start gap-3 rounded-lg bg-muted p-3"
+									>
+										<div className="mt-0.5 rounded-full bg-primary/10 p-1">
+											<Check className="h-3 w-3 text-primary" />
+										</div>
+										<span className="text-sm leading-relaxed">{line}</span>
+									</div>
+								))}
+							</div>
+						</div>
+
+						<div className="rounded-xl border bg-accent p-4">
+							<div className="flex items-start gap-3">
+								<Shield className="mt-0.5 h-5 w-5 text-primary" />
+								<div>
+									<p className="font-semibold">Medical disclaimer</p>
+									<p className="mt-1 text-sm text-muted-foreground">
+										{result.disclaimer ||
+											"This analysis is for informational purposes only and does not replace professional medical advice."}
+									</p>
+								</div>
+							</div>
+						</div>
+
+						{recommendedFacilities.length ? (
+							<div className="space-y-4">
+								<h3 className="flex items-center gap-2 text-lg font-semibold">
+									<Hospital className="h-5 w-5 text-primary" />
+									Recommended registered care nearby
+								</h3>
+								<div className="grid gap-3">
+									{recommendedFacilities.map((facility) => (
+										<div
+											key={facility.id}
+											className="rounded-xl border bg-muted/30 p-4"
+										>
+											<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+												<div className="space-y-2">
+													<div className="flex flex-wrap items-center gap-2">
+														<p className="font-semibold">{facility.name}</p>
+														{facility.type ? (
+															<Badge variant="secondary">{facility.type}</Badge>
+														) : null}
+														{facility.distanceKm !== null ? (
+															<Badge variant="outline">
+																{facility.distanceKm.toFixed(1)} km away
+															</Badge>
+														) : null}
+													</div>
+													<p className="text-sm text-muted-foreground">
+														{facility.specialty || "General care"}
+													</p>
+													<div className="flex items-start gap-2 text-sm text-muted-foreground">
+														<MapPin className="mt-0.5 h-4 w-4 text-primary" />
+														<span>{facility.address}</span>
+													</div>
+												</div>
+												<div className="flex flex-wrap gap-2">
+													<Button asChild variant="outline" size="sm">
+														<a
+															href={mapHref(facility)}
+															target="_blank"
+															rel="noreferrer"
+														>
+															Open map
+														</a>
+													</Button>
+													<Button asChild size="sm">
+														<Link href={`/user/appointments/${facility.id}`}>
+															Book now
+														</Link>
+													</Button>
+												</div>
+											</div>
+										</div>
+									))}
+								</div>
+							</div>
+						) : null}
+					</CardContent>
+				</Card>
+			) : null}
+		</UserPageShell>
+	);
+}
+
+function calculateAge(dateOfBirth?: string | null) {
+	if (!dateOfBirth) return null;
+
+	const birthDate = new Date(dateOfBirth);
+	if (Number.isNaN(birthDate.getTime())) return null;
+
+	const today = new Date();
+	let age = today.getFullYear() - birthDate.getFullYear();
+	const hasHadBirthdayThisYear =
+		today.getMonth() > birthDate.getMonth() ||
+		(today.getMonth() === birthDate.getMonth() &&
+			today.getDate() >= birthDate.getDate());
+
+	if (!hasHadBirthdayThisYear) {
+		age -= 1;
+	}
+
+	return age >= 0 ? age : null;
+}
+
+function distanceFromUser(facility: Facility, userLocation: Coordinates | null) {
+	if (!userLocation || !facility.latitude || !facility.longitude) return null;
+
+	const latitude = Number(facility.latitude);
+	const longitude = Number(facility.longitude);
+
+	if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null;
+
+	return haversineKm(
+		userLocation.latitude,
+		userLocation.longitude,
+		latitude,
+		longitude,
+	);
+}
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+	const toRad = (value: number) => (value * Math.PI) / 180;
+	const earthRadiusKm = 6371;
+	const dLat = toRad(lat2 - lat1);
+	const dLon = toRad(lon2 - lon1);
+	const a =
+		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+		Math.cos(toRad(lat1)) *
+			Math.cos(toRad(lat2)) *
+			Math.sin(dLon / 2) *
+			Math.sin(dLon / 2);
+
+	return 2 * earthRadiusKm * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function mapHref(facility: Facility) {
+	if (facility.latitude && facility.longitude) {
+		return `https://www.google.com/maps/search/?api=1&query=${facility.latitude},${facility.longitude}`;
+	}
+
+	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(facility.address)}`;
 }

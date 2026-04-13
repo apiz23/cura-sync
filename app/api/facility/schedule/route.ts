@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
+import { ensureFacilityAccess, requireAdminStaffSession } from "@/lib/authz";
 
 type FacilityScheduleInput = {
     day_of_week: number;
@@ -33,6 +34,9 @@ export async function GET(req: Request) {
 }
 
 export async function PUT(req: Request) {
+    const session = await requireAdminStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     const body: {
         facility_id: string;
         schedules: FacilityScheduleInput[];
@@ -43,6 +47,9 @@ export async function PUT(req: Request) {
     if (!facility_id || !Array.isArray(schedules)) {
         return NextResponse.json({ error: "Invalid payload" }, { status: 400 });
     }
+
+    const facilityAccess = ensureFacilityAccess(session, facility_id);
+    if (facilityAccess instanceof NextResponse) return facilityAccess;
 
     // Remove old schedules
     const { error: deleteError } = await supabase

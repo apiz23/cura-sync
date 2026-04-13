@@ -1,5 +1,6 @@
 import supabase from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { requireAnySession, requirePatientSession } from "@/lib/authz";
 
 /* =========================
    Types
@@ -14,12 +15,16 @@ type AppointmentApiRow = {
     status: string;
     reason_for_visit: string | null;
     created_at: string;
-    cura_profiles: {
-        name: string | null;
-    }[];
-    cura_facilities: {
-        name: string | null;
-    }[];
+};
+
+type ProfileLookupRow = {
+    id: string;
+    full_name: string | null;
+};
+
+type FacilityLookupRow = {
+    id: string;
+    name: string | null;
 };
 
 /* =========================
@@ -27,6 +32,9 @@ type AppointmentApiRow = {
 ========================= */
 export async function GET(req: Request) {
     try {
+        const session = await requireAnySession(req);
+        if (session instanceof NextResponse) return session;
+
         const { searchParams } = new URL(req.url);
 
         const facility_id = searchParams.get("facility_id");
@@ -45,20 +53,28 @@ export async function GET(req: Request) {
                 end_time,
                 status,
                 reason_for_visit,
-                created_at,
-                cura_profiles:profile_id (
-                    name
-                ),
-                cura_facilities:facility_id (
-                    name
-                )
+                created_at
             `
             )
             .order("appointment_date", { ascending: true })
             .order("start_time", { ascending: true });
 
-        if (facility_id) query = query.eq("facility_id", facility_id);
-        if (profile_id) query = query.eq("profile_id", profile_id);
+        if (session.kind === "patient") {
+            query = query.eq("profile_id", session.profileId);
+        } else {
+            // staff (facility-scoped)
+            const facilityFilter = facility_id ?? session.facilityId;
+            if (facilityFilter !== session.facilityId) {
+                return NextResponse.json(
+                    { error: "Forbidden" },
+                    { status: 403 }
+                );
+            }
+            query = query.eq("facility_id", facilityFilter);
+
+            if (profile_id) query = query.eq("profile_id", profile_id);
+        }
+
         if (date) query = query.eq("appointment_date", date);
 
         const { data, error } = await query;
@@ -71,12 +87,67 @@ export async function GET(req: Request) {
             );
         }
 
-        const rows = data as AppointmentApiRow[] | null;
+        const rows = (data as AppointmentApiRow[] | null) ?? [];
+        const profileIds = Array.from(
+            new Set(
+                rows
+                    .map((appointment) => appointment.profile_id)
+                    .filter((value): value is string => Boolean(value))
+            )
+        );
+        const facilityIds = Array.from(
+            new Set(
+                rows
+                    .map((appointment) => appointment.facility_id)
+                    .filter((value): value is string => Boolean(value))
+            )
+        );
 
-        const formatted = (rows ?? []).map((appt) => ({
+        const [profilesResult, facilitiesResult] = await Promise.all([
+            profileIds.length
+                ? supabase
+                      .from("cura_profiles")
+                      .select("id, full_name")
+                      .in("id", profileIds)
+                : Promise.resolve({ data: [], error: null }),
+            facilityIds.length
+                ? supabase
+                      .from("cura_facilities")
+                      .select("id, name")
+                      .in("id", facilityIds)
+                : Promise.resolve({ data: [], error: null }),
+        ]);
+
+        if (profilesResult.error || facilitiesResult.error) {
+            console.error("Fetch appointment relations error:", {
+                profilesError: profilesResult.error,
+                facilitiesError: facilitiesResult.error,
+            });
+            return NextResponse.json(
+                { error: "Failed to fetch appointments" },
+                { status: 500 }
+            );
+        }
+
+        const profileMap = new Map(
+            ((profilesResult.data as ProfileLookupRow[] | null) ?? []).map(
+                (profile) => [profile.id, profile.full_name]
+            )
+        );
+        const facilityMap = new Map(
+            ((facilitiesResult.data as FacilityLookupRow[] | null) ?? []).map(
+                (facility) => [facility.id, facility.name]
+            )
+        );
+
+        const formatted = rows.map((appt) => ({
             ...appt,
-            patient_name: appt.cura_profiles[0]?.name ?? "Unknown Patient",
-            facility_name: appt.cura_facilities[0]?.name ?? "Unknown Facility",
+            patient_name: appt.profile_id
+                ? profileMap.get(appt.profile_id) ?? "Unknown Patient"
+                : "Unknown Patient",
+            facility_name: appt.facility_id
+                ? facilityMap.get(appt.facility_id) ?? "Unknown Facility"
+                : "Unknown Facility",
         }));
 
         return NextResponse.json({ data: formatted }, { status: 200 });
@@ -134,10 +205,12 @@ function processTimes(startStr: string, endStr?: string) {
 ========================= */
 export async function POST(req: Request) {
     try {
+        const patient = await requirePatientSession();
+        if (patient instanceof NextResponse) return patient;
+
         const body = await req.json();
 
         const {
-            profile_id,
             facility_id,
             appointment_date,
             start_time,
@@ -152,11 +225,57 @@ export async function POST(req: Request) {
             reason_for_visit?: string;
         };
 
-        if (!profile_id || !facility_id || !appointment_date || !start_time) {
+        if (!facility_id || !appointment_date || !start_time) {
             return NextResponse.json(
                 { error: "Missing required fields" },
                 { status: 400 }
             );
+        }
+
+        // Ensure the patient is linked to the facility. If not, create the
+        // active facility registration during booking so the user journey
+        // does not depend on prior manual admin registration.
+        const { data: registration, error: regError } = await supabase
+            .from("cura_patient_facilities")
+            .select("id")
+            .eq("profile_id", patient.profileId)
+            .eq("facility_id", facility_id)
+            .maybeSingle();
+
+        if (regError) {
+            return NextResponse.json(
+                { error: "Registration check failed" },
+                { status: 500 }
+            );
+        }
+
+        if (!registration) {
+            const { error: registerError } = await supabase
+                .from("cura_patient_facilities")
+                .insert({
+                    profile_id: patient.profileId,
+                    facility_id,
+                    status: "active",
+                });
+
+            if (registerError) {
+                return NextResponse.json(
+                    { error: "Unable to register patient to facility" },
+                    { status: 500 }
+                );
+            }
+        } else {
+            const { error: reactivateError } = await supabase
+                .from("cura_patient_facilities")
+                .update({ status: "active" })
+                .eq("id", registration.id);
+
+            if (reactivateError) {
+                return NextResponse.json(
+                    { error: "Unable to activate facility registration" },
+                    { status: 500 }
+                );
+            }
         }
 
         const times = processTimes(start_time, end_time);
@@ -194,7 +313,7 @@ export async function POST(req: Request) {
             .from("cura_appointments")
             .insert([
                 {
-                    profile_id,
+                    profile_id: patient.profileId,
                     facility_id,
                     appointment_date,
                     start_time: times.startTime,

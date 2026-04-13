@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import supabase from "@/lib/supabase";
+import { ensureFacilityAccess, requireStaffSession } from "@/lib/authz";
 
 export async function GET(
     request: NextRequest,
@@ -8,11 +8,8 @@ export async function GET(
 ) {
     const { facilityId } = await params;
 
-    const { userId } = await auth();
-
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+    const session = await requireStaffSession(request);
+    if (session instanceof NextResponse) return session;
 
     if (!facilityId) {
         return NextResponse.json(
@@ -20,6 +17,9 @@ export async function GET(
             { status: 400 }
         );
     }
+
+    const facilityAccess = ensureFacilityAccess(session, facilityId);
+    if (facilityAccess instanceof NextResponse) return facilityAccess;
 
     // 🧠 Fetch patients registered in this facility
     const { data, error } = await supabase

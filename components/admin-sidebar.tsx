@@ -4,7 +4,6 @@ import * as React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useAuth } from "@/components/authprovideradmin";
-import { Stethoscope } from "lucide-react";
 
 import {
     Sidebar,
@@ -21,6 +20,7 @@ import {
 } from "@/components/ui/sidebar";
 import { AdminProfileMenu } from "./admin-profile-menu";
 import { adminMenu } from "@/lib/admin-menu";
+import { BrandLogo } from "./brand-logo";
 
 export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
     const { user, loading } = useAuth();
@@ -54,9 +54,7 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                 group-data-[collapsible=icon]:px-0
                             "
                         >
-                            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 items-center justify-center rounded-lg">
-                                <Stethoscope className="size-4" />
-                            </div>
+                            <BrandLogo className="size-8 rounded-lg" />
                             <div className="grid text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                                 <span className="font-semibold">CuraSync</span>
                                 <span className="text-xs text-muted-foreground">

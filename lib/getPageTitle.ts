@@ -40,7 +40,8 @@ export function getPageTitle(pathname: string): string {
     const OVERRIDES: Record<string, string> = {
         medications: "Medications",
         profile: "My Profile",
-        settings: "Settings",
+        settings: "Preferences",
+        security: "Security",
     };
 
     return OVERRIDES[baseSegment] ?? formatTitle(baseSegment);

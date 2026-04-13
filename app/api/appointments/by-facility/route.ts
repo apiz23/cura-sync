@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
+import { ensureFacilityAccess, requireStaffSession } from "@/lib/authz";
 
 type Appointment = {
     id: string;
@@ -18,15 +19,14 @@ type Profile = {
 };
 
 export async function GET(request: Request) {
-    const { searchParams } = new URL(request.url);
-    const facilityId = searchParams.get("facilityId");
+    const session = await requireStaffSession(request);
+    if (session instanceof NextResponse) return session;
 
-    if (!facilityId) {
-        return NextResponse.json(
-            { error: "facilityId is required" },
-            { status: 400 }
-        );
-    }
+    const { searchParams } = new URL(request.url);
+    const facilityId = searchParams.get("facilityId") ?? session.facilityId;
+
+    const facilityAccess = ensureFacilityAccess(session, facilityId);
+    if (facilityAccess instanceof NextResponse) return facilityAccess;
 
     /* ==============================
      1️⃣ Fetch appointments

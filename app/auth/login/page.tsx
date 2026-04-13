@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import { LoginForm } from "./loginform";
-import { Stethoscope, Shield, Activity, Heart } from "lucide-react";
+import { Stethoscope, Activity, Heart } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
+import { BrandLogo } from "@/components/brand-logo";
 
 export const metadata: Metadata = {
 	title: "Login | CuraSync",
@@ -12,31 +13,31 @@ export const metadata: Metadata = {
 export default function LoginPage() {
 	return (
 		<div className="grid min-h-svh lg:grid-cols-2">
+			{/* Left Panel - Login Form */}
 			<div className="relative flex flex-col items-center justify-center bg-linear-to-br from-background via-background to-primary/5 p-6 md:p-10">
+				{/* Background Pattern */}
 				<div className="absolute inset-0 bg-[linear-linear(45deg,transparent_25%,rgba(68,68,68,0.05)_25%,rgba(68,68,68,0.05)_75%,transparent_75%)] bg-size-20px_20px opacity-10"></div>
+
+				{/* Top Left Logo */}
+				<div className="absolute left-6 top-6 z-20 md:left-10 md:top-10">
+					<Link
+						href="/"
+						className="group flex items-center gap-3 rounded-2xl transition-all hover:from-primary/15 hover:to-primary/10 md:px-6 md:py-3"
+					>
+						<BrandLogo className="size-8 shadow-lg md:size-10" />
+						<div className="flex flex-col items-start">
+							<span className="text-lg font-bold tracking-tight bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
+								CuraSync
+							</span>
+						</div>
+					</Link>
+				</div>
+
+				{/* Login Content */}
 				<div className="relative z-10 w-full max-w-md space-y-8">
 					{/* Header */}
 					<div className="space-y-6 text-center">
-						<div className="flex justify-center">
-							<Link
-								href="/home"
-								className="group flex items-center gap-3 rounded-2xl bg-linear-to-r from-primary/10 to-primary/5 px-6 py-3 transition-all hover:from-primary/15 hover:to-primary/10"
-							>
-								<div className="flex size-10 items-center justify-center rounded-xl bg-linear-to-br from-primary to-primary/80 shadow-lg">
-									<Stethoscope className="size-5 text-white" />
-								</div>
-								<div className="flex flex-col items-start">
-									<span className="text-lg font-bold tracking-tight bg-linear-to-r from-primary to-primary/70 bg-clip-text text-transparent">
-										CuraSync
-									</span>
-									<span className="text-xs text-muted-foreground">
-										Healthcare Management
-									</span>
-								</div>
-							</Link>
-						</div>
-
-						<div className="space-y-3">
+						<div className="space-y-3 pt-16">
 							<h1 className="text-3xl font-bold tracking-tight">Welcome Back</h1>
 							<p className="text-muted-foreground">
 								Sign in to access your healthcare management dashboard
@@ -45,9 +46,7 @@ export default function LoginPage() {
 					</div>
 
 					{/* Login Form */}
-					<div className="rounded-2xl border bg-card/50 p-8 backdrop-blur-sm">
-						<LoginForm />
-					</div>
+					<LoginForm />
 
 					{/* Footer */}
 					<div className="space-y-4 text-center text-sm">
@@ -90,7 +89,7 @@ export default function LoginPage() {
 					unoptimized
 				/>
 
-				{/* Overlay with linear and content */}
+				{/* Overlay with gradient and content */}
 				<div className="absolute inset-0 bg-linear-to-t from-black/80 via-black/40 to-transparent">
 					<div className="absolute bottom-0 left-0 right-0 p-10 text-white">
 						<div className="max-w-md">

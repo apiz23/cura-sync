@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import { useAuth } from "@/components/authprovideradmin";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
@@ -23,26 +24,40 @@ import {
     Briefcase,
     Edit,
     Bell,
-    FileText,
+    Clock3,
+    KeyRound,
+    Activity,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
 import EditStaffProfileModal from "./edit-sheet";
 import { AuthUser } from "@/app/types";
+import { getStaffRoleLabel, normalizeStaffRole } from "@/lib/staff-role";
+
+function formatDateTime(value: string | null | undefined) {
+    if (!value) return "Not available";
+
+    return new Date(value).toLocaleString("en-US", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
 
 export default function ProfessionalProfilePage() {
-    const { user, loading } = useAuth();
-    const [profile, setProfile] = useState<AuthUser | null>(null);
+    const { user, loading, updateUser } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
 
     const initials =
-        (profile?.full_name?.split(" ")[0]?.[0] || "") +
-        (profile?.full_name?.split(" ")[1]?.[0] || "");
+        (user?.full_name?.split(" ")[0]?.[0] || "") +
+        (user?.full_name?.split(" ")[1]?.[0] || "");
 
     const handleUpdateProfile = async (updatedData: Partial<AuthUser>) => {
         try {
-            const res = await fetch(`/api/user/${updatedData.id}`, {
-                method: "PUT",
+            const res = await fetch("/api/staff/me", {
+                method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(updatedData),
             });
@@ -50,28 +65,28 @@ export default function ProfessionalProfilePage() {
             const result = await res.json();
 
             if (!res.ok) {
-                toast.error(result.error || "Failed to update user profile");
-                return;
+                toast.error(result.error || "Failed to update profile");
+                return false;
             }
 
+            updateUser(result as AuthUser);
             toast.success("Profile updated successfully");
-            setProfile({ ...user, ...updatedData } as AuthUser);
+            return true;
         } catch (error) {
             console.error(error);
             toast.error("Something went wrong");
+            return false;
         }
     };
 
     const getRoleColor = (role: string) => {
-        switch (role?.toLowerCase()) {
+        switch (normalizeStaffRole(role)) {
             case "doctor":
                 return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800";
-            case "user":
-                return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800";
             case "admin":
                 return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800";
             default:
-                return "bg-primary/10 text-primary border-primary/20";
+                return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
         }
     };
 
@@ -107,8 +122,8 @@ export default function ProfessionalProfilePage() {
                         <p className="text-muted-foreground mb-8">
                             Please log in to view your professional profile.
                         </p>
-                        <Button className="rounded-xl px-8 py-3 text-base">
-                            Go to Login
+                        <Button asChild className="rounded-xl px-8 py-3 text-base">
+                            <Link href="/auth/admin">Go to Login</Link>
                         </Button>
                     </CardContent>
                 </Card>
@@ -126,7 +141,7 @@ export default function ProfessionalProfilePage() {
                                 <div className="flex flex-col items-center text-center space-y-4">
                                     <Avatar className="h-36 w-36 border-4 border-background shadow-lg">
                                         <AvatarFallback className="text-4xl bg-linear-to-br from-primary/20 to-primary/5">
-                                            {initials.toUpperCase()}
+                                            {initials.toUpperCase() || "CS"}
                                         </AvatarFallback>
                                     </Avatar>
 
@@ -139,13 +154,12 @@ export default function ProfessionalProfilePage() {
                                                 user.role
                                             )}`}
                                         >
-                                            {user.role}
+                                            {getStaffRoleLabel(user.role)}
                                         </Badge>
                                     </div>
 
                                     <Separator className="my-2" />
 
-                                    {/* Contact Info */}
                                     <div className="space-y-4 w-full">
                                         <div className="flex items-center gap-3 text-sm p-3 bg-muted/30 rounded-lg">
                                             <Mail className="w-4 h-4 text-muted-foreground" />
@@ -160,12 +174,10 @@ export default function ProfessionalProfilePage() {
                                         </div>
                                     </div>
 
-                                    {/* Stats */}
                                     <div className="grid grid-cols-3 gap-4 w-full pt-4 border-t">
                                         <div className="text-center">
                                             <p className="text-2xl font-bold text-foreground">
-                                                {user.years_of_experience ||
-                                                    "0"}
+                                                {user.years_of_experience || "0"}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 Years
@@ -173,9 +185,7 @@ export default function ProfessionalProfilePage() {
                                         </div>
                                         <div className="text-center">
                                             <p className="text-2xl font-bold text-foreground">
-                                                {user.license_number
-                                                    ? "✓"
-                                                    : "—"}
+                                                {user.license_number ? "Yes" : "No"}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 License
@@ -183,7 +193,7 @@ export default function ProfessionalProfilePage() {
                                         </div>
                                         <div className="text-center">
                                             <p className="text-2xl font-bold text-foreground">
-                                                {user.facility_id ? "✓" : "—"}
+                                                {user.facility_id ? "Yes" : "No"}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 Facility
@@ -195,9 +205,7 @@ export default function ProfessionalProfilePage() {
                         </Card>
                     </div>
 
-                    {/* Right Column - Details */}
                     <div className="lg:col-span-3 space-y-6">
-                        {/* Professional Information */}
                         <Card className="border-2 border-border/50 shadow-sm">
                             <CardHeader className="pb-3">
                                 <CardTitle className="flex items-center gap-2 text-foreground">
@@ -205,7 +213,7 @@ export default function ProfessionalProfilePage() {
                                     Professional Information
                                 </CardTitle>
                                 <CardDescription>
-                                    Your professional details and qualifications
+                                    Personal profile fields are editable here. Role and facility assignments stay admin-managed.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent className="space-y-6">
@@ -218,8 +226,7 @@ export default function ProfessionalProfilePage() {
                                             </h4>
                                         </div>
                                         <p className="text-foreground text-lg font-medium">
-                                            {user.specialization ||
-                                                "Not specified"}
+                                            {user.specialization || "Not specified"}
                                         </p>
                                     </div>
 
@@ -232,8 +239,7 @@ export default function ProfessionalProfilePage() {
                                         </div>
                                         <div className="flex items-center gap-2">
                                             <p className="text-foreground text-lg font-medium">
-                                                {user.years_of_experience ||
-                                                    "0"}
+                                                {user.years_of_experience || "0"}
                                             </p>
                                             <span className="text-muted-foreground">
                                                 years
@@ -249,15 +255,13 @@ export default function ProfessionalProfilePage() {
                                             </h4>
                                         </div>
                                         <p className="text-foreground text-lg font-medium">
-                                            {user.license_number ||
-                                                "Not specified"}
+                                            {user.license_number || "Not specified"}
                                         </p>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Additional Information */}
                         <Card className="border-2 border-border/50 shadow-sm">
                             <CardContent className="p-6 space-y-6">
                                 <div className="flex items-center gap-2 mb-4">
@@ -267,51 +271,90 @@ export default function ProfessionalProfilePage() {
                                     </h3>
                                 </div>
 
-                                <div className="space-y-4">
-                                    <div className="space-y-2">
-                                        <p className="text-sm text-muted-foreground">
-                                            Facility ID
-                                        </p>
-                                        <p className="font-medium text-foreground">
-                                            {user.facility_id || "Not assigned"}
-                                        </p>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground">
+                                                Role
+                                            </p>
+                                            <p className="font-medium text-foreground">
+                                                {getStaffRoleLabel(user.role)}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground">
+                                                Facility ID
+                                            </p>
+                                            <p className="font-medium text-foreground">
+                                                {user.facility_id || "Not assigned"}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground">
+                                                Member Since
+                                            </p>
+                                            <p className="font-medium text-foreground">
+                                                {formatDateTime(user.created_at)}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground">
+                                                Profile ID
+                                            </p>
+                                            <code className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                                                {user.id}
+                                            </code>
+                                        </div>
                                     </div>
 
-                                    <div className="space-y-2">
-                                        <p className="text-sm text-muted-foreground">
-                                            Member Since
-                                        </p>
-                                        <p className="font-medium text-foreground">
-                                            {new Date(
-                                                user.created_at
-                                            ).toLocaleDateString("en-US", {
-                                                year: "numeric",
-                                                month: "long",
-                                                day: "numeric",
-                                            })}
-                                        </p>
-                                    </div>
-
-                                    <div className="space-y-2">
-                                        <p className="text-sm text-muted-foreground">
-                                            Profile ID
-                                        </p>
-                                        <code className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded">
-                                            {user.id}
-                                        </code>
+                                    <div className="space-y-4">
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                <Clock3 className="w-4 h-4" />
+                                                Last Login
+                                            </p>
+                                            <p className="font-medium text-foreground">
+                                                {formatDateTime(user.account_settings?.last_login_at)}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                <Activity className="w-4 h-4" />
+                                                Last Seen
+                                            </p>
+                                            <p className="font-medium text-foreground">
+                                                {formatDateTime(user.account_settings?.last_seen_at)}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                                <KeyRound className="w-4 h-4" />
+                                                Password Updated
+                                            </p>
+                                            <p className="font-medium text-foreground">
+                                                {formatDateTime(user.account_settings?.password_changed_at)}
+                                            </p>
+                                        </div>
+                                        <div className="space-y-2">
+                                            <p className="text-sm text-muted-foreground">
+                                                Account Settings Updated
+                                            </p>
+                                            <p className="font-medium text-foreground">
+                                                {formatDateTime(user.account_settings?.updated_at)}
+                                            </p>
+                                        </div>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
 
-                        {/* Quick Actions */}
                         <Card className="border-2 border-border/50 shadow-sm">
                             <CardHeader className="pb-3">
                                 <CardTitle className="text-foreground">
                                     Quick Actions
                                 </CardTitle>
                                 <CardDescription>
-                                    Manage your profile and account settings
+                                    Real account actions now point to working pages.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
@@ -324,32 +367,23 @@ export default function ProfessionalProfilePage() {
                                         <Edit className="w-5 h-5" />
                                         <span>Edit Profile</span>
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4"
-                                    >
-                                        <Shield className="w-5 h-5" />
-                                        <span className="text-sm">
-                                            Security
-                                        </span>
+                                    <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
+                                        <Link href="/admin/security">
+                                            <Shield className="w-5 h-5" />
+                                            <span className="text-sm">Security</span>
+                                        </Link>
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4"
-                                    >
-                                        <Bell className="w-5 h-5" />
-                                        <span className="text-sm">
-                                            Notifications
-                                        </span>
+                                    <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
+                                        <Link href="/admin/settings">
+                                            <Bell className="w-5 h-5" />
+                                            <span className="text-sm">Preferences</span>
+                                        </Link>
                                     </Button>
-                                    <Button
-                                        variant="outline"
-                                        className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4"
-                                    >
-                                        <FileText className="w-5 h-5" />
-                                        <span className="text-sm">
-                                            Documents
-                                        </span>
+                                    <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
+                                        <Link href="/admin/health-center">
+                                            <Building2 className="w-5 h-5" />
+                                            <span className="text-sm">Facility</span>
+                                        </Link>
                                     </Button>
                                 </div>
                             </CardContent>
@@ -358,7 +392,6 @@ export default function ProfessionalProfilePage() {
                 </div>
             </div>
 
-            {/* Edit Profile Modal */}
             {isEditing && (
                 <EditStaffProfileModal
                     user={user}

@@ -1,448 +1,579 @@
 "use client";
 
-import { useAuth } from "@/components/authprovideradmin";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import {
-    Users,
-    FileText,
-    Activity,
-    Shield,
-    CheckCircle2,
     AlertCircle,
-    UserPlus,
-    Bell,
-    Cpu,
-    HardDrive,
-    MemoryStick,
-    Download,
+    ArrowRight,
+    Calendar,
+    CalendarClock,
+    ClipboardList,
+    RefreshCw,
     Settings,
-    UserCog,
-    ArrowUpRight,
-    BarChart3,
-    Clock,
+    Shield,
+    Stethoscope,
+    UserPlus,
+    Users,
 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+
+import type { Appointment, FacilityEdit, Staff } from "@/app/types";
+import { useAuth } from "@/components/authprovideradmin";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import {
+    Card,
+    CardContent,
+    CardDescription,
+    CardHeader,
+    CardTitle,
+} from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
+
+type PatientRecord = {
+    id: string;
+    full_name: string;
+    email: string;
+    created_at?: string;
+};
+
+type FacilitySummary = {
+    facility: FacilityEdit | null;
+    schedules: { id: string }[];
+};
+
+type DashboardState = {
+    appointments: Appointment[];
+    staff: Staff[];
+    patients: PatientRecord[];
+    facilitySummary: FacilitySummary | null;
+};
+
+const initialState: DashboardState = {
+    appointments: [],
+    staff: [],
+    patients: [],
+    facilitySummary: null,
+};
 
 export default function DashboardPage() {
-    const { user: initialStaff, loading } = useAuth();
+    const { user, loading: authLoading } = useAuth();
+    const [state, setState] = useState<DashboardState>(initialState);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState<string | null>(null);
+
+    const loadDashboard = useCallback(async () => {
+        if (!user?.facility_id) return;
+
+        setLoading(true);
+        setError(null);
+
+        try {
+            const [appointmentsRes, staffRes, patientsRes, facilityRes] =
+                await Promise.all([
+                    fetch(
+                        `/api/appointments/by-facility?facilityId=${user.facility_id}`,
+                        { cache: "no-store" }
+                    ),
+                    fetch(`/api/staff/by-facility?facilityId=${user.facility_id}`, {
+                        cache: "no-store",
+                    }),
+                    fetch(
+                        `/api/patients/by-facility?facilityId=${user.facility_id}`,
+                        { cache: "no-store" }
+                    ),
+                    fetch("/api/facility/me", { cache: "no-store" }),
+                ]);
+
+            const [appointmentsData, staffData, patientsData, facilityData] =
+                await Promise.all([
+                    appointmentsRes.json().catch(() => null),
+                    staffRes.json().catch(() => null),
+                    patientsRes.json().catch(() => null),
+                    facilityRes.json().catch(() => null),
+                ]);
+
+            if (!appointmentsRes.ok || !staffRes.ok || !patientsRes.ok || !facilityRes.ok) {
+                throw new Error("Failed to load facility dashboard");
+            }
+
+            setState({
+                appointments: Array.isArray(appointmentsData)
+                    ? appointmentsData
+                    : [],
+                staff: Array.isArray(staffData?.staff) ? staffData.staff : [],
+                patients: Array.isArray(patientsData) ? patientsData : [],
+                facilitySummary: facilityData,
+            });
+        } catch (err) {
+            console.error("Failed to load admin dashboard", err);
+            setError("Unable to load the facility dashboard right now.");
+            setState(initialState);
+        } finally {
+            setLoading(false);
+        }
+    }, [user?.facility_id]);
+
+    useEffect(() => {
+        if (!authLoading && user?.facility_id) {
+            loadDashboard();
+        }
+    }, [authLoading, user?.facility_id, loadDashboard]);
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    const confirmedAppointments = state.appointments.filter(
+        (appointment) => appointment.status === "CONFIRMED"
+    );
+    const todayAppointments = state.appointments.filter(
+        (appointment) => appointment.appointment_date === todayIso
+    );
+    const pendingAppointments = state.appointments.filter(
+        (appointment) => appointment.status === "PENDING"
+    );
+    const doctorCount = state.staff.filter((member) => member.role === "doctor").length;
+    const adminCount = state.staff.filter((member) => member.role === "admin").length;
+
+    const recentPatients = useMemo(
+        () =>
+            [...state.patients]
+                .sort((a, b) => (b.created_at ?? "").localeCompare(a.created_at ?? ""))
+                .slice(0, 3),
+        [state.patients]
+    );
+
+    const upcomingAppointments = useMemo(
+        () =>
+            [...state.appointments]
+                .filter(
+                    (appointment) =>
+                        appointment.appointment_date >= todayIso &&
+                        appointment.status !== "CANCELLED"
+                )
+                .sort((a, b) =>
+                    `${a.appointment_date}T${a.start_time}`.localeCompare(
+                        `${b.appointment_date}T${b.start_time}`
+                    )
+                )
+                .slice(0, 4),
+        [state.appointments, todayIso]
+    );
+
+    const recentStaff = useMemo(
+        () =>
+            [...state.staff]
+                .sort((a, b) => b.created_at.localeCompare(a.created_at))
+                .slice(0, 3),
+        [state.staff]
+    );
+
+    if (loading) {
+        return (
+            <div className="flex flex-1 flex-col gap-8 p-6">
+                <div className="space-y-2">
+                    <Skeleton className="h-8 w-56" />
+                    <Skeleton className="h-4 w-72" />
+                </div>
+                <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+                    {Array.from({ length: 4 }).map((_, index) => (
+                        <Skeleton key={index} className="h-36 rounded-xl" />
+                    ))}
+                </div>
+                <div className="grid gap-6 lg:grid-cols-3">
+                    <Skeleton className="h-96 rounded-xl lg:col-span-2" />
+                    <Skeleton className="h-96 rounded-xl" />
+                </div>
+            </div>
+        );
+    }
 
     return (
         <div className="flex flex-1 flex-col gap-8 p-6">
-            {/* Header Section */}
-            <div className="space-y-2">
-                {loading ? (
-                    <div className="space-y-2">
-                        <Skeleton className="h-8 w-48" />
-                        <Skeleton className="h-4 w-80" />
-                    </div>
-                ) : (
-                    <>
-                        <h1 className="text-3xl font-bold tracking-tight text-foreground">
-                            Admin Dashboard
-                        </h1>
-                        <p className="text-muted-foreground">
-                            Welcome back,{" "}
-                            <span className="font-semibold text-foreground">
-                                {initialStaff?.full_name ?? "Admin"}
-                            </span>
-                            ! Here&apos;s your system overview.
-                        </p>
-                    </>
-                )}
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+                <div className="space-y-2">
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground">
+                        Facility Dashboard
+                    </h1>
+                    <p className="text-muted-foreground">
+                        {state.facilitySummary?.facility?.name ??
+                            "Your facility"}{" "}
+                        operational summary using live appointments, patients, and staff data.
+                    </p>
+                </div>
+                <div className="flex flex-wrap gap-3">
+                    <Button variant="outline" onClick={loadDashboard} className="gap-2">
+                        <RefreshCw className="h-4 w-4" />
+                        Refresh
+                    </Button>
+                    <Link href="/admin/settings">
+                        <Button className="gap-2">
+                            <Settings className="h-4 w-4" />
+                            Facility settings
+                        </Button>
+                    </Link>
+                </div>
             </div>
 
-            {/* Stats Cards Section */}
+            {error ? (
+                <Card className="border-destructive/30 bg-destructive/5">
+                    <CardContent className="flex items-center justify-between gap-4 p-5">
+                        <div>
+                            <p className="font-medium text-foreground">Dashboard unavailable</p>
+                            <p className="text-sm text-muted-foreground">{error}</p>
+                        </div>
+                        <Button variant="outline" onClick={loadDashboard}>
+                            Retry
+                        </Button>
+                    </CardContent>
+                </Card>
+            ) : null}
+
             <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-                <Card className="border-2 shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-semibold text-muted-foreground">
-                                Total Users
-                            </CardTitle>
-                            <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                                <Users className="h-4 w-4 text-blue-600 dark:text-blue-400" />
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">2,458</div>
-                        <div className="flex items-center gap-2 mt-2">
-                            <div className="flex items-center text-xs text-green-600">
-                                <ArrowUpRight className="h-3 w-3 mr-1" />
-                                +12% from last month
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                                Active
-                            </Badge>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-2 shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-semibold text-muted-foreground">
-                                Reports
-                            </CardTitle>
-                            <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                                <FileText className="h-4 w-4 text-purple-600 dark:text-purple-400" />
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">1,245</div>
-                        <div className="flex items-center gap-2 mt-2">
-                            <Badge
-                                variant="secondary"
-                                className="text-xs bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-300"
-                            >
-                                5 pending review
-                            </Badge>
-                            <span className="text-xs text-muted-foreground">
-                                32 today
-                            </span>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-2 shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-semibold text-muted-foreground">
-                                Active Sessions
-                            </CardTitle>
-                            <div className="p-2 rounded-lg bg-green-100 dark:bg-green-900/30">
-                                <Activity className="h-4 w-4 text-green-600 dark:text-green-400" />
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="text-3xl font-bold">87</div>
-                        <div className="flex items-center gap-2 mt-2">
-                            <div className="flex items-center text-xs text-blue-600">
-                                <Clock className="h-3 w-3 mr-1" />3 in last hour
-                            </div>
-                            <Badge variant="outline" className="text-xs">
-                                Live
-                            </Badge>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-2 shadow-sm hover:shadow-md transition-shadow duration-300">
-                    <CardHeader className="pb-3">
-                        <div className="flex items-center justify-between">
-                            <CardTitle className="text-sm font-semibold text-muted-foreground">
-                                System Health
-                            </CardTitle>
-                            <div className="p-2 rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                                <Shield className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                            </div>
-                        </div>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="flex items-center gap-2">
-                            <div className="text-3xl font-bold text-emerald-600">
-                                98%
-                            </div>
-                            <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300">
-                                Optimal
-                            </Badge>
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-2">
-                            All systems operational
-                        </p>
-                    </CardContent>
-                </Card>
+                <MetricCard
+                    title="Patients"
+                    value={String(state.patients.length)}
+                    description={`${recentPatients.length} recently registered records surfaced`}
+                    icon={Users}
+                />
+                <MetricCard
+                    title="Appointments Today"
+                    value={String(todayAppointments.length)}
+                    description={`${confirmedAppointments.length} confirmed overall`}
+                    icon={Calendar}
+                />
+                <MetricCard
+                    title="Staff Members"
+                    value={String(state.staff.length)}
+                    description={`${doctorCount} doctors, ${adminCount} admins`}
+                    icon={Stethoscope}
+                />
+                <MetricCard
+                    title="Weekly Schedule"
+                    value={String(state.facilitySummary?.schedules?.length ?? 0)}
+                    description="Configured operating-day schedule entries"
+                    icon={ClipboardList}
+                />
             </div>
 
-            {/* Recent Activity Section */}
-            <div className="grid gap-6 lg:grid-cols-3">
-                <div className="lg:col-span-2">
-                    <Card className="border-2 h-full">
-                        <CardHeader className="pb-4">
-                            <div className="flex items-center justify-between">
-                                <CardTitle className="text-xl font-bold flex items-center gap-2">
-                                    <Activity className="h-5 w-5 text-primary" />
-                                    Recent Activity
-                                </CardTitle>
-                                <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    className="text-xs"
+            <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+                <Card className="border shadow-sm">
+                    <CardHeader className="flex flex-row items-center justify-between gap-4">
+                        <div>
+                            <CardTitle>Upcoming appointments</CardTitle>
+                            <CardDescription>
+                                Immediate workload for this facility
+                            </CardDescription>
+                        </div>
+                        <Link href="/admin/appointments">
+                            <Button variant="ghost" size="sm" className="gap-2">
+                                Open appointments
+                                <ArrowRight className="h-4 w-4" />
+                            </Button>
+                        </Link>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                        {upcomingAppointments.length ? (
+                            upcomingAppointments.map((appointment) => (
+                                <Link
+                                    key={appointment.id}
+                                    href="/admin/appointments"
+                                    className="flex items-center justify-between rounded-xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
                                 >
-                                    View All
-                                </Button>
-                            </div>
-                        </CardHeader>
-                        <CardContent className="space-y-4">
-                            {[
-                                {
-                                    icon: CheckCircle2,
-                                    color: "text-green-600",
-                                    bg: "bg-green-100",
-                                    time: "2 min ago",
-                                    text: 'User "hafiz_admin" added a new report',
-                                },
-                                {
-                                    icon: Settings,
-                                    color: "text-blue-600",
-                                    bg: "bg-blue-100",
-                                    time: "15 min ago",
-                                    text: "System backup completed successfully",
-                                },
-                                {
-                                    icon: UserPlus,
-                                    color: "text-purple-600",
-                                    bg: "bg-purple-100",
-                                    time: "30 min ago",
-                                    text: 'New user "alyah" registered',
-                                },
-                                {
-                                    icon: Bell,
-                                    color: "text-amber-600",
-                                    bg: "bg-amber-100",
-                                    time: "1 hour ago",
-                                    text: "Security alert: Multiple login attempts detected",
-                                },
-                                {
-                                    icon: CheckCircle2,
-                                    color: "text-green-600",
-                                    bg: "bg-green-100",
-                                    time: "2 hours ago",
-                                    text: "Database optimization completed",
-                                },
-                                {
-                                    icon: AlertCircle,
-                                    color: "text-red-600",
-                                    bg: "bg-red-100",
-                                    time: "4 hours ago",
-                                    text: "Server maintenance scheduled for tonight",
-                                },
-                            ].map((item, index) => (
-                                <div
-                                    key={index}
-                                    className="flex items-start gap-4 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
-                                >
-                                    <div
-                                        className={`p-2 rounded-lg ${item.bg} ${item.color} flex-shrink-0 group-hover:scale-105 transition-transform`}
-                                    >
-                                        <item.icon className="h-4 w-4" />
-                                    </div>
-                                    <div className="flex-1 min-w-0">
-                                        <p className="text-sm font-medium text-foreground">
-                                            {item.text}
+                                    <div>
+                                        <p className="font-medium text-foreground">
+                                            {appointment.patient_name}
                                         </p>
-                                        <p className="text-xs text-muted-foreground mt-1">
-                                            {item.time}
+                                        <p className="text-sm text-muted-foreground">
+                                            {formatDate(appointment.appointment_date)} at{" "}
+                                            {formatTime(appointment.start_time)}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {appointment.reason_for_visit || "No visit reason recorded"}
                                         </p>
                                     </div>
-                                </div>
-                            ))}
-                        </CardContent>
-                    </Card>
-                </div>
+                                    <Badge variant="outline">{appointment.status}</Badge>
+                                </Link>
+                            ))
+                        ) : (
+                            <EmptyState
+                                title="No upcoming appointments"
+                                description="Once patients book appointments, they will appear here."
+                                href="/admin/appointments"
+                                action="Manage appointments"
+                            />
+                        )}
+                    </CardContent>
+                </Card>
 
-                {/* Quick Actions & Performance */}
                 <div className="space-y-6">
-                    <Card className="border-2">
+                    <Card className="border shadow-sm">
                         <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <BarChart3 className="h-5 w-5 text-primary" />
-                                Performance Metrics
-                            </CardTitle>
+                            <CardTitle>Quick actions</CardTitle>
+                            <CardDescription>Jump into the main admin workflows</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-5">
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <Cpu className="h-4 w-4 text-blue-600" />
-                                        <span className="text-sm font-medium">
-                                            CPU Usage
-                                        </span>
-                                    </div>
-                                    <span className="font-bold">42%</span>
-                                </div>
-                                <div className="w-full bg-muted rounded-full h-2">
-                                    <div
-                                        className="bg-blue-600 rounded-full h-2"
-                                        style={{ width: "42%" }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <MemoryStick className="h-4 w-4 text-purple-600" />
-                                        <span className="text-sm font-medium">
-                                            Memory
-                                        </span>
-                                    </div>
-                                    <span className="font-bold">68%</span>
-                                </div>
-                                <div className="w-full bg-muted rounded-full h-2">
-                                    <div
-                                        className="bg-purple-600 rounded-full h-2"
-                                        style={{ width: "68%" }}
-                                    />
-                                </div>
-                            </div>
-
-                            <div className="space-y-2">
-                                <div className="flex items-center justify-between">
-                                    <div className="flex items-center gap-2">
-                                        <HardDrive className="h-4 w-4 text-emerald-600" />
-                                        <span className="text-sm font-medium">
-                                            Storage
-                                        </span>
-                                    </div>
-                                    <span className="font-bold">35%</span>
-                                </div>
-                                <div className="w-full bg-muted rounded-full h-2">
-                                    <div
-                                        className="bg-emerald-600 rounded-full h-2"
-                                        style={{ width: "35%" }}
-                                    />
-                                </div>
-                            </div>
+                        <CardContent className="grid gap-3">
+                            <QuickAction
+                                href="/admin/patients"
+                                icon={Users}
+                                label="Manage patients"
+                            />
+                            <QuickAction
+                                href="/admin/staff"
+                                icon={UserPlus}
+                                label="Manage staff"
+                            />
+                            <QuickAction
+                                href="/admin/appointments"
+                                icon={CalendarClock}
+                                label="Review appointments"
+                            />
+                            <QuickAction
+                                href="/admin/security"
+                                icon={Shield}
+                                label="Review security settings"
+                            />
                         </CardContent>
                     </Card>
 
-                    <Card className="border-2">
+                    <Card className="border shadow-sm">
                         <CardHeader>
-                            <CardTitle className="text-lg font-bold flex items-center gap-2">
-                                <Settings className="h-5 w-5 text-primary" />
-                                Quick Actions
-                            </CardTitle>
+                            <CardTitle>Operational notes</CardTitle>
+                            <CardDescription>Signals derived from current records</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3">
-                            <Button
-                                variant="outline"
-                                className="w-full h-12 justify-start gap-3 hover:bg-primary/5 hover:border-primary/30 transition-all"
-                            >
-                                <Download className="h-4 w-4" />
-                                <span>Generate Report</span>
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full h-12 justify-start gap-3 hover:bg-primary/5 hover:border-primary/30 transition-all"
-                            >
-                                <UserCog className="h-4 w-4" />
-                                <span>Manage Users</span>
-                            </Button>
-                            <Button
-                                variant="outline"
-                                className="w-full h-12 justify-start gap-3 hover:bg-primary/5 hover:border-primary/30 transition-all"
-                            >
-                                <Settings className="h-4 w-4" />
-                                <span>System Settings</span>
-                            </Button>
+                        <CardContent className="space-y-3 text-sm">
+                            <OperationalRow
+                                label="Pending appointments"
+                                value={String(pendingAppointments.length)}
+                                tone={pendingAppointments.length ? "warning" : "neutral"}
+                            />
+                            <OperationalRow
+                                label="Recently added patients"
+                                value={String(recentPatients.length)}
+                                tone="neutral"
+                            />
+                            <OperationalRow
+                                label="Recently added staff"
+                                value={String(recentStaff.length)}
+                                tone="neutral"
+                            />
+                            <OperationalRow
+                                label="Facility active"
+                                value={state.facilitySummary?.facility?.is_active ? "Yes" : "No"}
+                                tone={
+                                    state.facilitySummary?.facility?.is_active
+                                        ? "success"
+                                        : "warning"
+                                }
+                            />
                         </CardContent>
                     </Card>
                 </div>
             </div>
 
-            {/* Additional Info Section */}
-            <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
-                <Card className="border-2">
+            <div className="grid gap-6 lg:grid-cols-2">
+                <Card className="border shadow-sm">
                     <CardHeader>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <Users className="h-5 w-5 text-primary" />
-                            User Distribution
-                        </CardTitle>
+                        <CardTitle>Recent registrations</CardTitle>
+                        <CardDescription>Newest patient records at this facility</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">Administrators</span>
-                                <span className="font-bold">12</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">Doctors</span>
-                                <span className="font-bold">156</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">Nurses</span>
-                                <span className="font-bold">289</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">Patients</span>
-                                <span className="font-bold">2,001</span>
-                            </div>
-                        </div>
-                    </CardContent>
-                </Card>
-
-                <Card className="border-2">
-                    <CardHeader>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <FileText className="h-5 w-5 text-primary" />
-                            Reports Status
-                        </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                        <div className="space-y-3">
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-green-500" />
-                                    <span className="text-sm">Completed</span>
-                                </div>
-                                <span className="font-bold">1,189</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-amber-500" />
-                                    <span className="text-sm">
-                                        Pending Review
+                    <CardContent className="space-y-3">
+                        {recentPatients.length ? (
+                            recentPatients.map((patient) => (
+                                <Link
+                                    key={patient.id}
+                                    href="/admin/patients"
+                                    className="flex items-center justify-between rounded-xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
+                                >
+                                    <div>
+                                        <p className="font-medium text-foreground">
+                                            {patient.full_name}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {patient.email}
+                                        </p>
+                                    </div>
+                                    <span className="text-sm text-muted-foreground">
+                                        {patient.created_at
+                                            ? formatDate(patient.created_at)
+                                            : "Unknown"}
                                     </span>
-                                </div>
-                                <span className="font-bold">56</span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-2">
-                                    <div className="w-2 h-2 rounded-full bg-blue-500" />
-                                    <span className="text-sm">In Progress</span>
-                                </div>
-                                <span className="font-bold">32</span>
-                            </div>
-                        </div>
+                                </Link>
+                            ))
+                        ) : (
+                            <EmptyState
+                                title="No patient records yet"
+                                description="Patient registrations will appear here after intake."
+                                href="/admin/patients"
+                                action="Open patients"
+                            />
+                        )}
                     </CardContent>
                 </Card>
 
-                <Card className="border-2">
+                <Card className="border shadow-sm">
                     <CardHeader>
-                        <CardTitle className="text-lg font-bold flex items-center gap-2">
-                            <Shield className="h-5 w-5 text-primary" />
-                            Security Status
-                        </CardTitle>
+                        <CardTitle>Recent staff accounts</CardTitle>
+                        <CardDescription>Latest staff records for this facility</CardDescription>
                     </CardHeader>
-                    <CardContent>
-                        <div className="space-y-4">
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">Last Backup</span>
-                                <Badge variant="outline" className="text-xs">
-                                    Today, 02:00
-                                </Badge>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">SSL Certificate</span>
-                                <Badge className="bg-green-100 text-green-800">
-                                    Valid
-                                </Badge>
-                            </div>
-                            <div className="flex items-center justify-between">
-                                <span className="text-sm">Security Scan</span>
-                                <Badge className="bg-emerald-100 text-emerald-800">
-                                    No Threats
-                                </Badge>
-                            </div>
-                        </div>
+                    <CardContent className="space-y-3">
+                        {recentStaff.length ? (
+                            recentStaff.map((staffMember) => (
+                                <Link
+                                    key={staffMember.id}
+                                    href="/admin/staff"
+                                    className="flex items-center justify-between rounded-xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
+                                >
+                                    <div>
+                                        <p className="font-medium text-foreground">
+                                            {staffMember.full_name}
+                                        </p>
+                                        <p className="text-sm text-muted-foreground">
+                                            {staffMember.email}
+                                        </p>
+                                    </div>
+                                    <Badge variant="outline" className="capitalize">
+                                        {staffMember.role ?? "unknown"}
+                                    </Badge>
+                                </Link>
+                            ))
+                        ) : (
+                            <EmptyState
+                                title="No staff records yet"
+                                description="Add facility staff to manage care operations."
+                                href="/admin/staff"
+                                action="Open staff"
+                            />
+                        )}
                     </CardContent>
                 </Card>
             </div>
         </div>
     );
+}
+
+function MetricCard({
+    title,
+    value,
+    description,
+    icon: Icon,
+}: {
+    title: string;
+    value: string;
+    description: string;
+    icon: typeof Users;
+}) {
+    return (
+        <Card className="border shadow-sm">
+            <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                        {title}
+                    </CardTitle>
+                    <div className="rounded-lg bg-primary/10 p-2 text-primary">
+                        <Icon className="h-4 w-4" />
+                    </div>
+                </div>
+            </CardHeader>
+            <CardContent>
+                <p className="text-3xl font-semibold text-foreground">{value}</p>
+                <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+            </CardContent>
+        </Card>
+    );
+}
+
+function QuickAction({
+    href,
+    icon: Icon,
+    label,
+}: {
+    href: string;
+    icon: typeof Users;
+    label: string;
+}) {
+    return (
+        <Link href={href}>
+            <Button
+                variant="outline"
+                className="h-12 w-full justify-between gap-3 rounded-xl"
+            >
+                <span className="flex items-center gap-3">
+                    <Icon className="h-4 w-4" />
+                    <span>{label}</span>
+                </span>
+                <ArrowRight className="h-4 w-4" />
+            </Button>
+        </Link>
+    );
+}
+
+function OperationalRow({
+    label,
+    value,
+    tone,
+}: {
+    label: string;
+    value: string;
+    tone: "neutral" | "warning" | "success";
+}) {
+    const toneClasses =
+        tone === "warning"
+            ? "bg-amber-50 text-amber-800"
+            : tone === "success"
+              ? "bg-emerald-50 text-emerald-800"
+              : "bg-muted/40 text-foreground";
+
+    return (
+        <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-2">
+            <span className="text-muted-foreground">{label}</span>
+            <span className={`rounded-full px-3 py-1 text-sm font-medium ${toneClasses}`}>
+                {value}
+            </span>
+        </div>
+    );
+}
+
+function EmptyState({
+    title,
+    description,
+    href,
+    action,
+}: {
+    title: string;
+    description: string;
+    href: string;
+    action: string;
+}) {
+    return (
+        <div className="rounded-xl border border-dashed p-6 text-center">
+            <div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
+                <AlertCircle className="h-5 w-5 text-muted-foreground" />
+            </div>
+            <p className="font-medium text-foreground">{title}</p>
+            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+                {description}
+            </p>
+            <Link href={href} className="mt-4 inline-flex">
+                <Button>{action}</Button>
+            </Link>
+        </div>
+    );
+}
+
+function formatDate(date: string) {
+    return new Date(date).toLocaleDateString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+    });
+}
+
+function formatTime(time: string) {
+    const [hours = "00", minutes = "00"] = time.split(":");
+    const date = new Date();
+    date.setHours(Number(hours), Number(minutes), 0, 0);
+
+    return new Intl.DateTimeFormat("en-US", {
+        hour: "numeric",
+        minute: "2-digit",
+    }).format(date);
 }

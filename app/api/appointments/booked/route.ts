@@ -1,5 +1,6 @@
 import supabase from "@/lib/supabase";
 import { NextResponse } from "next/server";
+import { requireAnySession } from "@/lib/authz";
 
 function formatTime(t: string) {
     const [hour, minute] = t.split(":");
@@ -8,8 +9,13 @@ function formatTime(t: string) {
 
 export async function GET(req: Request) {
     try {
+        const session = await requireAnySession(req);
+        if (session instanceof NextResponse) return session;
+
         const { searchParams } = new URL(req.url);
         const date = searchParams.get("date");
+        const facilityId =
+            searchParams.get("facilityId") ?? searchParams.get("facility_id");
 
         if (!date) {
             return NextResponse.json(
@@ -18,11 +24,25 @@ export async function GET(req: Request) {
             );
         }
 
-        const { data, error } = await supabase
+        let query = supabase
             .from("cura_appointments")
             .select("start_time, end_time, status")
             .eq("appointment_date", date)
             .in("status", ["PENDING", "CONFIRMED"]);
+
+        if (facilityId) {
+            if (session.kind === "staff" && facilityId !== session.facilityId) {
+                return NextResponse.json(
+                    { error: "Forbidden" },
+                    { status: 403 }
+                );
+            }
+            query = query.eq("facility_id", facilityId);
+        } else if (session.kind === "staff") {
+            query = query.eq("facility_id", session.facilityId);
+        }
+
+        const { data, error } = await query;
 
         if (error) {
             return NextResponse.json(

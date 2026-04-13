@@ -1,13 +1,43 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
+import { requireStaffSession } from "@/lib/authz";
+
+async function ensurePatientInStaffFacility(
+    staffFacilityId: string,
+    patientId: string
+): Promise<NextResponse | void> {
+    const { data, error } = await supabase
+        .from("cura_patient_facilities")
+        .select("id")
+        .eq("facility_id", staffFacilityId)
+        .eq("profile_id", patientId)
+        .eq("status", "active")
+        .maybeSingle();
+
+    if (error) {
+        return NextResponse.json({ error: "Access check failed" }, { status: 500 });
+    }
+
+    if (!data) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+}
 
 // GET single patient
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const session = await requireStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const { id } = await params;
+        const facilityCheck = await ensurePatientInStaffFacility(
+            session.facilityId,
+            id
+        );
+        if (facilityCheck instanceof NextResponse) return facilityCheck;
 
         const { data, error } = await supabase
             .from("cura_profiles")
@@ -49,8 +79,17 @@ export async function PUT(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const session = await requireStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const { id } = await params;
+        const facilityCheck = await ensurePatientInStaffFacility(
+            session.facilityId,
+            id
+        );
+        if (facilityCheck instanceof NextResponse) return facilityCheck;
+
         const body = await req.json();
         const { full_name, phone_number, avatar_url, patient_profile } = body;
 
@@ -97,8 +136,17 @@ export async function PATCH(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const session = await requireStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const { id } = await params;
+        const facilityCheck = await ensurePatientInStaffFacility(
+            session.facilityId,
+            id
+        );
+        if (facilityCheck instanceof NextResponse) return facilityCheck;
+
         const body = await req.json();
 
         const { data, error } = await supabase
@@ -130,8 +178,16 @@ export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
+    const session = await requireStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const { id } = await params;
+        const facilityCheck = await ensurePatientInStaffFacility(
+            session.facilityId,
+            id
+        );
+        if (facilityCheck instanceof NextResponse) return facilityCheck;
 
         const { error } = await supabase
             .from("cura_profiles")

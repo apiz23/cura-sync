@@ -30,6 +30,8 @@ import {
 import { Check, Pill, CalendarIcon, Clock, AlertCircle } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import { useUser } from "@clerk/nextjs";
+import { toast } from "sonner";
 
 /* ================= TYPES ================= */
 
@@ -74,6 +76,7 @@ export default function AddMedicationSheet({
     children: React.ReactNode;
     onSuccess: () => void;
 }) {
+    const { user, isLoaded } = useUser();
     const [open, setOpen] = useState(false);
     const [loading, setLoading] = useState(false);
 
@@ -122,29 +125,71 @@ export default function AddMedicationSheet({
     const handleSubmit = async () => {
         if (!validateForm()) return;
 
+        if (!isLoaded || !user) {
+            setErrors({ submit: "You must be signed in to add medication." });
+            return;
+        }
+
         setLoading(true);
         try {
-            const response = await fetch("/api/medications", {
+            const startDateStr = format(formData.startDate, "yyyy-MM-dd");
+
+            let endDate: Date | undefined = formData.endDate;
+            if (!endDate && formData.duration !== "ongoing") {
+                const days = Number(formData.duration);
+                if (!Number.isNaN(days) && days > 0) {
+                    const computed = new Date(formData.startDate);
+                    computed.setDate(computed.getDate() + days);
+                    endDate = computed;
+                }
+            }
+
+            const endDateStr = endDate ? format(endDate, "yyyy-MM-dd") : null;
+
+            const scheduleByFrequency: Record<string, string> = {
+                once: "Morning",
+                twice: "Morning / Night",
+                thrice: "Morning / Afternoon / Night",
+                weekly: "Weekly",
+                as_needed: "As needed",
+                other: formData.instructions?.trim() || "Custom schedule",
+            };
+
+            const schedule =
+                scheduleByFrequency[formData.frequency] ?? "As directed";
+
+            const submitPromise = fetch("/api/medications", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    profile_id: "demo-profile-id",
                     name: formData.name,
                     dosage: formData.dosage,
                     frequency: formData.frequency,
-                    duration:
-                        formData.duration === "ongoing"
-                            ? null
-                            : `${formData.duration} days`,
-                    instructions: formData.instructions || null,
-                    schedule: "Morning / Night",
+                    schedule,
+                    start_date: startDateStr,
+                    end_date: endDateStr,
+                    notes: formData.instructions?.trim() || null,
                     status: "ACTIVE",
-                    start_date: formData.startDate.toISOString(),
-                    end_date: formData.endDate?.toISOString(),
                 }),
+            }).then(async (response) => {
+                if (!response.ok) {
+                    const json = await response.json().catch(() => null);
+                    throw new Error(json?.error || "Failed to add medication");
+                }
+
+                return response.json().catch(() => null);
             });
 
-            if (!response.ok) throw new Error();
+            toast.promise(submitPromise, {
+                loading: "Adding medication...",
+                success: "Medication added",
+                error: (error) =>
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to add medication",
+            });
+
+            await submitPromise;
 
             setFormData({
                 name: "",
@@ -159,9 +204,12 @@ export default function AddMedicationSheet({
             setErrors({});
             setOpen(false);
             onSuccess();
-        } catch {
+        } catch (error) {
             setErrors({
-                submit: "Failed to add medication. Please try again.",
+                submit:
+                    error instanceof Error
+                        ? error.message
+                        : "Failed to add medication. Please try again.",
             });
         } finally {
             setLoading(false);

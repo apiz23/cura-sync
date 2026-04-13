@@ -14,7 +14,7 @@ export function AdminHeader() {
 
     if (loading) {
         return (
-            <header className="flex h-16 items-center justify-between border-b bg-background/95 px-6">
+            <header className="flex h-(--header-height) items-center justify-between border-b bg-background/95 px-4 md:px-6">
                 Loading...
             </header>
         );
@@ -23,7 +23,7 @@ export function AdminHeader() {
     if (!user) return null;
 
     return (
-        <header className="flex h-(--header-height) shrink-0 rounded-t-3xl items-center gap-2 border-b transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) justify-between bg-background/90 p-3">
+        <header className="flex h-(--header-height) shrink-0 items-center justify-between gap-2 border-b bg-background/95 px-4 transition-[width,height] ease-linear group-has-data-[collapsible=icon]/sidebar-wrapper:h-(--header-height) md:px-6">
             <div className="flex items-center gap-4">
                 <SidebarTrigger className="h-9 w-9" />
                 <Separator

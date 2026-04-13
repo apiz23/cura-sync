@@ -20,6 +20,7 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar";
 import { AuthUser } from "@/app/types";
+import { getStaffRoleLabel } from "@/lib/staff-role";
 
 interface AdminProfileMenuProps {
     user: AuthUser;
@@ -33,8 +34,9 @@ export function AdminProfileMenu({ user }: AdminProfileMenuProps) {
         (user.full_name?.split(" ")[1]?.[0] || "");
 
     const handleLogout = () => {
-        sessionStorage.clear();
-        window.location.href = "/auth/admin";
+        fetch("/api/auth/staff/logout", { method: "POST" }).finally(() => {
+            window.location.href = "/auth/admin";
+        });
     };
 
     return (
@@ -64,7 +66,7 @@ export function AdminProfileMenu({ user }: AdminProfileMenuProps) {
                                     {user.full_name}
                                 </span>
                                 <span className="truncate text-xs text-muted-foreground">
-                                    {user.role || "Administrator"}
+                                    {getStaffRoleLabel(user.role)}
                                 </span>
                             </div>
 

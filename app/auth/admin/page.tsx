@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { Shield, Stethoscope } from "lucide-react";
+import { Shield } from "lucide-react";
 import Link from "next/link";
 import { AdminLoginForm } from "./loginform";
+import { BrandLogo } from "@/components/brand-logo";
 
 export const metadata: Metadata = {
     title: "Admin Login | CuraSync",
@@ -19,9 +20,7 @@ export default function AdminLoginPage() {
                         href="/"
                         className="flex items-center gap-2 font-semibold text-lg hover:opacity-80 transition-opacity group"
                     >
-                        <div className="bg-linear-to-br from-primary to-primary/80 text-primary-foreground flex size-10 items-center justify-center rounded-xl shadow-lg group-hover:shadow-xl transition-shadow duration-300">
-                            <Stethoscope className="size-5" />
-                        </div>
+                        <BrandLogo className="size-10 shadow-lg group-hover:shadow-xl transition-shadow duration-300" />
                         <div className="flex items-center gap-2">
                             <span className="text-foreground">CuraSync</span>
                             <span className="text-xs bg-primary text-primary-foreground px-2.5 py-1 rounded-full font-medium">

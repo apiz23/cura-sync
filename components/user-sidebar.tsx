@@ -16,10 +16,10 @@ import {
     SidebarRail,
 } from "@/components/ui/sidebar";
 import { userMenu } from "@/lib/user-menu";
-import { Stethoscope } from "lucide-react";
 import UserProfileMenu from "./user-profile-menu";
 import { useUser } from "@clerk/nextjs";
 import { Skeleton } from "@/components/ui/skeleton";
+import { BrandLogo } from "./brand-logo";
 
 export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
     const pathname = usePathname();
@@ -39,9 +39,7 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
                 <SidebarMenu>
                     <SidebarMenuItem>
                         <SidebarMenuButton size="lg">
-                            <div className="bg-sidebar-primary text-sidebar-primary-foreground flex size-8 items-center justify-center rounded-lg">
-                                <Stethoscope className="size-4" />
-                            </div>
+                            <BrandLogo className="size-8 rounded-lg" />
                             <div className="grid text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                                 <span className="truncate font-semibold">
                                     CuraSync

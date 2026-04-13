@@ -1,16 +1,16 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
+import { ensureFacilityAccess, requireStaffSession } from "@/lib/authz";
 
 export async function GET(req: Request) {
-    const { searchParams } = new URL(req.url);
-    const facilityId = searchParams.get("facilityId");
+    const session = await requireStaffSession(req);
+    if (session instanceof NextResponse) return session;
 
-    if (!facilityId) {
-        return NextResponse.json(
-            { error: "facilityId is required" },
-            { status: 400 }
-        );
-    }
+    const { searchParams } = new URL(req.url);
+    const facilityId = searchParams.get("facilityId") ?? session.facilityId;
+
+    const facilityAccess = ensureFacilityAccess(session, facilityId);
+    if (facilityAccess instanceof NextResponse) return facilityAccess;
 
     // 1️⃣ get active patient IDs
     const { data: patientFacilities, error: pfError } = await supabase

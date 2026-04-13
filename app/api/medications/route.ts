@@ -1,19 +1,57 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import supabase from "@/lib/supabase";
+import { requireAnySession } from "@/lib/authz";
+
+function canManagePrescriptions(session: Awaited<ReturnType<typeof requireAnySession>>) {
+    return (
+        !(session instanceof NextResponse) &&
+        session.kind === "staff" &&
+        (session.role === "doctor" || session.role === "admin")
+    );
+}
 
 /* =========================
    GET /api/medications
    ========================= */
 export async function GET(req: NextRequest) {
-    const { searchParams } = new URL(req.url);
-    const profileId = searchParams.get("profile_id");
+    const session = await requireAnySession(req);
+    if (session instanceof NextResponse) return session;
 
-    if (!profileId) {
-        return NextResponse.json(
-            { error: "profile_id is required" },
-            { status: 400 }
-        );
+    const { searchParams } = new URL(req.url);
+    const profileId =
+        session.kind === "patient"
+            ? session.profileId
+            : searchParams.get("profile_id");
+
+    if (session.kind === "staff") {
+        if (!profileId) {
+            return NextResponse.json(
+                { error: "profile_id is required" },
+                { status: 400 }
+            );
+        }
+
+        const { data: reg, error: regError } = await supabase
+            .from("cura_patient_facilities")
+            .select("id")
+            .eq("profile_id", profileId)
+            .eq("facility_id", session.facilityId)
+            .eq("status", "active")
+            .maybeSingle();
+
+        if (regError) {
+            return NextResponse.json(
+                { error: "Access check failed" },
+                { status: 500 }
+            );
+        }
+
+        if (!reg) {
+            return NextResponse.json(
+                { error: "Forbidden" },
+                { status: 403 }
+            );
+        }
     }
 
     const { data, error } = await supabase
@@ -33,10 +71,14 @@ export async function GET(req: NextRequest) {
    POST /api/medications
    ========================= */
 export async function POST(req: NextRequest) {
-    const { userId } = await auth();
+    const session = await requireAnySession(req);
+    if (session instanceof NextResponse) return session;
 
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    if (!canManagePrescriptions(session)) {
+        return NextResponse.json(
+            { error: "Only doctors or admins can create prescriptions" },
+            { status: 403 }
+        );
     }
 
     const body = await req.json();
@@ -53,8 +95,10 @@ export async function POST(req: NextRequest) {
         prescribed_by,
     } = body;
 
+    const effectiveProfileId = profile_id;
+
     if (
-        !profile_id ||
+        !effectiveProfileId ||
         !name ||
         !dosage ||
         !frequency ||
@@ -67,10 +111,29 @@ export async function POST(req: NextRequest) {
         );
     }
 
+    const { data: reg, error: regError } = await supabase
+        .from("cura_patient_facilities")
+        .select("id")
+        .eq("profile_id", effectiveProfileId)
+        .eq("facility_id", session.facilityId)
+        .eq("status", "active")
+        .maybeSingle();
+
+    if (regError) {
+        return NextResponse.json(
+            { error: "Access check failed" },
+            { status: 500 }
+        );
+    }
+
+    if (!reg) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const { data, error } = await supabase
         .from("cura_medications")
         .insert({
-            profile_id,
+            profile_id: effectiveProfileId,
             name,
             dosage,
             frequency,

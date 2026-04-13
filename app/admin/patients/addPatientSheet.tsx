@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
+import { useAuth } from "@/components/authprovideradmin";
 
 interface UserOption {
     id: string;
@@ -30,16 +31,14 @@ export default function AddPatientSheet({
     onCreated: () => void;
     children: React.ReactNode;
 }) {
+    const { user } = useAuth();
     const [users, setUsers] = useState<UserOption[]>([]);
     const [filtered, setFiltered] = useState<UserOption[]>([]);
     const [search, setSearch] = useState("");
     const [selected, setSelected] = useState<string | null>(null);
     const [loading, setLoading] = useState(false);
 
-    const facilityId =
-        typeof window !== "undefined"
-            ? sessionStorage.getItem("facilityId")
-            : null;
+    const facilityId = user?.facility_id ?? null;
 
     useEffect(() => {
         fetch("/api/user")

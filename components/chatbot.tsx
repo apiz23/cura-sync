@@ -27,13 +27,13 @@ import { cn } from "@/lib/utils";
 interface ChatMessage {
     from: "user" | "assistant";
     content: string;
-    timestamp: string;
+    timestamp: string | null;
 }
 
 const INITIAL_MESSAGE: ChatMessage = {
     from: "assistant",
     content: "Hello! How can I help you today?",
-    timestamp: new Date().toISOString(),
+    timestamp: null,
 };
 
 export default function Chatbot() {
@@ -42,10 +42,25 @@ export default function Chatbot() {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
+    const sessionIdRef = useRef<string>("");
 
     useEffect(() => {
         bottomRef.current?.scrollIntoView({ behavior: "smooth" });
     }, [messages, isLoading]);
+
+    useEffect(() => {
+        if (typeof window === "undefined") return;
+
+        const storedSessionId = window.localStorage.getItem("cura-chat-session");
+        if (storedSessionId) {
+            sessionIdRef.current = storedSessionId;
+            return;
+        }
+
+        const newSessionId = `chat-${crypto.randomUUID()}`;
+        sessionIdRef.current = newSessionId;
+        window.localStorage.setItem("cura-chat-session", newSessionId);
+    }, []);
 
     const sendMessage = async () => {
         if (!input.trim() || isLoading) return;
@@ -65,7 +80,10 @@ export default function Chatbot() {
             const res = await fetch("/api/chat", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ message: userMessage.content }),
+                body: JSON.stringify({
+                    session_id: sessionIdRef.current,
+                    message: userMessage.content,
+                }),
             });
 
             const data = await res.json();
@@ -209,10 +227,12 @@ export default function Chatbot() {
                                                     ? "You"
                                                     : "Cura AI"}
                                             </span>
-                                            <span className="text-xs text-muted-foreground flex items-center gap-1">
-                                                <span className="h-1 w-1 rounded-full bg-current opacity-50" />
-                                                {formatTime(msg.timestamp)}
-                                            </span>
+                                            {msg.timestamp && (
+                                                <span className="text-xs text-muted-foreground flex items-center gap-1">
+                                                    <span className="h-1 w-1 rounded-full bg-current opacity-50" />
+                                                    {formatTime(msg.timestamp)}
+                                                </span>
+                                            )}
                                         </div>
                                     </div>
                                 </Message>

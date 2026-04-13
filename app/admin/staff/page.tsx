@@ -31,6 +31,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import ViewStaffSheet from "./view-staff-sheet";
 import { Staff, StaffRole } from "@/app/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { useAuth } from "@/components/authprovideradmin";
 import type { ColumnDef } from "@/components/kibo-ui/table";
 import {
     TableBody,
@@ -44,6 +45,7 @@ import {
 } from "@/components/kibo-ui/table";
 
 export default function StaffPage() {
+    const { user, loading: authLoading } = useAuth();
     const [staff, setStaff] = useState<Staff[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -56,7 +58,8 @@ export default function StaffPage() {
         setLoading(true);
 
         try {
-            const facilityId = sessionStorage.getItem("facilityId");
+            if (authLoading) return;
+            const facilityId = user?.facility_id;
 
             if (!facilityId) {
                 toast.error("Facility not selected");
@@ -110,8 +113,8 @@ export default function StaffPage() {
     }
 
     useEffect(() => {
-        fetchStaff();
-    }, []);
+        if (!authLoading && user) fetchStaff();
+    }, [authLoading, user]);
 
     const filteredStaff = staff.filter((s) => {
         const matchSearch =
@@ -282,6 +285,25 @@ export default function StaffPage() {
                 </div>
             ),
         },
+        {
+            id: "open",
+            header: () => <div className="text-right">Open</div>,
+            cell: ({ row }) => (
+                <div className="flex justify-end">
+                    <button
+                        type="button"
+                        className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                        onClick={(event) => {
+                            event.stopPropagation();
+                            handleViewStaff(row.original);
+                        }}
+                    >
+                        View details
+                        <ChevronRightIcon className="h-3.5 w-3.5" />
+                    </button>
+                </div>
+            ),
+        },
     ];
 
     return (
@@ -363,10 +385,16 @@ export default function StaffPage() {
             <Card className="border shadow-lg">
                 <CardHeader className="pb-3">
                     <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-                        <CardTitle className="flex items-center gap-2 text-xl">
-                            <Users className="w-5 h-5" />
-                            Staff Members
-                        </CardTitle>
+                        <div className="space-y-1">
+                            <CardTitle className="flex items-center gap-2 text-xl">
+                                <Users className="w-5 h-5" />
+                                Staff Members
+                            </CardTitle>
+                            <p className="text-xs text-muted-foreground">
+                                Click any row or the View details pill to open the
+                                staff sheet.
+                            </p>
+                        </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                             <Filter className="w-4 h-4" />
                             <span>
@@ -481,7 +509,14 @@ export default function StaffPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {({ row }) => (
-                                        <TableRow key={row.id} row={row}>
+                                        <TableRow
+                                            key={row.id}
+                                            row={row}
+                                            onClick={() =>
+                                                handleViewStaff(row.original as Staff)
+                                            }
+                                            className="cursor-pointer transition-colors hover:bg-muted/40"
+                                        >
                                             {({ cell }) => (
                                                 <TableCell
                                                     cell={cell}

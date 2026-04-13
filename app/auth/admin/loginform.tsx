@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Shield, Lock, Eye, EyeOff, Loader2, Key } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
@@ -19,10 +20,15 @@ export function AdminLoginForm({
     className,
     ...props
 }: React.ComponentProps<"div">) {
+    const router = useRouter();
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        router.prefetch("/admin/dashboard");
+    }, [router]);
 
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
@@ -49,30 +55,12 @@ export function AdminLoginForm({
                     throw new Error(data.error || "Invalid credentials");
                 }
 
-                sessionStorage.setItem(
-                    "cura-auth",
-                    JSON.stringify({
-                        email,
-                        userId: data.id,
-                        role: data.role,
-                        sessionId: data.sessionId || Date.now().toString(),
-                        loggedInAt: Date.now(),
-                    })
-                );
-
-                if (data.facilityId) {
-                    sessionStorage.setItem("facilityId", data.facilityId);
-                }
-
                 return data;
             })(),
             {
                 loading: "Authenticating admin...",
                 success: () => {
-                    setTimeout(() => {
-                        window.location.href = "/admin/dashboard";
-                    }, 800);
-
+                    router.replace("/admin/dashboard");
                     return "Admin login successful!";
                 },
                 error: (err) => err.message || "Login failed",

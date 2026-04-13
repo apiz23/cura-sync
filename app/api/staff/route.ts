@@ -1,23 +1,38 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
 import bcrypt from "bcrypt";
+import { ensureFacilityAccess, requireAdminStaffSession } from "@/lib/authz";
+import { normalizeStaffRole } from "@/lib/staff-role";
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+    const session = await requireAdminStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     const { data, error } = await supabase
         .from("cura_staff_profiles")
         .select("*")
+        .eq("facility_id", session.facilityId)
         .order("created_at", { ascending: false });
 
-    if (error)
+    if (error) {
         return NextResponse.json({ error: error.message }, { status: 400 });
-    return NextResponse.json({ staff: data });
+    }
+
+    return NextResponse.json({
+        staff: (data ?? []).map((member) => ({
+            ...member,
+            role: normalizeStaffRole(member.role),
+        })),
+    });
 }
 
 export async function POST(req: NextRequest) {
+    const session = await requireAdminStaffSession(req);
+    if (session instanceof NextResponse) return session;
+
     try {
         const body = await req.json();
-        const { fullName, email, password, role, specialization, facilityId } =
-            body;
+        const { fullName, email, password, role, specialization, facilityId } = body;
 
         if (!fullName || !email || !role || !facilityId) {
             return NextResponse.json(
@@ -31,15 +46,23 @@ export async function POST(req: NextRequest) {
             hashedPassword = await bcrypt.hash(password, 10);
         }
 
+        const effectiveFacilityId = facilityId ?? session.facilityId;
+
+        const facilityAccess = ensureFacilityAccess(
+            session,
+            effectiveFacilityId
+        );
+        if (facilityAccess instanceof NextResponse) return facilityAccess;
+
         const { data, error } = await supabase
             .from("cura_staff_profiles")
             .insert({
                 full_name: fullName,
-                email,
+                email: String(email).trim().toLowerCase(),
                 password: hashedPassword,
-                role,
+                role: normalizeStaffRole(role),
                 specialization: specialization || null,
-                facility_id: facilityId,
+                facility_id: effectiveFacilityId,
             })
             .select()
             .single();

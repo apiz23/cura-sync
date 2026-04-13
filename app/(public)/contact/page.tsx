@@ -1,25 +1,32 @@
 "use client";
 
 import {
-    Mail,
-    Phone,
-    MapPin,
-    Clock,
-    Send,
-    MessageCircle,
-    Users,
-    Shield,
     CheckCircle2,
+    Clock,
     Loader2,
+    Mail,
+    MapPin,
+    MessageCircle,
+    Phone,
+    Send,
+    Shield,
+    Users,
 } from "lucide-react";
 import { useState } from "react";
+import { toast } from "sonner";
+import PageTitle from "@/components/page-title";
+import {
+    Accordion,
+    AccordionContent,
+    AccordionItem,
+    AccordionTrigger,
+} from "@/components/ui/accordion";
+import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import PageTitle from "@/components/page-title";
 
 export default function ContactPage() {
     const [formData, setFormData] = useState({
@@ -31,159 +38,143 @@ export default function ContactPage() {
     const [loading, setLoading] = useState(false);
     const [submitted, setSubmitted] = useState(false);
 
-    const contactMethods = [
-        {
-            icon: Phone,
-            title: "Phone Support",
-            description: "Speak directly with our team",
-            contact: "+1 (555) 123-4567",
-            hours: "Mon-Fri: 8:00 AM - 6:00 PM EST",
-            badge: "Fast Response",
-        },
-        {
-            icon: Mail,
-            title: "Email Us",
-            description: "Send us a detailed message",
-            contact: "support@curasync.com",
-            hours: "Typically reply within 2 hours",
-            badge: "Preferred",
-        },
-        {
-            icon: MessageCircle,
-            title: "Live Chat",
-            description: "Instant messaging support",
-            contact: "Start Chat",
-            hours: "24/7 Available",
-            badge: "Instant",
-        },
-    ];
-
     const faqs = [
         {
-            question: "How secure is my health data?",
-            answer: "All health data is encrypted end-to-end and compliant with HIPAA regulations. We never share your information without explicit consent.",
+            question: "How do you handle health information?",
+            answer: "We aim to handle information carefully and can share current product details if you contact our team.",
         },
         {
-            question: "Can I contact for medical emergencies?",
-            answer: "No, for medical emergencies please call emergency services immediately. Our support is for platform and non-urgent health inquiries only.",
+            question: "Can I use this form for medical emergencies?",
+            answer: "No. For urgent medical concerns, contact emergency services or a local healthcare provider immediately.",
         },
         {
             question: "Do you offer technical support?",
-            answer: "Yes, our technical support team is available 24/7 to help with any platform issues, account problems, or feature questions.",
+            answer: "Yes. Our support team can help with platform questions, account access, and product issues.",
         },
         {
             question: "How do I reset my password?",
-            answer: "You can reset your password from the login page by clicking 'Forgot Password' or contact us for immediate assistance.",
+            answer: "Use the password reset flow from the login page or contact support if you need help.",
         },
     ];
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setLoading(true);
+        setSubmitted(false);
 
-        // Simulate API call
-        await new Promise((resolve) => setTimeout(resolve, 2000));
+        const sendPromise = fetch("/api/contact", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(formData),
+        }).then(async (res) => {
+            const data = await res.json().catch(() => null);
+            if (!res.ok) {
+                throw new Error(data?.error || "Failed to send message");
+            }
+            return data;
+        });
 
-        setLoading(false);
-        setSubmitted(true);
-        setFormData({ name: "", email: "", subject: "", message: "" });
-    };
+        toast.promise(sendPromise, {
+            loading: "Sending message...",
+            success: "Message sent successfully",
+            error: (error) =>
+                error instanceof Error
+                    ? error.message
+                    : "Failed to send message",
+        });
 
-    const handleInputChange = (
-        e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-    ) => {
-        const { name, value } = e.target;
-        setFormData((prev) => ({ ...prev, [name]: value }));
+        try {
+            await sendPromise;
+            setSubmitted(true);
+            setFormData({ name: "", email: "", subject: "", message: "" });
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
-        <div className="min-h-screen bg-background pt-20 pb-8 px-4">
-            <PageTitle title={"Contact"} />
-            <div className="max-w-6xl mx-auto space-y-12 pt-8">
-                {/* Header */}
-                <div className="text-center space-y-6">
-                    <div className="flex flex-col items-center space-y-4">
-                        <div className="p-4 bg-primary rounded-3xl shadow-lg">
-                            <MessageCircle className="h-10 w-10 text-primary-foreground" />
-                        </div>
-                        <div className="space-y-3">
-                            <h1 className="text-4xl font-bold text-foreground">
-                                Contact CuraSync
-                            </h1>
-                            <p className="text-lg text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                                Get in touch with our support team. We{"'"}re
-                                here to help you with any questions about our
-                                health platform.
-                            </p>
-                        </div>
+        <div className="min-h-screen bg-background px-4 pb-8 pt-20">
+            <PageTitle title="Contact" />
+            <div className="mx-auto max-w-6xl space-y-12 pt-8">
+                <div className="text-center space-y-4">
+                    <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl bg-primary text-primary-foreground shadow-lg">
+                        <MessageCircle className="h-8 w-8" />
+                    </div>
+                    <div className="space-y-3">
+                        <h1 className="text-4xl font-bold text-foreground">
+                            Contact CuraSync
+                        </h1>
+                        <p className="mx-auto max-w-2xl text-lg text-muted-foreground">
+                            Reach out for product questions, account help, or support with the platform.
+                        </p>
                     </div>
                 </div>
 
-                {/* Success Message */}
-                {submitted && (
-                    <Card className="border-border shadow-lg bg-card">
-                        <CardContent className="p-6">
-                            <div className="flex items-center gap-4">
-                                <div className="p-2 bg-primary rounded-lg">
-                                    <CheckCircle2 className="h-6 w-6 text-primary-foreground" />
-                                </div>
-                                <div className="space-y-1">
-                                    <h3 className="font-semibold text-foreground">
-                                        Message Sent Successfully!
-                                    </h3>
-                                    <p className="text-sm text-muted-foreground">
-                                        Thank you for contacting us. We{"'"}ll
-                                        get back to you within 2 hours.
-                                    </p>
-                                </div>
+                {submitted ? (
+                    <Card className="border shadow-sm">
+                        <CardContent className="flex items-center gap-4 p-6">
+                            <div className="rounded-lg bg-primary p-2 text-primary-foreground">
+                                <CheckCircle2 className="h-6 w-6" />
+                            </div>
+                            <div>
+                                <h2 className="font-semibold text-foreground">
+                                    Message sent successfully
+                                </h2>
+                                <p className="text-sm text-muted-foreground">
+                                    Thanks for reaching out. We will respond as soon as we can.
+                                </p>
                             </div>
                         </CardContent>
                     </Card>
-                )}
+                ) : null}
 
-                <div className="grid lg:grid-cols-3 gap-8">
-                    {/* Contact Methods */}
-                    <div className="lg:col-span-1 space-y-6">
-                        <Card className="border-border shadow-lg">
-                            <CardContent className="p-6 space-y-6">
-                                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                <div className="grid gap-8 lg:grid-cols-3">
+                    <div className="space-y-6">
+                        <Card className="border shadow-sm">
+                            <CardContent className="space-y-4 p-6">
+                                <h2 className="flex items-center gap-2 text-xl font-semibold">
                                     <Users className="h-5 w-5 text-primary" />
-                                    Contact Methods
+                                    Contact methods
                                 </h2>
 
-                                {contactMethods.map((method, index) => (
+                                {[
+                                    {
+                                        icon: Phone,
+                                        title: "Phone support",
+                                        description: "+1 (555) 123-4567",
+                                        meta: "Mon-Fri: 8:00 AM - 6:00 PM EST",
+                                    },
+                                    {
+                                        icon: Mail,
+                                        title: "Email us",
+                                        description: "support@curasync.com",
+                                        meta: "We usually reply within a few business hours.",
+                                    },
+                                    {
+                                        icon: MessageCircle,
+                                        title: "Live chat",
+                                        description: "Start chat",
+                                        meta: "For product and support questions.",
+                                    },
+                                ].map((item) => (
                                     <div
-                                        key={index}
-                                        className="space-y-3 p-4 bg-muted/50 rounded-xl border border-border"
+                                        key={item.title}
+                                        className="rounded-xl border bg-muted/40 p-4"
                                     >
-                                        <div className="flex items-start justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="p-2 bg-accent rounded-lg">
-                                                    <method.icon className="h-4 w-4 text-accent-foreground" />
-                                                </div>
-                                                <div>
-                                                    <h3 className="font-semibold text-foreground">
-                                                        {method.title}
-                                                    </h3>
-                                                    <p className="text-sm text-muted-foreground">
-                                                        {method.description}
-                                                    </p>
-                                                </div>
+                                        <div className="flex items-start gap-3">
+                                            <div className="rounded-lg bg-accent p-2">
+                                                <item.icon className="h-4 w-4 text-accent-foreground" />
                                             </div>
-                                            <Badge
-                                                variant="secondary"
-                                                className="bg-primary/10 text-primary"
-                                            >
-                                                {method.badge}
-                                            </Badge>
-                                        </div>
-                                        <div className="space-y-1">
-                                            <p className="font-medium text-foreground">
-                                                {method.contact}
-                                            </p>
-                                            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                <Clock className="h-3 w-3" />
-                                                {method.hours}
+                                            <div className="space-y-1">
+                                                <p className="font-semibold text-foreground">
+                                                    {item.title}
+                                                </p>
+                                                <p className="text-sm text-foreground">
+                                                    {item.description}
+                                                </p>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {item.meta}
+                                                </p>
                                             </div>
                                         </div>
                                     </div>
@@ -191,132 +182,119 @@ export default function ContactPage() {
                             </CardContent>
                         </Card>
 
-                        {/* Office Information */}
-                        <Card className="border-border shadow-lg">
-                            <CardContent className="p-6 space-y-4">
-                                <h2 className="text-xl font-semibold text-foreground flex items-center gap-2">
+                        <Card className="border shadow-sm">
+                            <CardContent className="space-y-4 p-6">
+                                <h2 className="flex items-center gap-2 text-xl font-semibold">
                                     <MapPin className="h-5 w-5 text-primary" />
-                                    Our Office
+                                    Our office
                                 </h2>
-
-                                <div className="space-y-3">
-                                    <div className="p-3 bg-muted/50 rounded-lg">
-                                        <p className="font-medium text-foreground">
-                                            CuraSync Headquarters
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            123 Healthcare Avenue
-                                            <br />
-                                            San Francisco, CA 94102
-                                            <br />
-                                            United States
-                                        </p>
-                                    </div>
-
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="rounded-xl border bg-muted/40 p-4 text-sm text-muted-foreground">
+                                    <p className="font-medium text-foreground">
+                                        CuraSync Headquarters
+                                    </p>
+                                    <p className="mt-2">
+                                        123 Healthcare Avenue
+                                        <br />
+                                        San Francisco, CA 94102
+                                        <br />
+                                        United States
+                                    </p>
+                                    <div className="mt-3 flex items-center gap-2">
                                         <Clock className="h-4 w-4" />
-                                        Business Hours: Mon-Fri, 9:00 AM - 5:00
-                                        PM PST
+                                        <span>Mon-Fri, 9:00 AM - 5:00 PM PST</span>
                                     </div>
                                 </div>
                             </CardContent>
                         </Card>
                     </div>
 
-                    {/* Contact Form */}
-                    <div className="lg:col-span-2">
-                        <Card className="border-border shadow-lg">
+                    <div className="space-y-8 lg:col-span-2">
+                        <Card className="border shadow-sm">
                             <CardContent className="p-8">
                                 <div className="space-y-6">
                                     <div className="space-y-2">
                                         <h2 className="text-2xl font-bold text-foreground">
-                                            Send us a Message
+                                            Send us a message
                                         </h2>
                                         <p className="text-muted-foreground">
-                                            Fill out the form below and we{"'"}
-                                            ll get back to you as soon as
-                                            possible.
+                                            Share your question and our team will follow up.
                                         </p>
                                     </div>
 
-                                    <form
-                                        onSubmit={handleSubmit}
-                                        className="space-y-6"
-                                    >
-                                        <div className="grid md:grid-cols-2 gap-6">
+                                    <form onSubmit={handleSubmit} className="space-y-6">
+                                        <div className="grid gap-6 md:grid-cols-2">
                                             <div className="space-y-2">
-                                                <label
-                                                    htmlFor="name"
-                                                    className="text-sm font-medium text-foreground"
-                                                >
-                                                    Full Name *
+                                                <label className="text-sm font-medium text-foreground">
+                                                    Full name
                                                 </label>
                                                 <Input
-                                                    id="name"
-                                                    name="name"
-                                                    type="text"
                                                     required
+                                                    name="name"
                                                     value={formData.name}
-                                                    onChange={handleInputChange}
+                                                    onChange={(e) =>
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            name: e.target.value,
+                                                        }))
+                                                    }
                                                     placeholder="Enter your full name"
-                                                    className="bg-white dark:bg-card border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                                                 />
                                             </div>
                                             <div className="space-y-2">
-                                                <label
-                                                    htmlFor="email"
-                                                    className="text-sm font-medium text-foreground"
-                                                >
-                                                    Email Address *
+                                                <label className="text-sm font-medium text-foreground">
+                                                    Email address
                                                 </label>
                                                 <Input
-                                                    id="email"
-                                                    name="email"
-                                                    type="email"
                                                     required
+                                                    type="email"
+                                                    name="email"
                                                     value={formData.email}
-                                                    onChange={handleInputChange}
+                                                    onChange={(e) =>
+                                                        setFormData((prev) => ({
+                                                            ...prev,
+                                                            email: e.target.value,
+                                                        }))
+                                                    }
                                                     placeholder="Enter your email"
-                                                    className="bg-white dark:bg-card border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label
-                                                htmlFor="subject"
-                                                className="text-sm font-medium text-foreground"
-                                            >
-                                                Subject *
+                                            <label className="text-sm font-medium text-foreground">
+                                                Subject
                                             </label>
                                             <Input
-                                                id="subject"
-                                                name="subject"
-                                                type="text"
                                                 required
+                                                name="subject"
                                                 value={formData.subject}
-                                                onChange={handleInputChange}
+                                                onChange={(e) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        subject: e.target.value,
+                                                    }))
+                                                }
                                                 placeholder="What is this regarding?"
-                                                className="bg-white dark:bg-card border-border focus:border-primary focus:ring-2 focus:ring-primary/20"
                                             />
                                         </div>
 
                                         <div className="space-y-2">
-                                            <label
-                                                htmlFor="message"
-                                                className="text-sm font-medium text-foreground"
-                                            >
-                                                Message *
+                                            <label className="text-sm font-medium text-foreground">
+                                                Message
                                             </label>
                                             <Textarea
-                                                id="message"
-                                                name="message"
                                                 required
                                                 rows={6}
+                                                name="message"
                                                 value={formData.message}
-                                                onChange={handleInputChange}
-                                                placeholder="Please describe your inquiry in detail..."
-                                                className="bg-white dark:bg-card border-border focus:border-primary focus:ring-2 focus:ring-primary/20 resize-none"
+                                                onChange={(e) =>
+                                                    setFormData((prev) => ({
+                                                        ...prev,
+                                                        message: e.target.value,
+                                                    }))
+                                                }
+                                                placeholder="Describe your question in detail..."
+                                                className="resize-none"
                                             />
                                         </div>
 
@@ -324,21 +302,19 @@ export default function ContactPage() {
                                             type="submit"
                                             disabled={loading}
                                             className={cn(
-                                                "w-full py-4 text-lg font-semibold rounded-xl transition-all duration-200 shadow-lg",
-                                                "bg-primary hover:bg-primary/90 text-primary-foreground hover:shadow-xl transform hover:scale-[1.02]",
-                                                loading &&
-                                                    "opacity-50 cursor-not-allowed"
+                                                "w-full text-lg",
+                                                loading && "opacity-50"
                                             )}
                                         >
                                             {loading ? (
                                                 <>
-                                                    <Loader2 className="mr-3 h-5 w-5 animate-spin" />
-                                                    Sending Message...
+                                                    <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                                                    Sending message...
                                                 </>
                                             ) : (
                                                 <>
-                                                    <Send className="mr-3 h-5 w-5" />
-                                                    Send Message
+                                                    <Send className="mr-2 h-5 w-5" />
+                                                    Send message
                                                 </>
                                             )}
                                         </Button>
@@ -347,76 +323,57 @@ export default function ContactPage() {
                             </CardContent>
                         </Card>
 
-                        {/* FAQ Section */}
-                        <Card className="border-border shadow-lg mt-8">
-                            <CardContent className="p-8">
-                                <div className="space-y-6">
-                                    <h2 className="text-2xl font-bold text-foreground flex items-center gap-2">
-                                        <MessageCircle className="h-6 w-6 text-primary" />
-                                        Frequently Asked Questions
-                                    </h2>
-
-                                    <div className="space-y-4">
-                                        {faqs.map((faq, index) => (
-                                            <div
-                                                key={index}
-                                                className="p-4 bg-muted/50 rounded-xl border border-border"
-                                            >
-                                                <h3 className="font-semibold text-foreground mb-2">
-                                                    {faq.question}
-                                                </h3>
-                                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                                    {faq.answer}
-                                                </p>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
+                        <Card className="border shadow-sm">
+                            <CardContent className="space-y-6 p-8">
+                                <h2 className="text-2xl font-bold text-foreground">
+                                    Frequently asked questions
+                                </h2>
+                                <Accordion
+                                    type="single"
+                                    collapsible
+                                    defaultValue="faq-0"
+                                    className="rounded-xl border bg-muted/30 px-4"
+                                >
+                                    {faqs.map((faq, index) => (
+                                        <AccordionItem
+                                            key={faq.question}
+                                            value={`faq-${index}`}
+                                        >
+                                            <AccordionTrigger className="text-base font-semibold text-foreground hover:no-underline">
+                                                {faq.question}
+                                            </AccordionTrigger>
+                                            <AccordionContent className="text-sm leading-relaxed text-muted-foreground">
+                                                {faq.answer}
+                                            </AccordionContent>
+                                        </AccordionItem>
+                                    ))}
+                                </Accordion>
                             </CardContent>
                         </Card>
                     </div>
                 </div>
 
-                {/* Security Notice */}
-                <Card className="border-border shadow-lg bg-card">
-                    <CardContent className="p-6">
-                        <div className="flex items-start gap-4">
-                            <div className="p-2 bg-accent rounded-lg flex-shrink-0">
-                                <Shield className="h-5 w-5 text-accent-foreground" />
-                            </div>
-                            <div className="space-y-2">
-                                <p className="font-semibold text-foreground">
-                                    Your Privacy and Security Matter
-                                </p>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    All communications are encrypted and secure.
-                                    We adhere to strict healthcare privacy
-                                    standards including HIPAA compliance. Your
-                                    personal and health information is protected
-                                    with the highest level of security measures.
-                                </p>
+                <Card className="border shadow-sm">
+                    <CardContent className="flex items-start gap-4 p-6">
+                        <div className="rounded-lg bg-accent p-2">
+                            <Shield className="h-5 w-5 text-accent-foreground" />
+                        </div>
+                        <div className="space-y-2">
+                            <p className="font-semibold text-foreground">
+                                Important reminder
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                This contact form is not for urgent medical concerns. For emergencies,
+                                call local emergency services immediately.
+                            </p>
+                            <div className="flex flex-wrap gap-2 pt-1">
+                                <Badge variant="secondary">Privacy-conscious support</Badge>
+                                <Badge variant="secondary">Non-emergency contact channel</Badge>
+                                <Badge variant="secondary">Product and account help</Badge>
                             </div>
                         </div>
                     </CardContent>
                 </Card>
-
-                {/* Footer */}
-                <div className="text-center space-y-4">
-                    <div className="flex items-center justify-center gap-3 text-muted-foreground">
-                        <div className="p-2 bg-accent rounded-lg">
-                            <Shield className="h-4 w-4 text-accent-foreground" />
-                        </div>
-                        <span className="text-sm font-medium">
-                            HIPAA Compliant • End-to-End Encrypted • 24/7
-                            Support
-                        </span>
-                    </div>
-                    <p className="text-xs text-muted-foreground max-w-2xl mx-auto leading-relaxed">
-                        For medical emergencies, please call 911 or your local
-                        emergency services immediately. This contact form is not
-                        intended for urgent medical concerns.
-                    </p>
-                </div>
             </div>
         </div>
     );

@@ -28,7 +28,6 @@ import {
     X,
 } from "lucide-react";
 import { toast } from "sonner";
-import supabase from "@/lib/supabase";
 import { Badge } from "@/components/ui/badge";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
@@ -102,15 +101,20 @@ export function AppointmentSheet({
         try {
             setSaving(true);
 
-            const { error } = await supabase
-                .from("cura_appointments")
-                .update({
+            const response = await fetch(`/api/appointments/${appointment.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
                     status,
                     reason_for_visit: reason,
-                })
-                .eq("id", appointment.id);
+                }),
+            });
 
-            if (error) throw error;
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                throw new Error(payload?.error || "Failed to update appointment");
+            }
 
             const updated: Appointment = {
                 ...appointment,

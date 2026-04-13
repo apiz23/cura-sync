@@ -46,7 +46,6 @@ import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import { format } from "date-fns";
-import supabase from "@/lib/supabase";
 import { toast } from "sonner";
 import { useUser } from "@clerk/nextjs";
 import dynamic from "next/dynamic";
@@ -81,14 +80,34 @@ type BookingFacility = {
     type: string | null;
     specialty: string | null;
     address: string;
-
     phone?: string | null;
-    rating?: number | null;
-    wait_time?: string | null;
-
     coordinates?: [number, number];
-    slots: string[];
 };
+
+type FacilitySchedule = {
+    id: string;
+    day_of_week: number;
+    start_time: string;
+    end_time: string;
+    slot_duration_minutes: number | null;
+};
+
+function toMinutes(time: string) {
+    const [hours = "0", minutes = "0"] = time.split(":");
+    return Number(hours) * 60 + Number(minutes);
+}
+
+function fromMinutes(totalMinutes: number) {
+    const hours = Math.floor(totalMinutes / 60)
+        .toString()
+        .padStart(2, "0");
+    const minutes = (totalMinutes % 60).toString().padStart(2, "0");
+    return `${hours}:${minutes}`;
+}
+
+function formatSlotLabel(start: string, end: string) {
+    return `${start} - ${end}`;
+}
 
 export default function AppointmentBookingPage() {
     const { facilityId } = useParams<{ facilityId: string }>();
@@ -96,6 +115,7 @@ export default function AppointmentBookingPage() {
     const { user } = useUser();
 
     const [facility, setFacility] = useState<BookingFacility | null>(null);
+    const [schedules, setSchedules] = useState<FacilitySchedule[]>([]);
     const [selectedDate, setSelectedDate] = useState<Date | undefined>(
         minBookingDate
     );
@@ -110,6 +130,31 @@ export default function AppointmentBookingPage() {
     );
 
     const normalizeTime = (t: string) => t?.slice(0, 5);
+
+    const availableSlots = (() => {
+        if (!selectedDate) return [];
+
+        const activeSchedules = schedules.filter(
+            (schedule) => schedule.day_of_week === selectedDate.getDay()
+        );
+
+        return activeSchedules.flatMap((schedule) => {
+            const duration = schedule.slot_duration_minutes ?? 60;
+            const slots: string[] = [];
+
+            for (
+                let start = toMinutes(schedule.start_time);
+                start + duration <= toMinutes(schedule.end_time);
+                start += duration
+            ) {
+                const startLabel = fromMinutes(start);
+                const endLabel = fromMinutes(start + duration);
+                slots.push(formatSlotLabel(startLabel, endLabel));
+            }
+
+            return slots;
+        });
+    })();
 
     useEffect(() => {
         if (!("geolocation" in navigator)) return;
@@ -134,17 +179,30 @@ export default function AppointmentBookingPage() {
         async function loadFacility() {
             setIsLoading(true);
             try {
-                const { data, error } = await supabase
-                    .from("cura_facilities")
-                    .select("*")
-                    .eq("id", facilityId)
-                    .single();
+                const [facilityRes, scheduleRes] = await Promise.all([
+                    fetch(`/api/facility/${facilityId}`, {
+                        cache: "no-store",
+                    }),
+                    fetch(
+                        `/api/facility/schedule?facilityId=${encodeURIComponent(
+                            String(facilityId)
+                        )}`,
+                        { cache: "no-store" }
+                    ),
+                ]);
 
-                if (error) {
+                const [facilityJson, scheduleJson] = await Promise.all([
+                    facilityRes.json().catch(() => null),
+                    scheduleRes.json().catch(() => null),
+                ]);
+
+                if (!facilityRes.ok || !facilityJson?.facility) {
                     toast.error("Facility not found");
-                    router.push("/facilities");
+                    router.push("/user/appointments");
                     return;
                 }
+
+                const data = facilityJson.facility;
 
                 const transformedFacility: BookingFacility = {
                     id: data.id,
@@ -153,8 +211,6 @@ export default function AppointmentBookingPage() {
                     specialty: data.specialty,
                     address: data.address,
                     phone: data.phone,
-                    rating: data.rating,
-                    wait_time: data.wait_time,
                     coordinates:
                         data.latitude && data.longitude
                             ? [
@@ -162,17 +218,14 @@ export default function AppointmentBookingPage() {
                                   parseFloat(data.longitude),
                               ]
                             : undefined,
-                    slots: [
-                        "09:00 - 10:00",
-                        "10:00 - 11:00",
-                        "11:00 - 12:00",
-                        "14:00 - 15:00",
-                        "15:00 - 16:00",
-                        "16:00 - 17:00",
-                    ],
                 };
 
                 setFacility(transformedFacility);
+                setSchedules(
+                    Array.isArray(scheduleJson?.schedules)
+                        ? scheduleJson.schedules
+                        : []
+                );
             } catch {
                 toast.error("Failed to load facility details");
             } finally {
@@ -191,16 +244,21 @@ export default function AppointmentBookingPage() {
             setIsLoadingSlots(true);
             try {
                 const dateStr = format(selectedDate, "yyyy-MM-dd");
+                const res = await fetch(
+                    `/api/appointments/booked?date=${encodeURIComponent(
+                        dateStr
+                    )}&facilityId=${encodeURIComponent(facility.id)}`,
+                    { cache: "no-store" }
+                );
 
-                const { data } = await supabase
-                    .from("cura_appointments")
-                    .select("start_time")
-                    .eq("facility_id", facility.id)
-                    .eq("appointment_date", dateStr)
-                    .neq("status", "CANCELLED");
+                const json = await res.json();
+                if (!res.ok) {
+                    throw new Error(json?.error || "Failed to load availability");
+                }
 
+                const slots: string[] = Array.isArray(json) ? json : [];
                 setBookedSlots(
-                    (data ?? []).map((d) => normalizeTime(d.start_time))
+                    slots.map((s) => normalizeTime(s.split(" - ")[0] ?? ""))
                 );
             } catch {
                 toast.error("Failed to load availability");
@@ -212,8 +270,20 @@ export default function AppointmentBookingPage() {
         fetchBookedSlots();
     }, [facility, selectedDate]);
 
+    useEffect(() => {
+        if (selectedSlot && !availableSlots.includes(selectedSlot)) {
+            setSelectedSlot(null);
+        }
+    }, [availableSlots, selectedSlot]);
+
     const isSlotBooked = (slot: string) =>
         bookedSlots.includes(normalizeTime(slot.split(" - ")[0]));
+
+    const selectedDaySchedules = selectedDate
+        ? schedules.filter(
+              (schedule) => schedule.day_of_week === selectedDate.getDay()
+          )
+        : [];
 
     const handleBooking = async () => {
         if (!user || !facility || !selectedDate || !selectedSlot || !reason) {
@@ -230,7 +300,6 @@ export default function AppointmentBookingPage() {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                profile_id: user.id,
                 facility_id: facility.id,
                 appointment_date: dateStr,
                 start_time,
@@ -309,7 +378,6 @@ export default function AppointmentBookingPage() {
 
     return (
         <div className="min-h-screen w-full overflow-x-hidden bg-linear-to-b from-background to-muted/10 p-4 md:p-6">
-            <div className="mx-auto w-full">
                 {/* Back Navigation */}
                 <Button
                     variant="ghost"
@@ -335,11 +403,11 @@ export default function AppointmentBookingPage() {
                                                 <Building className="h-6 w-6 text-white" />
                                             </div>
                                             <div className="flex-1">
-                                                <div className="mb-2 flex flex-wrap items-center gap-2">
-                                                    <h1 className="text-xl font-bold sm:text-2xl md:text-3xl">
-                                                        {facility?.name}
-                                                    </h1>
-                                                    <div className="flex flex-wrap items-center gap-2">
+                                                    <div className="mb-2 flex flex-wrap items-center gap-2">
+                                                        <h1 className="text-xl font-bold sm:text-2xl md:text-3xl">
+                                                            {facility?.name}
+                                                        </h1>
+                                                        <div className="flex flex-wrap items-center gap-2">
                                                         <Badge
                                                             variant="secondary"
                                                             className="gap-2 border-primary/20 bg-primary/10 text-primary"
@@ -349,8 +417,7 @@ export default function AppointmentBookingPage() {
                                                         </Badge>
                                                         <Badge className="border-none bg-linear-to-r from-primary to-primary/80 text-white shadow-sm">
                                                             <Star className="mr-1 h-3 w-3 fill-white" />
-                                                            {facility?.rating ||
-                                                                "4.5"}
+                                                            Appointment booking
                                                         </Badge>
                                                     </div>
                                                 </div>
@@ -367,8 +434,13 @@ export default function AppointmentBookingPage() {
                                             <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-2 py-1.5 sm:px-3">
                                                 <Clock className="h-4 w-4 text-primary" />
                                                 <span className="text-sm font-medium">
-                                                    {facility?.wait_time ||
-                                                        "15-30 mins"}
+                                                    {selectedDaySchedules.length
+                                                        ? `${selectedDaySchedules.length} schedule window${
+                                                              selectedDaySchedules.length === 1
+                                                                  ? ""
+                                                                  : "s"
+                                                          }`
+                                                        : "No schedule set for selected day"}
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-2 rounded-lg bg-muted/50 px-2 py-1.5 sm:px-3">
@@ -594,7 +666,7 @@ export default function AppointmentBookingPage() {
                                                 </Badge>
                                             </div>
                                             <p className="text-xs text-muted-foreground">
-                                                Next available: Today
+                                                Booking opens from the facility schedule for this day
                                             </p>
                                         </div>
                                     )}
@@ -611,9 +683,11 @@ export default function AppointmentBookingPage() {
                                     <CardDescription>
                                         {isLoadingSlots
                                             ? "Loading available slots..."
-                                            : `${
-                                                  6 - bookedSlots.length
-                                              } slots available today`}
+                                            : `${Math.max(
+                                                  availableSlots.length -
+                                                      bookedSlots.length,
+                                                  0
+                                              )} slots available for the selected day`}
                                     </CardDescription>
                                 </CardHeader>
                                 <CardContent className="p-4 md:p-6 md:pt-0">
@@ -623,31 +697,26 @@ export default function AppointmentBookingPage() {
                                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                             </div>
                                         ) : (
-                                            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-                                                {facility?.slots?.map(
-                                                    (slot) => {
-                                                        const booked =
-                                                            isSlotBooked(slot);
+                                            availableSlots.length ? (
+                                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
+                                                    {availableSlots.map((slot) => {
+                                                        const booked = isSlotBooked(slot);
                                                         const isSelected =
-                                                            selectedSlot ===
-                                                            slot;
+                                                            selectedSlot === slot;
                                                         const [start] =
                                                             slot.split(" - ");
+
                                                         return (
                                                             <button
                                                                 key={slot}
-                                                                disabled={
-                                                                    booked
-                                                                }
+                                                                disabled={booked}
                                                                 onClick={() => {
-                                                                    setSelectedSlot(
-                                                                        slot
-                                                                    );
+                                                                    setSelectedSlot(slot);
                                                                     toast.success(
                                                                         "Time slot selected",
                                                                         {
                                                                             description: `${slot} on ${format(
-                                                                                selectedDate!,
+                                                                                selectedDate,
                                                                                 "MMM d, yyyy"
                                                                             )}`,
                                                                         }
@@ -658,8 +727,8 @@ export default function AppointmentBookingPage() {
                                                                     booked
                                                                         ? "cursor-not-allowed border-muted bg-muted/30"
                                                                         : isSelected
-                                                                        ? "border-2 border-primary bg-linear-to-br from-primary/10 to-primary/5 shadow-sm"
-                                                                        : "hover:border-primary hover:bg-accent/50 hover:shadow-sm"
+                                                                          ? "border-2 border-primary bg-linear-to-br from-primary/10 to-primary/5 shadow-sm"
+                                                                          : "hover:border-primary hover:bg-accent/50 hover:shadow-sm"
                                                                 )}
                                                             >
                                                                 <div
@@ -668,20 +737,13 @@ export default function AppointmentBookingPage() {
                                                                         booked
                                                                             ? "text-muted-foreground"
                                                                             : isSelected
-                                                                            ? "text-primary"
-                                                                            : "text-foreground"
+                                                                              ? "text-primary"
+                                                                              : "text-foreground"
                                                                     )}
                                                                 >
                                                                     {start}
                                                                 </div>
-                                                                <div
-                                                                    className={cn(
-                                                                        "text-xs",
-                                                                        booked
-                                                                            ? "text-muted-foreground"
-                                                                            : "text-muted-foreground"
-                                                                    )}
-                                                                >
+                                                                <div className="text-xs text-muted-foreground">
                                                                     {booked
                                                                         ? "Booked"
                                                                         : "Available"}
@@ -691,9 +753,16 @@ export default function AppointmentBookingPage() {
                                                                 )}
                                                             </button>
                                                         );
-                                                    }
-                                                )}
-                                            </div>
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="space-y-3 py-8 text-center">
+                                                    <Clock className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                                                    <p className="text-muted-foreground">
+                                                        No schedule is configured for this date yet.
+                                                    </p>
+                                                </div>
+                                            )
                                         )
                                     ) : (
                                         <div className="space-y-3 py-8 text-center">
@@ -745,11 +814,23 @@ export default function AppointmentBookingPage() {
 
                                         <h4 className="flex items-center gap-2 font-semibold">
                                             <Clock className="h-4 w-4" />
-                                            Average Wait Time
+                                            Operating Schedule
                                         </h4>
                                         <p className="text-muted-foreground">
-                                            {facility?.wait_time ||
-                                                "15-30 mins"}
+                                            {selectedDaySchedules.length
+                                                ? selectedDaySchedules
+                                                      .map(
+                                                          (schedule) =>
+                                                              `${schedule.start_time.slice(
+                                                                  0,
+                                                                  5
+                                                              )} - ${schedule.end_time.slice(
+                                                                  0,
+                                                                  5
+                                                              )}`
+                                                      )
+                                                      .join(", ")
+                                                : "No hours configured for the selected day"}
                                         </p>
                                     </div>
                                 </div>
@@ -1022,14 +1103,13 @@ export default function AppointmentBookingPage() {
                                 <div className="flex w-full items-center gap-2 text-sm text-muted-foreground">
                                     <Lock className="h-3 w-3" />
                                     <span>
-                                        Your information is secure and encrypted
+                                        Review the details carefully before confirming
                                     </span>
                                 </div>
                             </CardFooter>
                         </Card>
                     </div>
                 </div>
-            </div>
         </div>
     );
 }

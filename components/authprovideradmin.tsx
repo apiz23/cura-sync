@@ -1,12 +1,14 @@
 "use client";
 
 import { createContext, useContext, useEffect, useState } from "react";
-import supabase from "@/lib/supabase";
 import { AuthUser } from "@/app/types";
+import { useRouter } from "next/navigation";
 
 interface AuthContextType {
     user: AuthUser | null;
     loading: boolean;
+    refreshUser: () => Promise<void>;
+    updateUser: (nextUser: AuthUser) => void;
 }
 
 const AuthContext = createContext<AuthContextType | null>(null);
@@ -14,59 +16,47 @@ const AuthContext = createContext<AuthContextType | null>(null);
 export function AuthProvider({ children }: { children: React.ReactNode }) {
     const [user, setUser] = useState<AuthUser | null>(null);
     const [loading, setLoading] = useState(true);
+    const router = useRouter();
 
-    useEffect(() => {
-        async function loadUser() {
-            const raw = sessionStorage.getItem("cura-auth");
+    async function loadUser() {
+        try {
+            const res = await fetch("/api/staff/me", {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+            });
 
-            if (!raw) {
-                setLoading(false);
+            if (res.status === 401) {
+                setUser(null);
+                router.replace("/auth/admin");
                 return;
             }
 
-            let session;
-            try {
-                session = JSON.parse(raw);
-            } catch {
-                sessionStorage.removeItem("cura-auth");
-                setLoading(false);
+            const data = await res.json();
+            if (!res.ok) {
+                setUser(null);
+                router.replace("/auth/admin");
                 return;
             }
 
-            if (!session?.email) {
-                setLoading(false);
-                return;
-            }
-
-            const { data, error } = await supabase
-                .from("cura_staff_profiles")
-                .select("*")
-                .eq("email", session.email)
-                .single();
-
-            if (!error && data) {
-                setUser({
-                    id: data.id,
-                    full_name: data.full_name,
-                    email: data.email,
-                    role: data.role,
-                    specialization: data.specialization,
-                    license_number: data.license_number,
-                    facility_id: data.facility_id,
-                    years_of_experience: data.years_of_experience,
-                    availability: data.availability,
-                    created_at: data.created_at,
-                });
-            }
-
+            setUser(data as AuthUser);
+        } finally {
             setLoading(false);
         }
+    }
 
+    useEffect(() => {
         loadUser();
-    }, []);
+    }, [router]);
 
     return (
-        <AuthContext.Provider value={{ user, loading }}>
+        <AuthContext.Provider
+            value={{
+                user,
+                loading,
+                refreshUser: loadUser,
+                updateUser: setUser,
+            }}
+        >
             {children}
         </AuthContext.Provider>
     );

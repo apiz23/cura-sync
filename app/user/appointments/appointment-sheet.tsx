@@ -24,7 +24,6 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
-import supabase from "@/lib/supabase";
 import { Facility } from "@/app/types";
 import { toast } from "sonner";
 import { Calendar } from "@/components/ui/calendar";
@@ -46,14 +45,12 @@ interface AppointmentModalProps {
     isOpen: boolean;
     onOpenChange: (open: boolean) => void;
     facility: BookingFacility | null;
-    profileId: string;
 }
 
 export default function AppointmentModal({
     isOpen,
     onOpenChange,
     facility,
-    profileId,
 }: AppointmentModalProps) {
     const [selectedDate, setSelectedDate] = useState("");
     const [selectedSlot, setSelectedSlot] = useState<string | null>(null);
@@ -76,19 +73,22 @@ export default function AppointmentModal({
 
             setIsLoadingSlots(true);
             try {
-                const { data: existingAppointments } = await supabase
-                    .from("cura_appointments")
-                    .select("start_time")
-                    .eq("facility_id", facility.id)
-                    .eq("appointment_date", selectedDate)
-                    .neq("status", "CANCELLED");
+                const res = await fetch(
+                    `/api/appointments/booked?date=${encodeURIComponent(
+                        selectedDate
+                    )}&facilityId=${encodeURIComponent(facility.id)}`,
+                    { cache: "no-store" }
+                );
 
-                if (existingAppointments) {
-                    const times = existingAppointments.map((a) =>
-                        normalizeTime(a.start_time)
-                    );
-                    setBookedSlots(times);
+                const json = await res.json();
+                if (!res.ok) {
+                    throw new Error(json?.error || "Failed to load schedule");
                 }
+
+                const slots: string[] = Array.isArray(json) ? json : [];
+                setBookedSlots(
+                    slots.map((s) => normalizeTime(s.split(" - ")[0] ?? ""))
+                );
             } catch (error) {
                 console.error("Error fetching slots:", error);
                 toast.error("Error loading schedule");
@@ -116,12 +116,11 @@ export default function AppointmentModal({
         const endTime = endTimeRaw || "";
         const normalizedStartTime = normalizeTime(startTime);
 
-        try {
+        const bookingPromise = (async () => {
             const response = await fetch("/api/appointments", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    profile_id: profileId,
                     facility_id: facility.id,
                     appointment_date: selectedDate,
                     start_time: startTime,
@@ -140,13 +139,19 @@ export default function AppointmentModal({
                 throw new Error(result.error || "Failed to book appointment");
             }
 
-            setBookedSlots((prev) => [...prev, normalizedStartTime]);
+            return result;
+        })();
 
-            toast.success("Appointment booked successfully!", {
-                description: `${formatDate(selectedDate)} at ${selectedSlot}`,
-                duration: 4000,
-                icon: <CheckCircle className="w-5 h-5 text-green-500" />,
-            });
+        toast.promise(bookingPromise, {
+            loading: "Booking appointment...",
+            success: `Appointment booked for ${formatDate(selectedDate)} at ${selectedSlot}`,
+            error: (error) =>
+                error instanceof Error ? error.message : "Booking failed",
+        });
+
+        try {
+            await bookingPromise;
+            setBookedSlots((prev) => [...prev, normalizedStartTime]);
 
             onOpenChange(false);
             setSelectedDate("");
@@ -154,13 +159,6 @@ export default function AppointmentModal({
             setReason("");
         } catch (err: unknown) {
             console.error(err);
-
-            const message =
-                err instanceof Error ? err.message : "Please try again later";
-
-            toast.error("Booking Failed", {
-                description: message,
-            });
         } finally {
             setIsBooking(false);
         }

@@ -5,6 +5,7 @@ import {
     SheetContent,
     SheetTitle,
     SheetHeader,
+    SheetFooter,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -26,6 +27,7 @@ import {
 import { useState } from "react";
 import { Medication } from "@/app/types";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 interface MedicationDetailsSheetProps {
     open: boolean;
@@ -110,14 +112,22 @@ export default function MedicationDetailsSheet({
 
     async function markAsTaken() {
         setIsTaking(true);
-        try {
-            const res = await fetch(
-                `/api/medications/${medication.id}/intake`,
-                {
-                    method: "POST",
-                }
-            );
+        const intakePromise = fetch(`/api/medications/${medication.id}/logs`, {
+            method: "POST",
+        }).then(async (res) => {
             if (!res.ok) throw new Error("Failed to log intake");
+            return res.json().catch(() => null);
+        });
+
+        toast.promise(intakePromise, {
+            loading: "Logging intake...",
+            success: "Medication marked as taken",
+            error: (error) =>
+                error instanceof Error ? error.message : "Failed to log intake",
+        });
+
+        try {
+            await intakePromise;
             onUpdate();
         } catch (error) {
             console.error("Failed to mark as taken:", error);
@@ -138,7 +148,7 @@ export default function MedicationDetailsSheet({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0 border-border/40 shadow-xl dark:shadow-none">
+            <SheetContent className="w-full sm:max-w-lg h-full p-0 border-border/40 shadow-xl dark:shadow-none">
                 <SheetHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border/50">
                     <div className="flex items-center justify-between p-6">
                         <div className="flex items-center gap-3">
@@ -180,7 +190,7 @@ export default function MedicationDetailsSheet({
                     </div>
                 </SheetHeader>
 
-                <div className="p-6 space-y-6 max-h-[calc(100vh-200px)] overflow-y-auto">
+                <div className="p-6 space-y-6 overflow-y-auto">
                     {/* Status Card */}
                     <Card className="p-5 border-border/50 bg-gradient-to-br from-card to-muted/30 rounded-2xl">
                         <div className="space-y-4">
@@ -336,7 +346,7 @@ export default function MedicationDetailsSheet({
                     )}
 
                     {/* Action Buttons */}
-                    <div className="space-y-2 pt-2">
+                    <SheetFooter className="space-y-2 pt-2">
                         {isActive && (
                             <Button
                                 onClick={markAsTaken}
@@ -364,7 +374,7 @@ export default function MedicationDetailsSheet({
                         >
                             Close Details
                         </Button>
-                    </div>
+                    </SheetFooter>
 
                     {/* Last Updated */}
                     {lastUpdated && (

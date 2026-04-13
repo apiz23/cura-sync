@@ -1,7 +1,6 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
-import supabase from "@/lib/supabase";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -63,25 +62,15 @@ export default function EditFacilityPage() {
         setLoading(true);
 
         try {
-            const { data: facilityData, error: facilityError } = await supabase
-                .from("cura_facilities")
-                .select("*")
-                .eq("id", user.facility_id)
-                .single();
+            const res = await fetch("/api/facility/me");
+            const data = await res.json();
 
-            if (facilityError) throw facilityError;
+            if (!res.ok) {
+                throw new Error(data?.error || "Failed to load facility data");
+            }
 
-            setFacility(facilityData);
-
-            const { data: scheduleData, error: scheduleError } = await supabase
-                .from("cura_facility_schedules")
-                .select("*")
-                .eq("facility_id", user.facility_id)
-                .order("day_of_week", { ascending: true });
-
-            if (scheduleError) throw scheduleError;
-
-            setSchedules(scheduleData || []);
+            setFacility(data.facility);
+            setSchedules(data.schedules || []);
         } catch (error) {
             toast.error("Failed to load facility data");
             console.error(error);
@@ -112,9 +101,11 @@ export default function EditFacilityPage() {
         setSaving(true);
 
         try {
-            const { error } = await supabase
-                .from("cura_facilities")
-                .update({
+            const facilityRes = await fetch("/api/facility", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    id: facility.id,
                     name: facility.name,
                     type: facility.type,
                     specialty: facility.specialty,
@@ -122,15 +113,43 @@ export default function EditFacilityPage() {
                     latitude: facility.latitude,
                     longitude: facility.longitude,
                     is_active: facility.is_active,
-                })
-                .eq("id", facility.id);
+                }),
+            });
 
-            if (error) throw error;
+            const facilityResult = await facilityRes.json();
+            if (!facilityRes.ok) {
+                throw new Error(
+                    facilityResult?.error || "Failed to update facility"
+                );
+            }
+
+            const scheduleRes = await fetch("/api/facility/schedule", {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    facility_id: facility.id,
+                    schedules: schedules.map((s) => ({
+                        day_of_week: s.day_of_week,
+                        start_time: s.start_time,
+                        end_time: s.end_time,
+                        slot_duration_minutes: s.slot_duration_minutes ?? null,
+                    })),
+                }),
+            });
+
+            const scheduleResult = await scheduleRes.json();
+            if (!scheduleRes.ok) {
+                throw new Error(
+                    scheduleResult?.error || "Failed to update schedules"
+                );
+            }
 
             toast.success("Facility updated successfully", {
                 description: "Changes have been saved",
                 icon: <CheckCircle className="w-5 h-5 text-green-500" />,
             });
+
+            fetchFacilityData();
         } catch (error: unknown) {
             let message = "Something went wrong";
 

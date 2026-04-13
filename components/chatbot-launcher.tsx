@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useState } from "react";
 import {
     Sheet,
     SheetContent,
@@ -12,6 +13,16 @@ import { Bot, MessageCircle } from "lucide-react";
 import Chatbot from "./chatbot";
 
 export default function ChatbotLauncher() {
+    const [mounted, setMounted] = useState(false);
+
+    useEffect(() => {
+        setMounted(true);
+    }, []);
+
+    if (!mounted) {
+        return null;
+    }
+
     return (
         <>
             <Sheet>

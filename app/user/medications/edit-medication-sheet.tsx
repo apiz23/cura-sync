@@ -44,6 +44,7 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import { toast } from "sonner";
 
 interface EditMedicationSheetProps {
     open: boolean;
@@ -164,16 +165,28 @@ export default function EditMedicationSheet({
                 updated_at: new Date().toISOString(),
             };
 
-            const response = await fetch(`/api/medications/${medication.id}`, {
+            const savePromise = fetch(`/api/medications/${medication.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify(payload),
+            }).then(async (response) => {
+                if (!response.ok) {
+                    throw new Error("Failed to update medication");
+                }
+
+                return response.json().catch(() => null);
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to update medication");
-            }
+            toast.promise(savePromise, {
+                loading: "Saving medication...",
+                success: "Medication updated",
+                error: (error) =>
+                    error instanceof Error
+                        ? error.message
+                        : "Update failed",
+            });
 
+            await savePromise;
             onUpdated();
             onOpenChange(false);
         } catch (err) {
@@ -194,14 +207,26 @@ export default function EditMedicationSheet({
 
         setLoading(true);
         try {
-            const response = await fetch(`/api/medications/${medication.id}`, {
+            const deletePromise = fetch(`/api/medications/${medication.id}`, {
                 method: "DELETE",
+            }).then(async (response) => {
+                if (!response.ok) {
+                    throw new Error("Failed to delete medication");
+                }
+
+                return response.json().catch(() => null);
             });
 
-            if (!response.ok) {
-                throw new Error("Failed to delete medication");
-            }
+            toast.promise(deletePromise, {
+                loading: "Deleting medication...",
+                success: "Medication deleted",
+                error: (error) =>
+                    error instanceof Error
+                        ? error.message
+                        : "Delete failed",
+            });
 
+            await deletePromise;
             onUpdated();
             onOpenChange(false);
         } catch (err) {

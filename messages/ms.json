@@ -1,0 +1,62 @@
+{
+  "Navbar": {
+    "home": "Laman Utama",
+    "pricing": "Harga",
+    "contact": "Hubungi",
+    "facilities": "Fasiliti",
+    "partnerRegister": "Daftar Pusat Kesihatan",
+    "login": "Log Masuk",
+    "language": "Bahasa",
+    "english": "English",
+    "malay": "Bahasa Melayu"
+  },
+  "HomePage": {
+    "eyebrow": "Platform Penyelarasan Penjagaan Kesihatan Bersepadu",
+    "description": "Projek tahun akhir yang memfokuskan kepada penjagaan pesakit berhubung, operasi fasiliti, dan sokongan gejala berasaskan AI.",
+    "contactCta": "Hubungi Pasukan",
+    "demoCta": "Lihat Demo Langsung",
+    "whyBadge": "Mengapa CuraSync",
+    "whyTitle": "Hubungkan perjalanan pesakit dan fasiliti",
+    "whyDescription": "Projek ini memfokuskan kepada aliran kerja kesihatan utama yang lebih jelas: cari fasiliti, tempah janji temu, urus rawatan, dan sokong susulan dengan alat bantuan AI.",
+    "exploreTitle": "Terokai projek ini dalam tindakan",
+    "exploreDescription": "Cuba pengalaman awam, terokai fasiliti, atau buka penganalisis simptom untuk melihat aliran kerja yang saling berhubung.",
+    "contactProjectTeam": "Hubungi Pasukan Projek",
+    "exploreFacilities": "Terokai Fasiliti",
+    "footerNote": "Dibina berasaskan aliran kerja pesakit, penyedia, dan bantuan AI",
+    "scroll": "Skrol untuk terokai",
+    "featureCards": {
+      "syncTitle": "Penyegerakan Masa Nyata",
+      "syncDescription": "Pastikan janji temu, profil, dan rekod ubat sentiasa selaras merentas platform.",
+      "aiTitle": "Sokongan AI",
+      "aiDescription": "Gunakan penganalisis simptom untuk merumuskan apa yang sedang dialami pesakit sebelum susulan.",
+      "rolesTitle": "Peranan Pesakit dan Staf",
+      "rolesDescription": "Menyokong aliran kerja berbeza untuk pengguna awam, pesakit, dan staf fasiliti.",
+      "accessTitle": "Akses Berpusat",
+      "accessDescription": "Satukan penemuan fasiliti, tempahan, dan pengurusan rekod dalam satu sistem yang saling berhubung."
+    },
+    "benefits": {
+      "privacyTitle": "Peka Privasi",
+      "privacyDescription": "Dibangunkan dengan pengendalian maklumat kesihatan yang teliti",
+      "workflowTitle": "Fokus Aliran Kerja",
+      "workflowDescription": "Direka berdasarkan tugasan praktikal pesakit dan fasiliti",
+      "visibilityTitle": "Keterlihatan Operasi",
+      "visibilityDescription": "Paparkan janji temu, ubat, dan rekod akaun dengan jelas",
+      "patientTitle": "Fokus Pesakit",
+      "patientDescription": "Bertujuan meningkatkan kesinambungan penjagaan merentas pelbagai titik sentuh"
+    },
+    "stats": {
+      "modules": "Modul Teras",
+      "roles": "Peranan Pengguna",
+      "ai": "Ciri AI",
+      "journeys": "Perjalanan Utama"
+    },
+    "journeyCards": {
+      "timeTitle": "Jimat Masa",
+      "timeDescription": "Kurangkan kemas kini manual berulang dengan janji temu dan rekod ubat yang dikongsi.",
+      "continuityTitle": "Tingkatkan Kesinambungan",
+      "continuityDescription": "Pastikan ringkasan simptom, janji temu, dan ubat berada dalam satu sistem yang berhubung.",
+      "accessTitle": "Lindungi Akses",
+      "accessDescription": "Gunakan kawalan akses berasaskan peranan untuk pesakit dan staf fasiliti."
+    }
+  }
+}

@@ -9,14 +9,16 @@ import {
 } from "lucide-react"
 import { useTheme } from "next-themes"
 import { Toaster as Sonner, type ToasterProps } from "sonner"
+import { cn } from "@/lib/utils"
 
 const Toaster = ({ ...props }: ToasterProps) => {
   const { theme = "system" } = useTheme()
 
   return (
     <Sonner
+      {...props}
       theme={theme as ToasterProps["theme"]}
-      className="toaster group"
+      className={cn("toaster group font-sans", props.className)}
       icons={{
         success: <CircleCheckIcon className="size-4" />,
         info: <InfoIcon className="size-4" />,
@@ -26,13 +28,23 @@ const Toaster = ({ ...props }: ToasterProps) => {
       }}
       style={
         {
+          fontFamily: "var(--font-sans)",
+          "--font-mono-family": "var(--font-mono)",
           "--normal-bg": "var(--popover)",
           "--normal-text": "var(--popover-foreground)",
           "--normal-border": "var(--border)",
           "--border-radius": "var(--radius)",
+          ...props.style,
         } as React.CSSProperties
       }
-      {...props}
+      toastOptions={{
+        classNames: {
+          toast: "font-sans",
+          title: "font-sans",
+          description: "font-sans",
+        },
+        ...props.toastOptions,
+      }}
     />
   )
 }

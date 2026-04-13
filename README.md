@@ -1,36 +1,151 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# CuraSync Web
 
-## Getting Started
+CuraSync Web is a healthcare platform built with Next.js. It includes:
 
-First, run the development server:
+- a public marketing and facility discovery site
+- authentication flows
+- a user dashboard for appointments, medications, profile, and symptom analysis
+- an admin/staff area for facility management
+- Supabase-backed APIs
+- AI-powered chat and symptom analysis integrations
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## Tech Stack
+
+- Next.js 16 with App Router
+- React 19
+- TypeScript
+- Tailwind CSS 4
+- Clerk for authentication
+- Supabase for data access
+- Radix UI, Vaul, and custom UI components
+- Sonner for toast notifications
+
+## Project Structure
+
+```text
+app/
+  (public)/   Public website pages
+  auth/       Authentication pages
+  user/       User dashboard pages
+  admin/      Admin and staff pages
+  api/        Server routes
+components/   Shared UI and feature components
+lib/          Helpers, auth utilities, Supabase client
+supabase/
+  migrations/ Database migrations
+scripts/      Local development helpers
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## Main Features
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+- public facility browsing
+- facility registration
+- appointment booking flow
+- medication management
+- user profile management
+- admin facility management and scheduling
+- AI chat assistant
+- symptom analysis integration
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## Requirements
 
-## Learn More
+- Node.js 20+
+- pnpm or npm
+- Supabase project
+- Clerk project
 
-To learn more about Next.js, take a look at the following resources:
+## Environment Variables
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+Create `cura-sync-web/.env.local` and configure the values below.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```env
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+CLERK_SECRET_KEY=
+CURA_STAFF_JWT_SECRET=
+NEXT_PUBLIC_CURA_SYNC_AI=http://127.0.0.1:8000
+RESEND_API_KEY=
+```
 
-## Deploy on Vercel
+Notes:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are required by [`lib/supabase.ts`](c:/Users/SCSM11/Desktop/Developer/cura-sync/cura-sync-web/lib/supabase.ts).
+- `CURA_STAFF_JWT_SECRET` is used for staff session handling, with `CLERK_SECRET_KEY` as fallback in [`lib/staff-session.ts`](c:/Users/SCSM11/Desktop/Developer/cura-sync/cura-sync-web/lib/staff-session.ts).
+- `NEXT_PUBLIC_CURA_SYNC_AI` is used by the chat and symptom-analysis API routes.
+- `RESEND_API_KEY` is required for the contact API route.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Installation
+
+```bash
+pnpm install
+```
+
+If you use npm instead:
+
+```bash
+npm install
+```
+
+## Development
+
+Start the app:
+
+```bash
+pnpm dev
+```
+
+Useful scripts:
+
+```bash
+pnpm dev
+pnpm dev:clean
+pnpm dev:unlock
+pnpm dev:webpack
+pnpm build
+pnpm start
+pnpm lint
+```
+
+## Database
+
+Supabase migrations live in [`supabase/migrations`](c:/Users/SCSM11/Desktop/Developer/cura-sync/cura-sync-web/supabase/migrations).
+
+If you are using the Supabase CLI, a typical flow is:
+
+```bash
+supabase start
+supabase db push
+```
+
+Adjust that flow to match your team setup if your database is already hosted remotely.
+
+## App Areas
+
+- Public: landing pages, pricing, contact, facilities, partner registration
+- Auth: sign-in and access flows
+- User: appointments, medications, profile, symptom analyzer
+- Admin: facility data, schedules, and internal management workflows
+
+## API Notes
+
+Examples of server routes in [`app/api`](c:/Users/SCSM11/Desktop/Developer/cura-sync/cura-sync-web/app/api):
+
+- facility data
+- facility schedules
+- appointments
+- chat
+- symptom analysis
+- contact form handling
+
+## Linting
+
+```bash
+pnpm lint
+```
+
+At the time of writing, the repo has existing warning-level ESLint output in [`scripts/clean-next-dev.mjs`](c:/Users/SCSM11/Desktop/Developer/cura-sync/cura-sync-web/scripts/clean-next-dev.mjs).
+
+## Notes
+
+- The app uses the App Router layout pattern extensively across public, auth, user, and admin sections.
+- Some features depend on external services being available, especially Clerk, Supabase, and the local or remote AI backend.

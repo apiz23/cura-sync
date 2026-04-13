@@ -1,6 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import supabase from "@/lib/supabase";
+import { requireAnySession } from "@/lib/authz";
+
+function canManagePrescriptions(session: Awaited<ReturnType<typeof requireAnySession>>) {
+    return (
+        !(session instanceof NextResponse) &&
+        session.kind === "staff" &&
+        (session.role === "doctor" || session.role === "admin")
+    );
+}
 
 /* =========================
    PATCH /api/medications/[id]
@@ -9,12 +17,40 @@ export async function PATCH(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const { userId } = await auth();
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await requireAnySession(req);
+    if (session instanceof NextResponse) return session;
+
+    if (!canManagePrescriptions(session)) {
+        return NextResponse.json(
+            { error: "Only doctors or admins can update prescriptions" },
+            { status: 403 }
+        );
     }
 
     const { id } = await params;
+
+    const { data: existing, error: existingError } = await supabase
+        .from("cura_medications")
+        .select("id, profile_id")
+        .eq("id", id)
+        .single();
+
+    if (existingError || !existing) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const { data: reg } = await supabase
+        .from("cura_patient_facilities")
+        .select("id")
+        .eq("profile_id", existing.profile_id)
+        .eq("facility_id", session.facilityId)
+        .eq("status", "active")
+        .maybeSingle();
+
+    if (!reg) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
     const body = await req.json();
 
     const allowedUpdates = {
@@ -51,12 +87,39 @@ export async function DELETE(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    const { userId } = await auth();
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    const session = await requireAnySession(req);
+    if (session instanceof NextResponse) return session;
+
+    if (!canManagePrescriptions(session)) {
+        return NextResponse.json(
+            { error: "Only doctors or admins can delete prescriptions" },
+            { status: 403 }
+        );
     }
 
     const { id } = await params;
+
+    const { data: existing, error: existingError } = await supabase
+        .from("cura_medications")
+        .select("id, profile_id")
+        .eq("id", id)
+        .single();
+
+    if (existingError || !existing) {
+        return NextResponse.json({ error: "Not found" }, { status: 404 });
+    }
+
+    const { data: reg } = await supabase
+        .from("cura_patient_facilities")
+        .select("id")
+        .eq("profile_id", existing.profile_id)
+        .eq("facility_id", session.facilityId)
+        .eq("status", "active")
+        .maybeSingle();
+
+    if (!reg) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const { error } = await supabase
         .from("cura_medications")
