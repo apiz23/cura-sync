@@ -14,6 +14,8 @@ import {
 	Sparkles,
 	Stethoscope,
 	Thermometer,
+	ThumbsDown,
+	ThumbsUp,
 	User,
 } from "lucide-react";
 import { useCallback, useEffect, useMemo, useState } from "react";
@@ -103,6 +105,8 @@ export default function AnalyzePage() {
 	const [error, setError] = useState<string | null>(null);
 	const [facilities, setFacilities] = useState<Facility[]>([]);
 	const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+	const [feedbackGiven, setFeedbackGiven] = useState(false);
+	const [feedbackSent, setFeedbackSent] = useState(false);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -190,7 +194,28 @@ export default function AnalyzePage() {
 		setTextInput("");
 		setResult(null);
 		setError(null);
+		setFeedbackGiven(false);
+		setFeedbackSent(false);
 	}, []);
+
+	const handleFeedback = useCallback(async (wasAccurate: boolean) => {
+		if (!result || feedbackGiven) return;
+		setFeedbackGiven(true);
+		try {
+			await fetch("/api/public/feedback", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({
+					symptoms: allSymptoms.join(", "),
+					was_accurate: wasAccurate,
+					possible_disease: result.possible_disease,
+				}),
+			});
+			setFeedbackSent(true);
+		} catch {
+			// silent
+		}
+	}, [result, feedbackGiven, allSymptoms]);
 
 	const handleAnalyze = async () => {
 		if (allSymptoms.length === 0) {
@@ -366,6 +391,32 @@ export default function AnalyzePage() {
 											</p>
 										</div>
 									</div>
+								</div>
+
+								<div className="flex items-center gap-3 rounded-xl border bg-muted/30 p-4">
+									<p className="flex-1 text-sm text-muted-foreground">Was this analysis helpful?</p>
+									{feedbackSent ? (
+										<p className="text-sm text-muted-foreground">Thanks for your feedback!</p>
+									) : (
+										<div className="flex gap-2">
+											<Button
+												variant="outline"
+												size="sm"
+												disabled={feedbackGiven}
+												onClick={() => void handleFeedback(true)}
+											>
+												<ThumbsUp className="mr-1 h-4 w-4" /> Yes
+											</Button>
+											<Button
+												variant="outline"
+												size="sm"
+												disabled={feedbackGiven}
+												onClick={() => void handleFeedback(false)}
+											>
+												<ThumbsDown className="mr-1 h-4 w-4" /> No
+											</Button>
+										</div>
+									)}
 								</div>
 
 								{recommendedFacilities.length ? (
