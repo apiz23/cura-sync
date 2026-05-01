@@ -1,10 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 import supabase from "@/lib/supabase";
 import {
     requireAnySession,
     type AnySession,
     type StaffSession,
 } from "@/lib/authz";
+import { MEDICATION_STATUS } from "@/lib/constants";
+import { logAudit, actorFromSession } from "@/lib/audit";
+
+const createMedicationSchema = z.object({
+    profile_id: z.string().optional(),
+    name: z.string().min(1, "name is required"),
+    dosage: z.string().min(1, "dosage is required"),
+    frequency: z.string().min(1, "frequency is required"),
+    schedule: z.string().min(1, "schedule is required"),
+    start_date: z.string().min(1, "start_date is required"),
+    end_date: z.string().optional().nullable(),
+    notes: z.string().optional().nullable(),
+    prescribed_by: z.string().optional().nullable(),
+});
 
 function canManagePrescriptions(
     session: AnySession | NextResponse
@@ -64,6 +79,7 @@ export async function GET(req: NextRequest) {
         .from("cura_medications")
         .select("*")
         .eq("profile_id", profileId)
+        .is("deleted_at", null)
         .order("created_at", { ascending: false });
 
     if (error) {
@@ -80,60 +96,63 @@ export async function POST(req: NextRequest) {
     const session = await requireAnySession(req);
     if (session instanceof NextResponse) return session;
 
-    if (!canManagePrescriptions(session)) {
+    const isPatient = session.kind === "patient";
+    const isStaffWithPrescriptionRights =
+        session.kind === "staff" &&
+        (session.role === "doctor" || session.role === "admin");
+
+    if (!isPatient && !isStaffWithPrescriptionRights) {
         return NextResponse.json(
-            { error: "Only doctors or admins can create prescriptions" },
+            { error: "Only doctors, admins, or patients (for self) can create medications" },
             { status: 403 }
         );
     }
 
     const body = await req.json();
+    const parsed = createMedicationSchema.safeParse(body);
 
-    const {
-        profile_id,
-        name,
-        dosage,
-        frequency,
-        schedule,
-        start_date,
-        end_date,
-        notes,
-        prescribed_by,
-    } = body;
-
-    const effectiveProfileId = profile_id;
-
-    if (
-        !effectiveProfileId ||
-        !name ||
-        !dosage ||
-        !frequency ||
-        !schedule ||
-        !start_date
-    ) {
+    if (!parsed.success) {
         return NextResponse.json(
-            { error: "Missing required fields" },
+            { error: parsed.error.issues[0]?.message ?? "Invalid request body" },
             { status: 400 }
         );
     }
 
-    const { data: reg, error: regError } = await supabase
-        .from("cura_patient_facilities")
-        .select("id")
-        .eq("profile_id", effectiveProfileId)
-        .eq("facility_id", session.facilityId)
-        .eq("status", "active")
-        .maybeSingle();
+    const { name, dosage, frequency, schedule, start_date, end_date, notes } = parsed.data;
 
-    if (regError) {
-        return NextResponse.json(
-            { error: "Access check failed" },
-            { status: 500 }
-        );
-    }
+    let effectiveProfileId: string;
+    let prescribedBy: string;
 
-    if (!reg) {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    if (isPatient) {
+        effectiveProfileId = session.profileId;
+        prescribedBy = "self";
+    } else {
+        const staffSession = session as StaffSession;
+        const staffProfileId = parsed.data.profile_id;
+        if (!staffProfileId) {
+            return NextResponse.json(
+                { error: "profile_id is required" },
+                { status: 400 }
+            );
+        }
+
+        const { data: reg, error: regError } = await supabase
+            .from("cura_patient_facilities")
+            .select("id")
+            .eq("profile_id", staffProfileId)
+            .eq("facility_id", staffSession.facilityId)
+            .eq("status", "active")
+            .maybeSingle();
+
+        if (regError) {
+            return NextResponse.json({ error: "Access check failed" }, { status: 500 });
+        }
+        if (!reg) {
+            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+        }
+
+        effectiveProfileId = staffProfileId;
+        prescribedBy = parsed.data.prescribed_by ?? "staff";
     }
 
     const { data, error } = await supabase
@@ -147,8 +166,8 @@ export async function POST(req: NextRequest) {
             start_date,
             end_date,
             notes,
-            prescribed_by,
-            status: "ACTIVE",
+            prescribed_by: prescribedBy,
+            status: MEDICATION_STATUS.ACTIVE,
         })
         .select()
         .single();
@@ -156,6 +175,14 @@ export async function POST(req: NextRequest) {
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    void logAudit({
+        ...actorFromSession(session),
+        action: "CREATE",
+        resource_type: "medication",
+        resource_id: data.id,
+        metadata: { name, profile_id: effectiveProfileId },
+    });
 
     return NextResponse.json(data, { status: 201 });
 }
