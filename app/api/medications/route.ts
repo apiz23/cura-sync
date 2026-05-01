@@ -1,11 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import supabase from "@/lib/supabase";
-import {
-    requireAnySession,
-    type AnySession,
-    type StaffSession,
-} from "@/lib/authz";
+import { requireAnySession } from "@/lib/authz";
 import { MEDICATION_STATUS } from "@/lib/constants";
 import { logAudit, actorFromSession } from "@/lib/audit";
 
@@ -20,16 +16,6 @@ const createMedicationSchema = z.object({
     notes: z.string().optional().nullable(),
     prescribed_by: z.string().optional().nullable(),
 });
-
-function canManagePrescriptions(
-    session: AnySession | NextResponse
-): session is StaffSession {
-    return (
-        !(session instanceof NextResponse) &&
-        session.kind === "staff" &&
-        (session.role === "doctor" || session.role === "admin")
-    );
-}
 
 /* =========================
    GET /api/medications
@@ -96,12 +82,10 @@ export async function POST(req: NextRequest) {
     const session = await requireAnySession(req);
     if (session instanceof NextResponse) return session;
 
-    const isPatient = session.kind === "patient";
-    const isStaffWithPrescriptionRights =
-        session.kind === "staff" &&
-        (session.role === "doctor" || session.role === "admin");
-
-    if (!isPatient && !isStaffWithPrescriptionRights) {
+    if (
+        session.kind !== "patient" &&
+        !(session.kind === "staff" && (session.role === "doctor" || session.role === "admin"))
+    ) {
         return NextResponse.json(
             { error: "Only doctors, admins, or patients (for self) can create medications" },
             { status: 403 }
@@ -123,24 +107,22 @@ export async function POST(req: NextRequest) {
     let effectiveProfileId: string;
     let prescribedBy: string;
 
-    if (isPatient) {
+    if (session.kind === "patient") {
+        // TypeScript knows session: PatientSession here — no cast needed
         effectiveProfileId = session.profileId;
         prescribedBy = "self";
     } else {
-        const staffSession = session as StaffSession;
+        // TypeScript knows session: StaffSession here — no cast needed
         const staffProfileId = parsed.data.profile_id;
         if (!staffProfileId) {
-            return NextResponse.json(
-                { error: "profile_id is required" },
-                { status: 400 }
-            );
+            return NextResponse.json({ error: "profile_id is required" }, { status: 400 });
         }
 
         const { data: reg, error: regError } = await supabase
             .from("cura_patient_facilities")
             .select("id")
             .eq("profile_id", staffProfileId)
-            .eq("facility_id", staffSession.facilityId)
+            .eq("facility_id", session.facilityId)
             .eq("status", "active")
             .maybeSingle();
 
@@ -152,7 +134,7 @@ export async function POST(req: NextRequest) {
         }
 
         effectiveProfileId = staffProfileId;
-        prescribedBy = parsed.data.prescribed_by ?? "staff";
+        prescribedBy = session.staffId;  // authenticated identity, not caller-supplied
     }
 
     const { data, error } = await supabase
