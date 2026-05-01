@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CheckCircle, Clock, Loader2, RefreshCw, Stethoscope, User } from "lucide-react";
 import { useAuth } from "@/components/authprovideradmin";
 import { Badge } from "@/components/ui/badge";
@@ -24,7 +24,7 @@ export default function ConsultationsPage() {
     const [error, setError] = useState<string | null>(null);
     const [completingId, setCompletingId] = useState<string | null>(null);
 
-    const todayIso = new Date().toISOString().slice(0, 10);
+    const todayIso = useMemo(() => new Date().toISOString().slice(0, 10), []);
 
     const fetchQueue = useCallback(async () => {
         if (!user?.facility_id) return;
@@ -51,6 +51,7 @@ export default function ConsultationsPage() {
             });
             setAppointments(todayQueue);
         } catch (err) {
+            console.error("[ConsultationsPage] fetchQueue:", err);
             const msg = err instanceof Error ? err.message : "Failed to load queue";
             setError(msg);
             toast.error(msg);
@@ -80,6 +81,7 @@ export default function ConsultationsPage() {
             setAppointments((prev) => prev.filter((a) => a.id !== appointment.id));
             toast.success(`Consultation with ${appointment.patient_name} completed`);
         } catch (err) {
+            console.error("[ConsultationsPage] handleComplete:", err);
             toast.error(err instanceof Error ? err.message : "Failed to complete");
         } finally {
             setCompletingId(null);
@@ -90,6 +92,14 @@ export default function ConsultationsPage() {
         return (
             <div className="flex items-center justify-center h-64">
                 <Loader2 className="size-6 animate-spin text-muted-foreground" />
+            </div>
+        );
+    }
+
+    if (!user?.facility_id) {
+        return (
+            <div className="p-6 text-sm text-muted-foreground">
+                No facility assigned to your account. Contact an administrator.
             </div>
         );
     }
