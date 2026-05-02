@@ -357,6 +357,8 @@ export default function SymptomsCheckPage() {
 		}
 	};
 
+	const sourceBadgeProps = result ? sourceLabel(result.source) : null;
+
 	return (
 		<UserPageShell>
 			<UserPageHeader
@@ -500,14 +502,11 @@ export default function SymptomsCheckPage() {
 							<Badge className={urgencyBadgeClass(result.urgency)}>
 								{result.urgency.toUpperCase()}
 							</Badge>
-							{(() => {
-								const src = sourceLabel(result.source);
-								return src ? (
-									<Badge className={`${src.className} text-xs`}>
-										{src.label}
-									</Badge>
-								) : null;
-							})()}
+							{sourceBadgeProps && (
+								<Badge className={sourceBadgeProps.className}>
+									{sourceBadgeProps.label}
+								</Badge>
+							)}
 						</div>
 					</CardHeader>
 					<CardContent className="space-y-6">
