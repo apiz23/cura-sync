@@ -2,17 +2,16 @@
 
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "@clerk/nextjs";
 import {
     Activity,
     ArrowRight,
-    Brain,
     Calendar,
     ClipboardList,
     Pill,
     ShieldCheck,
     Sparkles,
-    User,
 } from "lucide-react";
 
 import type { Appointment, Medication } from "@/app/types";
@@ -39,10 +38,33 @@ type UserProfile = {
     } | null;
 };
 
+type HealthSyncSnapshot = {
+    id: string;
+    syncedAt: string;
+    rangeStart: string;
+    rangeEnd: string;
+    source: {
+        platform: string;
+        vendor: string;
+        attribution: string;
+    };
+    summary: {
+        sleepSessionsCount: number;
+        totalSleepMinutes: number;
+        averageHeartRateBpm: number | null;
+        stepsCount: number;
+    };
+};
+
 type DashboardState = {
     profile: UserProfile | null;
     appointments: Appointment[];
     medications: Medication[];
+    healthSync: {
+        latest: HealthSyncSnapshot | null;
+        recent: HealthSyncSnapshot[];
+        count: number;
+    } | null;
 };
 
 type DashboardRequestResult<T> = {
@@ -55,16 +77,39 @@ const emptyState: DashboardState = {
     profile: null,
     appointments: [],
     medications: [],
+    healthSync: null,
 };
 
 export default function UserDashboardPage() {
+    const router = useRouter();
     const { user, isLoaded } = useUser();
+    const userId = user?.id ?? null;
     const [state, setState] = useState<DashboardState>(emptyState);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const userInitials = useMemo(() => {
+        const first = user?.firstName?.trim() ?? "";
+        const last = user?.lastName?.trim() ?? "";
+        const fromClerk =
+            ((first[0] ?? "") + (last[0] ?? "")).toUpperCase() || "";
+        if (fromClerk) return fromClerk;
+
+        const fromProfile = (state.profile?.full_name ?? "")
+            .split(/\s+/)
+            .filter(Boolean)
+            .slice(0, 2)
+            .map((part) => part[0]?.toUpperCase() ?? "")
+            .join("");
+
+        return fromProfile || "GU";
+    }, [state.profile?.full_name, user?.firstName, user?.lastName]);
+
+    const userDisplayName =
+        state.profile?.full_name ?? user?.fullName ?? user?.username ?? "User";
+
     useEffect(() => {
-        if (!isLoaded || !user) return;
+        if (!isLoaded || !userId) return;
 
         let cancelled = false;
 
@@ -73,7 +118,12 @@ export default function UserDashboardPage() {
             setError(null);
 
             try {
-                const [profileResult, appointmentsResult, medicationsResult] =
+                const [
+                    profileResult,
+                    appointmentsResult,
+                    medicationsResult,
+                    healthSyncResult,
+                ] =
                     await Promise.all([
                         loadDashboardResource<UserProfile | null>(
                             "/api/user/profile",
@@ -87,12 +137,16 @@ export default function UserDashboardPage() {
                             "/api/user/medications",
                             "medications"
                         ),
+                        loadDashboardResource<{
+                            data?: DashboardState["healthSync"];
+                        }>("/api/user/health-sync?days=7", "health sync"),
                     ]);
 
                 const failedSources = [
                     profileResult,
                     appointmentsResult,
                     medicationsResult,
+                    healthSyncResult,
                 ]
                     .filter((result) => !result.ok)
                     .map((result) => result.label);
@@ -106,6 +160,7 @@ export default function UserDashboardPage() {
                         medications: Array.isArray(medicationsResult.data)
                             ? medicationsResult.data
                             : [],
+                        healthSync: healthSyncResult.data?.data ?? null,
                     });
 
                     setError(
@@ -134,7 +189,7 @@ export default function UserDashboardPage() {
         return () => {
             cancelled = true;
         };
-    }, [isLoaded, user]);
+    }, [isLoaded, userId]);
 
     const todayIso = new Date().toISOString().slice(0, 10);
 
@@ -161,6 +216,11 @@ export default function UserDashboardPage() {
     const completedMedications = state.medications.filter(
         (medication) => medication.status === "COMPLETED"
     );
+    const latestHealthSync = state.healthSync?.latest ?? null;
+    const recentHealthSync = state.healthSync?.recent ?? [];
+    const syncedSleepHours = latestHealthSync
+        ? (latestHealthSync.summary.totalSleepMinutes / 60).toFixed(1)
+        : null;
 
     const profileFields = [
         state.profile?.full_name,
@@ -193,6 +253,11 @@ export default function UserDashboardPage() {
         })),
     ].slice(0, 4);
 
+    if (!loading && isLoaded && userId && state.profile === null) {
+        router.replace("/user/profile?setup=true");
+        return null;
+    }
+
     return (
         <UserPageShell>
             {loading ? (
@@ -208,8 +273,12 @@ export default function UserDashboardPage() {
                 </div>
             ) : (
                 <UserPageHeader
-                    icon={User}
-                    title={`Welcome back, ${state.profile?.full_name ?? "User"}`}
+                    avatar={{
+                        src: user?.imageUrl ?? null,
+                        alt: userDisplayName,
+                        fallback: userInitials,
+                    }}
+                    title={`Welcome back, ${userDisplayName}`}
                     description="This dashboard summarizes your real appointments, medications, and profile information."
                     meta={
                         <>
@@ -274,10 +343,20 @@ export default function UserDashboardPage() {
                     icon={ClipboardList}
                 />
                 <SummaryCard
-                    title="Symptom Analyzer"
-                    value="Ready"
-                    description="AI triage is available when you need to summarize symptoms"
-                    icon={Brain}
+                    title="Health Connect"
+                    value={
+                        latestHealthSync
+                            ? latestHealthSync.summary.stepsCount.toLocaleString()
+                            : "Off"
+                    }
+                    description={
+                        latestHealthSync
+                            ? `Last sync ${formatRelativeDateTime(
+                                  latestHealthSync.syncedAt
+                              )}`
+                            : "Open the mobile app to sync wearables"
+                    }
+                    icon={Activity}
                 />
             </div>
 
@@ -366,6 +445,107 @@ export default function UserDashboardPage() {
 
                     <Card className="border shadow-sm">
                         <CardHeader>
+                            <CardTitle>Wearable snapshot</CardTitle>
+                            <CardDescription>
+                                Latest server snapshot uploaded from Health Connect
+                            </CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-5 text-sm">
+                            <SummaryRow
+                                label="Last sync"
+                                value={
+                                    latestHealthSync
+                                        ? formatRelativeDateTime(
+                                              latestHealthSync.syncedAt
+                                          )
+                                        : "Not synced yet"
+                                }
+                            />
+                            <SummaryRow
+                                label="Steps"
+                                value={
+                                    latestHealthSync
+                                        ? latestHealthSync.summary.stepsCount.toLocaleString()
+                                        : "0"
+                                }
+                            />
+                            <SummaryRow
+                                label="Sleep"
+                                value={
+                                    latestHealthSync
+                                        ? `${syncedSleepHours ?? "0.0"} hours`
+                                        : "0 hours"
+                                }
+                            />
+                            <SummaryRow
+                                label="Avg heart rate"
+                                value={
+                                    latestHealthSync?.summary.averageHeartRateBpm !==
+                                    null
+                                        ? `${latestHealthSync?.summary.averageHeartRateBpm} bpm`
+                                        : "No samples"
+                                }
+                            />
+                            <SummaryRow
+                                label="Total uploads"
+                                value={String(state.healthSync?.count ?? 0)}
+                            />
+
+                            <div className="space-y-2">
+                                <p className="text-xs font-medium text-muted-foreground">
+                                    Recent uploads
+                                </p>
+                                {recentHealthSync.length ? (
+                                    <div className="space-y-2">
+                                        {recentHealthSync.slice(0, 5).map((snapshot) => (
+                                            <div
+                                                key={snapshot.id}
+                                                className="flex items-center justify-between gap-4 rounded-lg border bg-background/40 px-3 py-2"
+                                            >
+                                                <div className="min-w-0">
+                                                    <p className="truncate font-medium text-foreground">
+                                                        {formatRelativeDateTime(
+                                                            snapshot.syncedAt
+                                                        )}
+                                                    </p>
+                                                    <p className="truncate text-xs text-muted-foreground">
+                                                        {snapshot.source?.attribution ??
+                                                            "Synced from Health Connect"}
+                                                    </p>
+                                                </div>
+                                                <div className="shrink-0 text-right text-xs text-muted-foreground">
+                                                    <p>
+                                                        <span className="font-medium text-foreground">
+                                                            {formatInteger(
+                                                                snapshot.summary.stepsCount
+                                                            )}
+                                                        </span>{" "}
+                                                        steps
+                                                    </p>
+                                                    <p>
+                                                        <span className="font-medium text-foreground">
+                                                            {formatSleepHours(
+                                                                snapshot.summary.totalSleepMinutes
+                                                            )}
+                                                        </span>
+                                                        h sleep
+                                                    </p>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                                        Sync in the mobile app to see your wearable history
+                                        here.
+                                    </div>
+                                )}
+                            </div>
+                        </CardContent>
+                    </Card>
+
+                    <Card className="border shadow-sm">
+                        <CardHeader>
                             <CardTitle>Care summary</CardTitle>
                             <CardDescription>
                                 Current state of your account and treatment data
@@ -399,6 +579,14 @@ export default function UserDashboardPage() {
                                 value={
                                     state.profile?.patient_profile?.emergency_contact ??
                                     "Missing"
+                                }
+                            />
+                            <SummaryRow
+                                label="Wearable sync"
+                                value={
+                                    latestHealthSync
+                                        ? formatDateTime(latestHealthSync.syncedAt)
+                                        : "Not connected"
                                 }
                             />
                         </CardContent>
@@ -528,6 +716,21 @@ function EmptyState({
     );
 }
 
+function formatInteger(value: unknown) {
+    const asNumber = typeof value === "number" ? value : Number(value);
+    if (!Number.isFinite(asNumber)) return "0";
+    return Math.round(asNumber).toLocaleString();
+}
+
+function formatSleepHours(totalSleepMinutes: unknown) {
+    const minutes =
+        typeof totalSleepMinutes === "number"
+            ? totalSleepMinutes
+            : Number(totalSleepMinutes);
+    if (!Number.isFinite(minutes) || minutes <= 0) return "0.0";
+    return (minutes / 60).toFixed(1);
+}
+
 function formatDate(date: string) {
     return new Date(date).toLocaleDateString("en-US", {
         month: "short",
@@ -545,4 +748,35 @@ function formatTime(time: string) {
         hour: "numeric",
         minute: "2-digit",
     }).format(date);
+}
+
+function formatDateTime(value: string) {
+    return new Date(value).toLocaleString("en-US", {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+    });
+}
+
+function formatRelativeDateTime(value: string) {
+    const target = new Date(value);
+    const diffMs = Date.now() - target.getTime();
+    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+
+    if (diffHours < 1) {
+        return "less than 1 hour ago";
+    }
+
+    if (diffHours < 24) {
+        return `${diffHours} hour${diffHours === 1 ? "" : "s"} ago`;
+    }
+
+    const diffDays = Math.round(diffHours / 24);
+    if (diffDays < 7) {
+        return `${diffDays} day${diffDays === 1 ? "" : "s"} ago`;
+    }
+
+    return formatDateTime(value);
 }
