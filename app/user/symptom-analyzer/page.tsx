@@ -40,6 +40,7 @@ type AnalysisResult = {
 	suggested_action: string;
 	disclaimer?: string;
 	normalized_symptoms?: string[];
+	source?: string;
 };
 
 type UserProfile = {
@@ -123,6 +124,21 @@ function urgencyBadgeClass(urgency: AnalysisResult["urgency"]) {
 			return "bg-emerald-500 text-white";
 		default:
 			return "bg-muted text-foreground";
+	}
+}
+
+function sourceLabel(source: string | undefined): { label: string; className: string } | null {
+	switch (source) {
+		case "jamai_structured":
+			return { label: "AI-powered", className: "bg-violet-100 text-violet-700 border-violet-200" };
+		case "knowledge_base":
+			return { label: "Knowledge Base", className: "bg-blue-100 text-blue-700 border-blue-200" };
+		case "rule_based_safety":
+			return { label: "Rule-based Triage", className: "bg-amber-100 text-amber-700 border-amber-200" };
+		case "fallback":
+			return { label: "General Guidance", className: "bg-gray-100 text-gray-600 border-gray-200" };
+		default:
+			return null;
 	}
 }
 
@@ -480,9 +496,19 @@ export default function SymptomsCheckPage() {
 								medical advice.
 							</CardDescription>
 						</div>
-						<Badge className={urgencyBadgeClass(result.urgency)}>
-							{result.urgency.toUpperCase()}
-						</Badge>
+						<div className="flex flex-wrap items-center gap-2">
+							<Badge className={urgencyBadgeClass(result.urgency)}>
+								{result.urgency.toUpperCase()}
+							</Badge>
+							{(() => {
+								const src = sourceLabel(result.source);
+								return src ? (
+									<Badge className={`${src.className} text-xs`}>
+										{src.label}
+									</Badge>
+								) : null;
+							})()}
+						</div>
 					</CardHeader>
 					<CardContent className="space-y-6">
 						<div className="grid gap-4 md:grid-cols-2">
