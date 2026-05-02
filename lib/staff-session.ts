@@ -13,15 +13,13 @@ export type StaffSessionClaims = {
 };
 
 function getStaffSessionSecret(): Uint8Array {
-    const secret =
-        process.env.CURA_STAFF_JWT_SECRET || process.env.CLERK_SECRET_KEY;
-
+    const secret = process.env.CURA_STAFF_JWT_SECRET;
     if (!secret) {
         throw new Error(
-            "Missing CURA_STAFF_JWT_SECRET (or CLERK_SECRET_KEY fallback) for staff sessions"
+            "CURA_STAFF_JWT_SECRET is required but not set. " +
+            "Generate a random 32-char secret and add it to your environment variables."
         );
     }
-
     return new TextEncoder().encode(secret);
 }
 
