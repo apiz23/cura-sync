@@ -442,7 +442,10 @@ export function PatientHealthView({
                                 </tr>
                             </thead>
                             <tbody>
-                                {snapshots.slice(0, 7).map((snap) => (
+                                {[...snapshots]
+                                    .sort((a, b) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime())
+                                    .slice(0, 7)
+                                    .map((snap) => (
                                     <tr
                                         key={snap.id}
                                         className="border-b last:border-0 hover:bg-muted/20"
