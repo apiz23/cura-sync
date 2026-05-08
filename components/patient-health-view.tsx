@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { memo, useMemo } from "react";
 import { Activity, Heart, Moon, Footprints } from "lucide-react";
 import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
 import {
@@ -97,14 +97,17 @@ function getDayLabel(dateStr: string): string {
 }
 
 function computeAggregates(snapshots: HealthSyncSnapshot[]): Aggregates {
-    if (!snapshots.length) {
+    const days = getLast7Days();
+    const daySet = new Set(days);
+    const recent = snapshots.filter((s) => daySet.has(s.rangeStart.slice(0, 10)));
+    if (!recent.length) {
         return { avgSleepHours: null, avgHeartRate: null, avgSteps: null };
     }
-    const withSleep = snapshots.filter((s) => s.summary.totalSleepMinutes > 0);
-    const withHR = snapshots.filter(
+    const withSleep = recent.filter((s) => s.summary.totalSleepMinutes > 0);
+    const withHR = recent.filter(
         (s) => s.summary.averageHeartRateBpm !== null
     );
-    const withSteps = snapshots.filter((s) => s.summary.stepsCount > 0);
+    const withSteps = recent.filter((s) => s.summary.stepsCount > 0);
     return {
         avgSleepHours:
             withSleep.length
@@ -171,7 +174,7 @@ function formatDateTime(value: string) {
 
 function formatRelativeDateTime(value: string) {
     const diffMs = Date.now() - new Date(value).getTime();
-    const diffHours = Math.round(diffMs / (1000 * 60 * 60));
+    const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
     if (diffHours < 1) return "less than 1h ago";
     if (diffHours < 24) return `${diffHours}h ago`;
     const diffDays = Math.round(diffHours / 24);
@@ -179,7 +182,7 @@ function formatRelativeDateTime(value: string) {
 }
 
 // --- subcomponents ---
-function StatCard({
+const StatCard = memo(function StatCard({
     label,
     value,
     unit,
@@ -231,7 +234,7 @@ function StatCard({
             </CardContent>
         </Card>
     );
-}
+});
 
 // --- main export ---
 export function PatientHealthView({
@@ -242,6 +245,13 @@ export function PatientHealthView({
 }: PatientHealthViewProps) {
     const aggregates = useMemo(() => computeAggregates(snapshots), [snapshots]);
     const chartData = useMemo(() => buildChartData(snapshots), [snapshots]);
+    const sortedHistory = useMemo(
+        () =>
+            [...snapshots]
+                .sort((a, b) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime())
+                .slice(0, 7),
+        [snapshots]
+    );
 
     if (!snapshots.length) {
         return (
@@ -442,10 +452,7 @@ export function PatientHealthView({
                                 </tr>
                             </thead>
                             <tbody>
-                                {[...snapshots]
-                                    .sort((a, b) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime())
-                                    .slice(0, 7)
-                                    .map((snap) => (
+                                {sortedHistory.map((snap) => (
                                     <tr
                                         key={snap.id}
                                         className="border-b last:border-0 hover:bg-muted/20"
