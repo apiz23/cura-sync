@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import {
     AlertCircle,
     Calendar,
+    CalendarClock,
     CalendarDays,
     CheckCircle,
     ChevronLeft,
@@ -57,9 +59,12 @@ const PAGE_SIZE_OPTIONS = [10, 25, 50] as const;
 
 export default function AppointmentsPage() {
     const { user, loading: authLoading } = useAuth();
+    const pathname = usePathname();
+    const router = useRouter();
     const [appointments, setAppointments] = useState<Appointment[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [checkingInId, setCheckingInId] = useState<string | null>(null);
 
     const [searchTerm, setSearchTerm] = useState("");
     const [statusFilter, setStatusFilter] = useState("all");
@@ -113,6 +118,88 @@ export default function AppointmentsPage() {
             fetchAppointments();
         }
     }, [authLoading, user?.facility_id, fetchAppointments]);
+
+    useEffect(() => {
+        if (authLoading || !user?.role) return;
+
+        const role = String(user.role ?? "").toLowerCase();
+        if (role === "doctor" && pathname === "/admin/appointments") {
+            router.replace("/admin/consultations");
+        }
+        if (role !== "doctor" && pathname === "/admin/consultations") {
+            router.replace("/admin/appointments");
+        }
+    }, [authLoading, pathname, router, user?.role]);
+
+    const role = String(user?.role ?? "").toLowerCase();
+    const isDoctor = role === "doctor";
+
+    const todayIso = new Date().toISOString().slice(0, 10);
+
+    const canQuickCheckIn = role === "staff" || role === "admin";
+
+    async function handleQuickCheckIn(appointment: Appointment) {
+        if (!canQuickCheckIn) return;
+        if (appointment.status !== "CONFIRMED") return;
+
+        setCheckingInId(appointment.id);
+        try {
+            const response = await fetch(`/api/appointments/${appointment.id}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ status: "CHECKED_IN" }),
+            });
+
+            const payload = await response.json().catch(() => null);
+
+            if (!response.ok) {
+                throw new Error(payload?.error || "Unable to check-in appointment");
+            }
+
+            setAppointments((prev) =>
+                prev.map((appt) =>
+                    appt.id === appointment.id
+                        ? ({
+                              ...appt,
+                              ...(payload && typeof payload === "object" ? payload : {}),
+                              status: payload?.status ?? "CHECKED_IN",
+                          } as Appointment)
+                        : appt
+                )
+            );
+
+            toast.success("Patient checked in");
+        } catch (err) {
+            console.error(err);
+            toast.error(err instanceof Error ? err.message : "Check-in failed");
+        } finally {
+            setCheckingInId(null);
+        }
+    }
+
+    useEffect(() => {
+        // Default doctor view to today's date (queue-style workflow).
+        if (authLoading || !isDoctor) return;
+        if (!dateFilter) setDateFilter(todayIso);
+    }, [authLoading, dateFilter, isDoctor, todayIso]);
+
+    const todaysQueue = useMemo(() => {
+        if (!isDoctor) return [];
+        return [...appointments]
+            .filter(
+                (a) =>
+                    a.appointment_date === todayIso &&
+                    (a.status === "CHECKED_IN" || a.status === "CONFIRMED")
+            )
+            .sort((a, b) => {
+                if (a.status !== b.status) {
+                    // Checked-in patients should appear first.
+                    if (a.status === "CHECKED_IN") return -1;
+                    if (b.status === "CHECKED_IN") return 1;
+                }
+                return a.start_time.localeCompare(b.start_time);
+            });
+    }, [appointments, isDoctor, todayIso]);
 
     const filteredAppointments = useMemo(() => {
         let filtered = appointments;
@@ -188,6 +275,13 @@ export default function AppointmentsPage() {
                     className: "bg-green-50 text-green-700 border-green-200",
                     dotClassName: "bg-green-500",
                     label: "Confirmed",
+                };
+            case "CHECKED_IN":
+                return {
+                    icon: CalendarClock,
+                    className: "bg-blue-50 text-blue-700 border-blue-200",
+                    dotClassName: "bg-blue-500",
+                    label: "Checked in",
                 };
             case "CANCELLED":
                 return {
@@ -313,6 +407,36 @@ export default function AppointmentsPage() {
             },
         },
         {
+            id: "actions",
+            header: () => <div className="text-right">Actions</div>,
+            cell: ({ row }) => {
+                if (!canQuickCheckIn) {
+                    return <div className="text-right text-xs text-muted-foreground">-</div>;
+                }
+
+                const appt = row.original;
+                const disabled = appt.status !== "CONFIRMED" || checkingInId === appt.id;
+
+                return (
+                    <div className="flex justify-end">
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="h-8 rounded-full px-3 text-xs"
+                            disabled={disabled}
+                            onClick={(event) => {
+                                event.stopPropagation();
+                                handleQuickCheckIn(appt);
+                            }}
+                        >
+                            {checkingInId === appt.id ? "Checking in..." : "Check-in"}
+                        </Button>
+                    </div>
+                );
+            },
+        },
+        {
             id: "open",
             header: () => <div className="text-right">Open</div>,
             cell: ({ row }) => (
@@ -348,10 +472,12 @@ export default function AppointmentsPage() {
                 <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div>
                         <h1 className="text-2xl font-bold tracking-tight text-foreground">
-                            Appointments
+                            {isDoctor ? "Consultations" : "Appointments"}
                         </h1>
                         <p className="mt-1 text-muted-foreground">
-                            Manage and track patient appointments
+                            {isDoctor
+                                ? "See today's queue and complete consultations after check-in"
+                                : "Manage and track patient appointments"}
                         </p>
                     </div>
                     <Button
@@ -391,11 +517,18 @@ export default function AppointmentsPage() {
                             helper: "All records",
                         },
                         {
+                            label: "Checked in",
+                            value: appointments.filter((a) => a.status === "CHECKED_IN").length,
+                            icon: CalendarClock,
+                            className: "bg-blue-50 text-blue-700 border-blue-200",
+                            helper: "Arrived",
+                        },
+                        {
                             label: "Confirmed",
                             value: appointments.filter((a) => a.status === "CONFIRMED").length,
                             icon: CheckCircle,
                             className: "bg-green-50 text-green-700 border-green-200",
-                            helper: "Ready to attend",
+                            helper: "Scheduled",
                         },
                         {
                             label: "Pending",
@@ -403,13 +536,6 @@ export default function AppointmentsPage() {
                             icon: Clock4,
                             className: "bg-amber-50 text-amber-700 border-amber-200",
                             helper: "Needs review",
-                        },
-                        {
-                            label: "Cancelled",
-                            value: appointments.filter((a) => a.status === "CANCELLED").length,
-                            icon: XCircle,
-                            className: "bg-red-50 text-red-700 border-red-200",
-                            helper: "Cancelled records",
                         },
                     ].map((item) => (
                         <Card key={item.label} className="border-border bg-card">
@@ -435,6 +561,52 @@ export default function AppointmentsPage() {
                     ))}
                 </div>
             </div>
+
+            {isDoctor ? (
+                <Card className="border-border bg-card shadow-xs">
+                    <CardContent className="p-5">
+                        <div className="flex items-start justify-between gap-4">
+                            <div>
+                                <p className="text-sm font-semibold text-foreground">
+                                    Today's queue
+                                </p>
+                                <p className="mt-1 text-xs text-muted-foreground">
+                                    Staff check-in patients. Doctors can complete only after check-in.
+                                </p>
+                            </div>
+                            <Badge variant="outline">
+                                {todaysQueue.length} item{todaysQueue.length === 1 ? "" : "s"}
+                            </Badge>
+                        </div>
+                        <div className="mt-4 space-y-2">
+                            {todaysQueue.length ? (
+                                todaysQueue.slice(0, 6).map((appt) => (
+                                    <button
+                                        key={appt.id}
+                                        type="button"
+                                        onClick={() => openAppointmentSheet(appt)}
+                                        className="flex w-full items-center justify-between gap-4 rounded-xl border border-border/60 bg-background/40 p-3 text-left transition-colors hover:bg-muted/40"
+                                    >
+                                        <div className="min-w-0">
+                                            <p className="truncate text-sm font-medium text-foreground">
+                                                {appt.patient_name}
+                                            </p>
+                                            <p className="truncate text-xs text-muted-foreground">
+                                                {formatTime(appt.start_time)} · {appt.reason_for_visit || "No reason"}
+                                            </p>
+                                        </div>
+                                        <Badge variant="outline">{appt.status}</Badge>
+                                    </button>
+                                ))
+                            ) : (
+                                <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                                    No confirmed or checked-in appointments today.
+                                </div>
+                            )}
+                        </div>
+                    </CardContent>
+                </Card>
+            ) : null}
 
             <Card className="border-border bg-card shadow-xs">
                 <CardContent className="p-5">
@@ -463,6 +635,7 @@ export default function AppointmentsPage() {
                                         <SelectItem value="all">All Status</SelectItem>
                                         <SelectItem value="PENDING">Pending</SelectItem>
                                         <SelectItem value="CONFIRMED">Confirmed</SelectItem>
+                                        <SelectItem value="CHECKED_IN">Checked in</SelectItem>
                                         <SelectItem value="COMPLETED">Completed</SelectItem>
                                         <SelectItem value="CANCELLED">Cancelled</SelectItem>
                                     </SelectContent>

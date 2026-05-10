@@ -321,7 +321,7 @@ export default function PricingPage() {
                             </span>
                             <Badge
                                 variant="secondary"
-                                className="bg-green-500/10 text-green-600"
+                                className="bg-primary/10 text-primary"
                             >
                                 Save 20%
                             </Badge>
@@ -540,7 +540,7 @@ export default function PricingPage() {
                                         </span>
                                         <div className="flex items-center gap-4">
                                             <div className="flex items-center gap-1">
-                                                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                                                <div className="w-2 h-2 bg-muted-foreground rounded-full"></div>
                                                 <span className="text-xs text-muted-foreground">
                                                     Basic
                                                 </span>
@@ -552,7 +552,7 @@ export default function PricingPage() {
                                                 </span>
                                             </div>
                                             <div className="flex items-center gap-1">
-                                                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                                                <div className="w-2 h-2 bg-foreground rounded-full"></div>
                                                 <span className="text-xs text-muted-foreground">
                                                     Enterprise
                                                 </span>
@@ -597,7 +597,7 @@ export default function PricingPage() {
                 </div>
 
                 {/* Enterprise CTA */}
-                <Card className="border-primary shadow-2xl bg-gradient-to-r from-primary/5 to-primary/10">
+                <Card className="border-primary shadow-2xl bg-linear-to-r from-primary/5 to-primary/10">
                     <CardContent className="p-12 text-center">
                         <div className="space-y-6 max-w-2xl mx-auto">
                             <div className="flex justify-center">

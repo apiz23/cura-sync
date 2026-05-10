@@ -7,6 +7,8 @@ type FacilityScheduleInput = {
     start_time: string;
     end_time: string;
     slot_duration_minutes: number | null;
+    break_start: string | null;
+    break_end: string | null;
 };
 
 export async function GET(req: Request) {
@@ -74,6 +76,8 @@ export async function PUT(req: Request) {
                 start_time: s.start_time,
                 end_time: s.end_time,
                 slot_duration_minutes: s.slot_duration_minutes,
+                break_start: s.break_start ?? null,
+                break_end: s.break_end ?? null,
             }))
         );
 

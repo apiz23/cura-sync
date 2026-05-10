@@ -55,7 +55,7 @@ export default function NotFound() {
                             <p className="bg-linear-to-r from-primary to-chart-2 bg-clip-text text-7xl font-bold tracking-tight text-transparent sm:text-8xl md:text-9xl">
                                 404
                             </p>
-                            <h1 className="serif text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
+                            <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl md:text-5xl">
                                 This page is not part of the current care path
                             </h1>
                             <p className="max-w-2xl text-base leading-relaxed text-muted-foreground sm:text-lg">

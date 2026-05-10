@@ -21,6 +21,7 @@ import {
 import { AdminProfileMenu } from "./admin-profile-menu";
 import { adminMenu } from "@/lib/admin-menu";
 import { BrandLogo } from "./brand-logo";
+import { getStaffRoleLabel } from "@/lib/staff-role";
 
 export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
     const { user, loading } = useAuth();
@@ -31,6 +32,7 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
     if (!user) return null;
 
     const role = user.role;
+    const roleLabel = getStaffRoleLabel(role);
 
     const isMenuActive = (itemUrl: string) => {
         if (itemUrl === "/admin") {
@@ -54,11 +56,11 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                 group-data-[collapsible=icon]:px-0
                             "
                         >
-                            <BrandLogo className="size-8 rounded-lg" />
+                            <BrandLogo className="bg-secondary size-8 rounded-lg" />
                             <div className="grid text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
                                 <span className="font-semibold">CuraSync</span>
                                 <span className="text-xs text-muted-foreground">
-                                    Admin
+                                    {roleLabel} Console
                                 </span>
                             </div>
                         </SidebarMenuButton>
@@ -80,7 +82,13 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
 
                             <SidebarGroupContent>
                                 <SidebarMenu>
-                                    {group.items.map((item) => {
+                                    {group.items
+                                        .filter(
+                                            (item) =>
+                                                !(item as any).roles ||
+                                                (item as any).roles.includes(role)
+                                        )
+                                        .map((item) => {
                                         const Icon = item.icon;
                                         const active = isMenuActive(item.url);
 

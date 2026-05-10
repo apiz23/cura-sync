@@ -14,7 +14,6 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
     Users,
-    Trash2,
     Search,
     Filter,
     Loader2,
@@ -28,7 +27,6 @@ import {
 import AddStaffSheet from "./add-staff-sheet";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import ViewStaffSheet from "./view-staff-sheet";
 import { Staff, StaffRole } from "@/app/types";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { useAuth } from "@/components/authprovideradmin";
@@ -43,16 +41,16 @@ import {
     TableProvider,
     TableRow,
 } from "@/components/kibo-ui/table";
+import { useRouter } from "next/navigation";
 
 export default function StaffPage() {
     const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
+    const isAdmin = user?.role === "admin";
     const [staff, setStaff] = useState<Staff[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
     const [roleFilter, setRoleFilter] = useState<StaffRole | "all">("all");
-    const [deletingId, setDeletingId] = useState<string | null>(null);
-    const [viewStaff, setViewStaff] = useState<Staff | null>(null);
-    const [viewOpen, setViewOpen] = useState(false);
 
     async function fetchStaff() {
         setLoading(true);
@@ -88,33 +86,24 @@ export default function StaffPage() {
         }
     }
 
-    async function removeStaff(id: string) {
-        if (!confirm("Are you sure you want to delete this staff member?"))
-            return;
-
-        setDeletingId(id);
-        try {
-            const res = await fetch(`/api/staff/${id}`, { method: "DELETE" });
-            if (!res.ok) {
-                toast.error("Failed to delete staff");
-            } else {
-                toast.success("Staff member removed successfully");
-                fetchStaff();
-            }
-        } catch (err: unknown) {
-            if (err instanceof Error) {
-                toast.error(err.message);
-            } else {
-                toast.error("Failed to delete staff");
-            }
-        } finally {
-            setDeletingId(null);
-        }
-    }
-
     useEffect(() => {
         if (!authLoading && user) fetchStaff();
     }, [authLoading, user]);
+
+    if (!authLoading && user && !isAdmin) {
+        return (
+            <Card className="border shadow-sm">
+                <CardHeader>
+                    <CardTitle>Staff Management</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <p className="text-sm text-muted-foreground">
+                        Only facility administrators can manage staff accounts.
+                    </p>
+                </CardContent>
+            </Card>
+        );
+    }
 
     const filteredStaff = staff.filter((s) => {
         const matchSearch =
@@ -176,9 +165,8 @@ export default function StaffPage() {
         });
     };
 
-    const handleViewStaff = (staff: Staff) => {
-        setViewStaff(staff);
-        setViewOpen(true);
+    const openStaffProfile = (staffId: string) => {
+        router.push(`/admin/staff/${staffId}`);
     };
 
     // Define columns for the table
@@ -207,7 +195,7 @@ export default function StaffPage() {
                 return (
                     <div
                         className="flex items-center gap-3 cursor-pointer group/patient"
-                        onClick={() => handleViewStaff(row.original)}
+                        onClick={() => openStaffProfile(row.original.id)}
                     >
                         <div className="relative">
                             <Avatar className="size-10 bg-linear-to-br from-primary/10 to-primary/20">
@@ -295,10 +283,10 @@ export default function StaffPage() {
                         className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                         onClick={(event) => {
                             event.stopPropagation();
-                            handleViewStaff(row.original);
+                            openStaffProfile(row.original.id);
                         }}
                     >
-                        View details
+                        Open profile
                         <ChevronRightIcon className="h-3.5 w-3.5" />
                     </button>
                 </div>
@@ -391,8 +379,7 @@ export default function StaffPage() {
                                 Staff Members
                             </CardTitle>
                             <p className="text-xs text-muted-foreground">
-                                Click any row or the View details pill to open the
-                                staff sheet.
+                                Click any row to open the full staff profile.
                             </p>
                         </div>
                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
@@ -509,15 +496,15 @@ export default function StaffPage() {
                                 </TableHeader>
                                 <TableBody>
                                     {({ row }) => (
-                                        <TableRow
-                                            key={row.id}
-                                            row={row}
-                                            onClick={() =>
-                                                handleViewStaff(row.original as Staff)
-                                            }
-                                            className="cursor-pointer transition-colors hover:bg-muted/40"
-                                        >
-                                            {({ cell }) => (
+                                <TableRow
+                                    key={row.id}
+                                    row={row}
+                                    onClick={() =>
+                                        openStaffProfile((row.original as Staff).id)
+                                    }
+                                    className="cursor-pointer transition-colors hover:bg-muted/40"
+                                >
+                                    {({ cell }) => (
                                                 <TableCell
                                                     cell={cell}
                                                     key={cell.id}
@@ -527,19 +514,10 @@ export default function StaffPage() {
                                     )}
                                 </TableBody>
                             </TableProvider>
-                        )}
-                    </div>
-                </CardContent>
-            </Card>
-            <ViewStaffSheet
-                staff={viewStaff}
-                open={viewOpen}
-                onOpenChange={setViewOpen}
-                onEdit={() => {
-                    // Handle edit functionality
-                }}
-                onDelete={removeStaff}
-            />
+                    )}
+                </div>
+            </CardContent>
+        </Card>
         </div>
     );
 }

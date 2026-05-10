@@ -19,6 +19,7 @@ export async function POST(req: NextRequest) {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ symptoms, was_accurate, possible_disease, correct_condition, session_id }),
+				signal: AbortSignal.timeout(8000),
 			},
 		);
 

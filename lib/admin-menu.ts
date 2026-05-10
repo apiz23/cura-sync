@@ -6,6 +6,7 @@ import {
     Shield,
     Settings,
     Hospital,
+    ScrollText,
 } from "lucide-react";
 
 export const adminMenu = [
@@ -33,11 +34,19 @@ export const adminMenu = [
                 title: "Appointments",
                 url: "/admin/appointments",
                 icon: ClipboardList,
+                roles: ["admin", "staff"],
+            },
+            {
+                title: "Consultations",
+                url: "/admin/consultations",
+                icon: ClipboardList,
+                roles: ["doctor"],
             },
             {
                 title: "Staff Management",
                 url: "/admin/staff",
                 icon: UserPlus,
+                roles: ["admin"],
             },
         ],
     },
@@ -46,9 +55,9 @@ export const adminMenu = [
         roles: ["admin"],
         items: [
             {
-                title: "Blockchain Status",
-                url: "/admin/blockchain",
-                icon: Shield,
+                title: "Audit Trail",
+                url: "/admin/audit",
+                icon: ScrollText,
             },
             {
                 title: "Health Center",

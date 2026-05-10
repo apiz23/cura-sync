@@ -65,6 +65,8 @@ CLERK_SECRET_KEY=
 CURA_STAFF_JWT_SECRET=
 NEXT_PUBLIC_CURA_SYNC_AI=http://127.0.0.1:8000
 RESEND_API_KEY=
+CONTACT_FROM_EMAIL=
+CONTACT_TO_EMAIL=
 ```
 
 Notes:
@@ -73,6 +75,8 @@ Notes:
 - `CURA_STAFF_JWT_SECRET` is used for staff session handling, with `CLERK_SECRET_KEY` as fallback in [`lib/staff-session.ts`](c:/Users/SCSM11/Desktop/Developer/cura-sync/cura-sync-web/lib/staff-session.ts).
 - `NEXT_PUBLIC_CURA_SYNC_AI` is used by the chat and symptom-analysis API routes.
 - `RESEND_API_KEY` is required for the contact API route.
+- `CONTACT_FROM_EMAIL` defaults to `CuraSync <onboarding@resend.dev>` if unset.
+- `CONTACT_TO_EMAIL` defaults to `piz230601@gmail.com` if unset.
 
 ## Installation
 

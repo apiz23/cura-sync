@@ -17,6 +17,8 @@ export interface FacilitySchedule {
 	start_time: string;
 	end_time: string;
 	slot_duration_minutes: number;
+	break_start: string | null;
+	break_end: string | null;
 }
 
 export interface Appointment {
@@ -26,7 +28,7 @@ export interface Appointment {
 	appointment_date: string;
 	start_time: string;
 	end_time: string;
-	status: "PENDING" | "CONFIRMED" | "CANCELLED" | "COMPLETED";
+	status: "PENDING" | "CONFIRMED" | "CHECKED_IN" | "CANCELLED" | "COMPLETED";
 	reason_for_visit: string | null;
 	patient_name: string;
 	patient_avatar?: string | null;
@@ -155,6 +157,7 @@ export interface AuthUser {
 	specialization?: string | null;
 	license_number?: string | null;
 	facility_id?: string | null;
+	facility_name?: string | null;
 	years_of_experience?: number | null;
 	availability?: WeeklyAvailability | null;
 	created_at: string;
@@ -169,4 +172,5 @@ export interface AnalysisResult {
 	normalized_symptoms?: string[];
 	disclaimer?: string;
 	timestamp?: string;
+	source?: string;
 }

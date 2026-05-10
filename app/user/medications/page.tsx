@@ -7,9 +7,7 @@ import {
 	Clock,
 	Calendar,
 	AlertCircle,
-	Filter,
 	Eye,
-	MoreHorizontal,
 	CheckCircle,
 	ChevronRightIcon,
 	ShieldCheck,
@@ -21,6 +19,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@clerk/nextjs";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { toast } from "sonner";
+import { isMedicationActiveOnDate, isMedicationExpired } from "@/lib/medication-dates";
 import type { ColumnDef } from "@/components/kibo-ui/table";
 import {
 	TableBody,
@@ -32,12 +31,6 @@ import {
 	TableProvider,
 	TableRow,
 } from "@/components/kibo-ui/table";
-import {
-	DropdownMenu,
-	DropdownMenuContent,
-	DropdownMenuItem,
-	DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import MedicationDetailsSheet from "./medication-details-sheet";
 import {
 	Select,
@@ -96,52 +89,45 @@ export default function MedicationPage() {
 		if (filterStatus === "completed") return med.status === "COMPLETED";
 		if (filterStatus === "stopped") return med.status === "STOPPED";
 		if (filterStatus === "expired") {
-			if (!med.end_date) return false;
-			return new Date(med.end_date) < new Date();
+			return isMedicationExpired(med.end_date);
 		}
 		return true;
 	});
 
 	const today = new Date();
-	const todayMeds = meds.filter((med) => {
-		const startDate = new Date(med.start_date);
-		const endDate = med.end_date ? new Date(med.end_date) : null;
-		return startDate <= today && (!endDate || endDate >= today);
-	});
+	const todayMeds = meds.filter((med) =>
+		isMedicationActiveOnDate(med.start_date, med.end_date ?? null, today)
+	);
 
 	const activeMeds = meds.filter((med) => med.status === "ACTIVE");
 
-	const expiredMeds = meds.filter((med) => {
-		if (!med.end_date) return false;
-		const endDate = new Date(med.end_date);
-		return endDate < today;
-	});
+	const expiredMeds = meds.filter((med) => isMedicationExpired(med.end_date, today));
 
 	const getStatusConfig = (status: string) => {
 		const configs = {
 			COMPLETED: {
-				color: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+				color: "bg-primary/10 text-primary border-primary/20",
 				icon: <CheckCircle className="h-3.5 w-3.5" />,
 				label: "Completed",
-				dotColor: "bg-emerald-500",
+				dotColor: "bg-primary",
 			},
 			ACTIVE: {
-				color: "bg-blue-500/10 text-blue-700 border-blue-200",
+				color: "bg-info/10 text-info border-info/20",
 				icon: <Clock className="h-3.5 w-3.5" />,
 				label: "Active",
-				dotColor: "bg-blue-500",
+				dotColor: "bg-info",
 			},
 			STOPPED: {
-				color: "bg-amber-500/10 text-amber-700 border-amber-200",
+				color: "bg-warning/10 text-warning-foreground border-warning/20",
 				icon: <AlertCircle className="h-3.5 w-3.5" />,
 				label: "Stopped",
-				dotColor: "bg-amber-500",
+				dotColor: "bg-warning",
 			},
 			default: {
-				color: "bg-gray-500/10 text-gray-700 border-gray-200",
+				color: "bg-muted text-muted-foreground border-border",
 				icon: <Pill className="h-3.5 w-3.5" />,
 				label: "Unknown",
-				dotColor: "bg-gray-500",
+				dotColor: "bg-muted-foreground",
 			},
 		};
 
@@ -149,18 +135,10 @@ export default function MedicationPage() {
 	};
 
 	const formatShortDate = (dateString: string) => {
-		const date = new Date(dateString);
-		const now = new Date();
-		const diffTime = Math.abs(now.getTime() - date.getTime());
-		const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-
-		if (diffDays === 0) return "Today";
-		if (diffDays === 1) return "Yesterday";
-		if (diffDays < 7) return `${diffDays}d ago`;
-
-		return date.toLocaleDateString("en-US", {
+		return new Date(dateString).toLocaleDateString("en-US", {
 			month: "short",
 			day: "numeric",
+			year: "numeric",
 		});
 	};
 
@@ -247,9 +225,7 @@ export default function MedicationPage() {
 			id: "dates",
 			header: ({ column }) => <TableColumnHeader column={column} title="Dates" />,
 			cell: ({ row }) => {
-				const isExpired = row.original.end_date
-					? new Date(row.original.end_date) < new Date()
-					: false;
+				const isExpired = isMedicationExpired(row.original.end_date);
 
 				return (
 					<div className="space-y-1">
@@ -292,7 +268,7 @@ export default function MedicationPage() {
 							<Button
 								variant="outline"
 								size="sm"
-								className="h-8 px-3 gap-1.5 bg-green-50 text-green-700 hover:bg-green-100 hover:text-green-800 border-green-200"
+								className="h-8 px-3 gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 border-primary/30"
 								onClick={() => markAsTaken(row.original.id)}
 							>
 								<CheckCircle className="h-3.5 w-3.5" />
@@ -312,14 +288,16 @@ export default function MedicationPage() {
 				return (
 					<div className="flex items-center justify-start gap-2">
 						<Button
+							variant="outline"
+							size="sm"
 							className="gap-2 cursor-pointer"
 							onClick={() => {
 								setSelectedMedication(row.original);
 								setDetailsOpen(true);
 							}}
 						>
-							<Eye className="h-4 w-4" />
-							View Details
+							<Eye className="h-3.5 w-3.5" />
+							Details
 						</Button>
 					</div>
 				);
@@ -397,15 +375,15 @@ export default function MedicationPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-2 border-blue-500/10 hover:border-blue-500/20 transition-all duration-300 hover:shadow-lg">
+					<Card className="border-2 border-info/10 hover:border-info/20 transition-all duration-300 hover:shadow-lg">
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
 									<p className="text-sm font-medium text-muted-foreground">Active</p>
 									<h3 className="text-3xl font-bold mt-2">{activeMeds.length}</h3>
 								</div>
-								<div className="p-3 rounded-full bg-blue-500/10">
-									<Clock className="h-6 w-6 text-blue-500" />
+								<div className="p-3 rounded-full bg-info/10">
+									<Clock className="h-6 w-6 text-info" />
 								</div>
 							</div>
 							<div className="mt-3 text-xs text-muted-foreground">
@@ -414,7 +392,7 @@ export default function MedicationPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-2 border-emerald-500/10 hover:border-emerald-500/20 transition-all duration-300 hover:shadow-lg">
+					<Card className="border-2 border-secondary/10 hover:border-secondary/20 transition-all duration-300 hover:shadow-lg">
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
@@ -423,14 +401,14 @@ export default function MedicationPage() {
 										{meds.filter((m) => m.status === "COMPLETED").length}
 									</h3>
 								</div>
-								<div className="p-3 rounded-full bg-emerald-500/10">
-									<Calendar className="h-6 w-6 text-emerald-500" />
+								<div className="p-3 rounded-full bg-secondary/10">
+									<Calendar className="h-6 w-6 text-secondary" />
 								</div>
 							</div>
 						</CardContent>
 					</Card>
 
-					<Card className="border-2 border-amber-500/10 hover:border-amber-500/20 transition-all duration-300 hover:shadow-lg">
+					<Card className="border-2 border-warning/10 hover:border-warning/20 transition-all duration-300 hover:shadow-lg">
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
@@ -439,12 +417,12 @@ export default function MedicationPage() {
 									</p>
 									<h3 className="text-3xl font-bold mt-2">{expiredMeds.length}</h3>
 								</div>
-								<div className="p-3 rounded-full bg-amber-500/10">
-									<AlertCircle className="h-6 w-6 text-amber-500" />
+								<div className="p-3 rounded-full bg-warning/10">
+									<AlertCircle className="h-6 w-6 text-warning" />
 								</div>
 							</div>
 							{expiredMeds.length > 0 && (
-								<div className="mt-3 text-xs font-medium text-amber-600">
+								<div className="mt-3 text-xs font-medium text-warning-foreground">
 									{expiredMeds.length} expired
 								</div>
 							)}

@@ -3,6 +3,7 @@
 import type { LucideIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 
 interface UserPageShellProps {
     children: React.ReactNode;
@@ -10,10 +11,17 @@ interface UserPageShellProps {
     contentClassName?: string;
 }
 
+type UserPageHeaderAvatar = {
+    src?: string | null;
+    alt: string;
+    fallback: string;
+};
+
 interface UserPageHeaderProps {
     title: string;
     description?: string;
     icon?: LucideIcon;
+    avatar?: UserPageHeaderAvatar;
     actions?: React.ReactNode;
     meta?: React.ReactNode;
     align?: "left" | "center";
@@ -48,6 +56,7 @@ export function UserPageHeader({
     title,
     description,
     icon: Icon,
+    avatar,
     actions,
     meta,
     align = "left",
@@ -78,7 +87,16 @@ export function UserPageHeader({
                             : "items-start"
                     )}
                 >
-                    {Icon ? (
+                    {avatar ? (
+                        <Avatar className="h-14 w-14 shrink-0 rounded-2xl ring-1 ring-border/60">
+                            {avatar.src ? (
+                                <AvatarImage src={avatar.src} alt={avatar.alt} />
+                            ) : null}
+                            <AvatarFallback className="rounded-2xl bg-primary/10 text-primary font-semibold">
+                                {avatar.fallback}
+                            </AvatarFallback>
+                        </Avatar>
+                    ) : Icon ? (
                         <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl bg-primary/12 text-primary shadow-sm ring-1 ring-primary/10">
                             <Icon className="h-7 w-7" />
                         </div>

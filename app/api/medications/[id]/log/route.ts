@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
 import { requirePatientSession } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
 
 const ALLOWED_STATUSES = ["TAKEN", "MISSED", "SKIPPED"] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
@@ -65,6 +66,15 @@ export async function POST(
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    void logAudit({
+        actor_id: patient.profileId,
+        actor_type: "patient",
+        action: "CREATE",
+        resource_type: "medication_log",
+        resource_id: id,
+        metadata: { status },
+    });
 
     return NextResponse.json({ success: true });
 }

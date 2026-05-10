@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
     Activity,
     AlertCircle,
@@ -45,7 +46,6 @@ import {
     TableRow,
 } from "@/components/kibo-ui/table";
 import AddPatientSheet from "./addPatientSheet";
-import ViewPatientSheet from "./view-patient-sheet";
 
 export interface Patient {
     id: string;
@@ -71,6 +71,7 @@ type RecordStatus = "complete" | "partial" | "basic";
 
 export default function PatientListPage() {
     const { user, loading: authLoading } = useAuth();
+    const router = useRouter();
     const [patients, setPatients] = useState<Patient[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -78,8 +79,6 @@ export default function PatientListPage() {
     const [facilityId, setFacilityId] = useState<string | null>(null);
     const [recordFilter, setRecordFilter] = useState<RecordStatus | "all">("all");
     const [genderFilter, setGenderFilter] = useState("all");
-    const [selectedPatient, setSelectedPatient] = useState<Patient | null>(null);
-    const [isViewOpen, setIsViewOpen] = useState(false);
 
     const fetchPatients = useCallback(async () => {
         if (!facilityId) return;
@@ -196,9 +195,8 @@ export default function PatientListPage() {
         return Math.round(ages.reduce((sum, age) => sum + age, 0) / ages.length);
     }, [patients]);
 
-    const handleViewPatient = (patient: Patient) => {
-        setSelectedPatient(patient);
-        setIsViewOpen(true);
+    const openPatientProfile = (patientId: string) => {
+        router.push(`/admin/patients/${patientId}`);
     };
 
     const formatDate = (dateString?: string) => {
@@ -233,7 +231,7 @@ export default function PatientListPage() {
                         className="flex items-center gap-3 text-left"
                         onClick={(event) => {
                             event.stopPropagation();
-                            handleViewPatient(row.original);
+                            openPatientProfile(row.original.id);
                         }}
                     >
                         <Avatar className="size-10 border border-border">
@@ -317,43 +315,43 @@ export default function PatientListPage() {
                 );
             },
         },
-        {
-            id: "record",
-            header: ({ column }) => (
-                <TableColumnHeader column={column} title="Record Status" />
-            ),
-            cell: ({ row }) => {
-                const completion = getRecordCompletion(row.original);
-                const statusLabel =
-                    completion.status === "complete"
-                        ? "Complete"
-                        : completion.status === "partial"
-                          ? "Partial"
-                          : "Basic";
+        // {
+        //     id: "record",
+        //     header: ({ column }) => (
+        //         <TableColumnHeader column={column} title="Record Status" />
+        //     ),
+        //     cell: ({ row }) => {
+        //         const completion = getRecordCompletion(row.original);
+        //         const statusLabel =
+        //             completion.status === "complete"
+        //                 ? "Complete"
+        //                 : completion.status === "partial"
+        //                   ? "Partial"
+        //                   : "Basic";
 
-                return (
-                    <div className="space-y-2">
-                        <Badge variant="outline" className="text-xs">
-                            {statusLabel}
-                        </Badge>
-                        <div className="space-y-1">
-                            <div className="flex items-center justify-between text-xs">
-                                <span className="text-muted-foreground">
-                                    Completion
-                                </span>
-                                <span className="font-medium text-foreground">
-                                    {completion.percentage}%
-                                </span>
-                            </div>
-                            <Progress value={completion.percentage} className="h-1.5" />
-                        </div>
-                        <div className="text-xs text-muted-foreground">
-                            Registered: {formatDate(row.original.created_at)}
-                        </div>
-                    </div>
-                );
-            },
-        },
+        //         return (
+        //             <div className="space-y-2">
+        //                 <Badge variant="outline" className="text-xs">
+        //                     {statusLabel}
+        //                 </Badge>
+        //                 <div className="space-y-1">
+        //                     <div className="flex items-center justify-between text-xs">
+        //                         <span className="text-muted-foreground">
+        //                             Completion
+        //                         </span>
+        //                         <span className="font-medium text-foreground">
+        //                             {completion.percentage}%
+        //                         </span>
+        //                     </div>
+        //                     <Progress value={completion.percentage} className="h-1.5" />
+        //                 </div>
+        //                 <div className="text-xs text-muted-foreground">
+        //                     Registered: {formatDate(row.original.created_at)}
+        //                 </div>
+        //             </div>
+        //         );
+        //     },
+        // },
         {
             id: "open",
             header: () => <div className="text-right">Open</div>,
@@ -364,10 +362,10 @@ export default function PatientListPage() {
                         className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                         onClick={(event) => {
                             event.stopPropagation();
-                            handleViewPatient(row.original);
+                            openPatientProfile(row.original.id);
                         }}
                     >
-                        View details
+                        Open profile
                         <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                 </div>
@@ -488,10 +486,9 @@ export default function PatientListPage() {
                                 {filteredPatients.length} patients found
                                 {searchQuery && ` for "${searchQuery}"`}
                             </p>
-                            <p className="text-xs text-muted-foreground">
-                                Click any row or the View details pill to open the
-                                patient sheet.
-                            </p>
+                             <p className="text-xs text-muted-foreground">
+                                Click any row to open the full patient profile.
+                             </p>
                         </div>
                     </div>
 
@@ -607,7 +604,9 @@ export default function PatientListPage() {
                                         key={row.id}
                                         row={row}
                                         onClick={() =>
-                                            handleViewPatient(row.original as Patient)
+                                            openPatientProfile(
+                                                (row.original as Patient).id
+                                            )
                                         }
                                         className="cursor-pointer transition-colors hover:bg-muted/40"
                                     >
@@ -623,10 +622,10 @@ export default function PatientListPage() {
 
                 {filteredPatients.length > 0 && (
                     <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-                        <Card className="border-primary/20 bg-linear-to-r from-primary/5 to-primary/10">
+                        <Card className="border-border bg-card">
                             <CardContent className="p-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="rounded-full bg-primary/20 p-3">
+                                    <div className="rounded-full bg-primary/10 p-3">
                                         <Heart className="h-6 w-6 text-primary" />
                                     </div>
                                     <div>
@@ -642,15 +641,15 @@ export default function PatientListPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-blue-200 bg-linear-to-r from-blue-50/60 to-blue-100/50">
+                        <Card className="border-border bg-card">
                             <CardContent className="p-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="rounded-full bg-blue-200 p-3">
-                                        <Mail className="h-6 w-6 text-blue-700" />
+                                    <div className="rounded-full bg-muted p-3">
+                                        <Mail className="h-6 w-6 text-foreground" />
                                     </div>
                                     <div>
                                         <h4 className="mb-1 font-semibold">Email coverage</h4>
-                                        <p className="text-2xl font-bold text-blue-700">
+                                        <p className="text-2xl font-bold text-foreground">
                                             {patients.length}
                                         </p>
                                         <p className="text-xs text-muted-foreground">
@@ -661,15 +660,15 @@ export default function PatientListPage() {
                             </CardContent>
                         </Card>
 
-                        <Card className="border-amber-200 bg-linear-to-r from-amber-50/60 to-amber-100/50">
+                        <Card className="border-border bg-card">
                             <CardContent className="p-6">
                                 <div className="flex items-center gap-4">
-                                    <div className="rounded-full bg-amber-200 p-3">
-                                        <AlertCircle className="h-6 w-6 text-amber-700" />
+                                    <div className="rounded-full bg-destructive/10 p-3">
+                                        <AlertCircle className="h-6 w-6 text-destructive" />
                                     </div>
                                     <div>
                                         <h4 className="mb-1 font-semibold">Missing emergency contact</h4>
-                                        <p className="text-2xl font-bold text-amber-700">
+                                        <p className="text-2xl font-bold text-foreground">
                                             {
                                                 patients.filter((patient) => !patient.emergency_contact)
                                                     .length
@@ -686,11 +685,6 @@ export default function PatientListPage() {
                 )}
             </div>
 
-            <ViewPatientSheet
-                patient={selectedPatient}
-                open={isViewOpen}
-                onOpenChange={setIsViewOpen}
-            />
         </div>
     );
 }

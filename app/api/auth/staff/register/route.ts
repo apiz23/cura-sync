@@ -4,6 +4,7 @@ import bcrypt from "bcryptjs";
 import { v4 as uuidv4 } from "uuid";
 import { ensureFacilityAccess, requireAdminStaffSession } from "@/lib/authz";
 import { normalizeStaffRole } from "@/lib/staff-role";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(req: Request) {
     const session = await requireAdminStaffSession(req);
@@ -39,6 +40,14 @@ export async function POST(req: Request) {
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
+
+        void logAudit({
+            actor_id: session.staffId,
+            actor_type: "staff",
+            action: "CREATE",
+            resource_type: "staff",
+            metadata: { email: String(email).trim().toLowerCase(), role: normalizeStaffRole(role), facility_id: effectiveFacilityId },
+        });
 
         return NextResponse.json(
             { success: true, message: "Staff registered" },

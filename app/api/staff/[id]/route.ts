@@ -3,6 +3,7 @@ import supabase from "@/lib/supabase";
 import { requireAdminStaffSession } from "@/lib/authz";
 import bcrypt from "bcryptjs";
 import { normalizeStaffRole } from "@/lib/staff-role";
+import { logAudit } from "@/lib/audit";
 
 interface Availability {
     available?: boolean;
@@ -130,6 +131,14 @@ export async function DELETE(
         if (error) {
             return NextResponse.json({ error: error.message }, { status: 400 });
         }
+
+        void logAudit({
+            actor_id: session.staffId,
+            actor_type: "staff",
+            action: "DELETE",
+            resource_type: "staff",
+            resource_id: id,
+        });
 
         return NextResponse.json({ success: true, deleted: true });
     } catch (err: unknown) {

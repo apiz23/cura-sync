@@ -34,6 +34,7 @@ import { Separator } from "@/components/ui/separator";
 import { format } from "date-fns";
 import { Appointment } from "@/app/types";
 import Image from "next/image";
+import { useAuth } from "@/components/authprovideradmin";
 
 interface AppointmentSheetProps {
     open: boolean;
@@ -48,6 +49,7 @@ export function AppointmentSheet({
     appointment,
     onUpdated,
 }: AppointmentSheetProps) {
+    const { user } = useAuth();
     const [status, setStatus] = useState<Appointment["status"]>("PENDING");
     const [reason, setReason] = useState("");
     const [saving, setSaving] = useState(false);
@@ -84,6 +86,8 @@ export function AppointmentSheet({
         switch (status) {
             case "CONFIRMED":
                 return "bg-green-500/10 text-green-700 border-green-200";
+            case "CHECKED_IN":
+                return "bg-blue-500/10 text-blue-700 border-blue-200";
             case "CANCELLED":
                 return "bg-red-500/10 text-red-700 border-red-200";
             case "PENDING":
@@ -101,12 +105,15 @@ export function AppointmentSheet({
         try {
             setSaving(true);
 
+            const role = String(user?.role ?? "").toLowerCase();
+            const isStaff = role === "staff";
+
             const response = await fetch(`/api/appointments/${appointment.id}`, {
                 method: "PATCH",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     status,
-                    reason_for_visit: reason,
+                    ...(isStaff ? {} : { reason_for_visit: reason }),
                 }),
             });
 
@@ -116,11 +123,13 @@ export function AppointmentSheet({
                 throw new Error(payload?.error || "Failed to update appointment");
             }
 
+            // PATCH returns a bare `cura_appointments` row; keep the joined/display fields we already have.
             const updated: Appointment = {
                 ...appointment,
-                status,
-                reason_for_visit: reason,
-            };
+                ...(payload && typeof payload === "object" ? payload : {}),
+                status: payload?.status ?? status,
+                reason_for_visit: payload?.reason_for_visit ?? appointment.reason_for_visit,
+            } as Appointment;
 
             toast.success("Appointment updated successfully");
             onUpdated(updated);
@@ -134,6 +143,47 @@ export function AppointmentSheet({
     }
 
     if (!appointment) return null;
+
+    const role = String(user?.role ?? "").toLowerCase();
+    const isAdmin = role === "admin";
+    const isDoctor = role === "doctor";
+    const isStaff = role === "staff";
+
+    function uiCanTransition(from: string, to: string) {
+        const f = String(from ?? "").toUpperCase();
+        const t = String(to ?? "").toUpperCase();
+
+        if (f === t) return true;
+        if (f === "CANCELLED") return false;
+        if (f === "COMPLETED") return false;
+
+        if (f === "PENDING") return t === "CONFIRMED" || t === "CANCELLED";
+        if (f === "CONFIRMED") return t === "CHECKED_IN" || t === "CANCELLED";
+        if (f === "CHECKED_IN") return t === "COMPLETED" || t === "CANCELLED";
+
+        return false;
+    }
+
+    function uiAllowedByRole(next: Appointment["status"]) {
+        const nextUpper = String(next ?? "").toUpperCase();
+        if (isAdmin) return true;
+        if (isStaff) {
+            return (
+                nextUpper === "CONFIRMED" ||
+                nextUpper === "CHECKED_IN" ||
+                nextUpper === "CANCELLED"
+            );
+        }
+        if (isDoctor) return nextUpper === "COMPLETED";
+        return false;
+    }
+
+    function isStatusOptionDisabled(next: Appointment["status"]) {
+        if (isAdmin) return false;
+        if (!uiAllowedByRole(next)) return true;
+        if (!appointment) return true;
+        return !uiCanTransition(appointment.status, next);
+    }
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
@@ -279,20 +329,28 @@ export function AppointmentSheet({
                                         <SelectValue />
                                     </SelectTrigger>
                                     <SelectContent>
-                                        <SelectItem value="PENDING">
+                                        <SelectItem value="PENDING" disabled={isStatusOptionDisabled("PENDING")}>
                                             Pending
                                         </SelectItem>
-                                        <SelectItem value="CONFIRMED">
+                                        <SelectItem value="CONFIRMED" disabled={isStatusOptionDisabled("CONFIRMED")}>
                                             Confirmed
                                         </SelectItem>
-                                        <SelectItem value="COMPLETED">
+                                        <SelectItem value="CHECKED_IN" disabled={isStatusOptionDisabled("CHECKED_IN")}>
+                                            Checked in
+                                        </SelectItem>
+                                        <SelectItem value="COMPLETED" disabled={isStatusOptionDisabled("COMPLETED")}>
                                             Completed
                                         </SelectItem>
-                                        <SelectItem value="CANCELLED">
+                                        <SelectItem value="CANCELLED" disabled={isStatusOptionDisabled("CANCELLED")}>
                                             Cancelled
                                         </SelectItem>
                                     </SelectContent>
                                 </Select>
+                                {!isAdmin ? (
+                                    <p className="text-xs text-muted-foreground">
+                                        Role rules: staff can confirm/check-in/cancel; doctors can complete; admins can override.
+                                    </p>
+                                ) : null}
                             </div>
 
                             <div className="space-y-3">
@@ -305,7 +363,13 @@ export function AppointmentSheet({
                                     onChange={(e) => setReason(e.target.value)}
                                     placeholder="Enter reason for visit..."
                                     className="min-h-[100px] resize-none"
+                                    disabled={isStaff && !isAdmin}
                                 />
+                                {isStaff && !isAdmin ? (
+                                    <p className="text-xs text-muted-foreground">
+                                        Staff cannot edit the reason field (status-only).
+                                    </p>
+                                ) : null}
                             </div>
                         </div>
                     </div>

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
 import supabase from "@/lib/supabase";
+import { requireMobileOrBrowserUserId } from "@/lib/mobile-auth";
 import {
     getStaffSessionFromRequest,
     type StaffSessionClaims,
@@ -32,13 +33,24 @@ type StaffSessionVersionCacheEntry = {
 
 const staffSessionVersionCache = new Map<string, StaffSessionVersionCacheEntry>();
 
-export async function requirePatientSession(): Promise<
+export async function requirePatientSession(
+    req?: Request
+): Promise<
     PatientSession | NextResponse
 > {
-    const { userId } = await auth();
-
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    let userId: string;
+    if (req) {
+        const mobileOrBrowserUserId = await requireMobileOrBrowserUserId(req);
+        if (mobileOrBrowserUserId instanceof NextResponse) {
+            return mobileOrBrowserUserId;
+        }
+        userId = mobileOrBrowserUserId;
+    } else {
+        const browserAuth = await auth();
+        if (!browserAuth.userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        userId = browserAuth.userId;
     }
 
     // Optional: ensure this Clerk user is actually a patient profile.
@@ -119,9 +131,9 @@ export async function requireAnySession(
     // Prefer Clerk user session if present. This avoids accidentally treating a
     // browser with a leftover staff cookie as "staff" when the user is signed in
     // as a patient.
-    const { userId } = await auth();
-    if (userId) {
-        return { kind: "patient", profileId: userId };
+    const mobileOrBrowserUserId = await requireMobileOrBrowserUserId(req);
+    if (!(mobileOrBrowserUserId instanceof NextResponse)) {
+        return { kind: "patient", profileId: mobileOrBrowserUserId };
     }
 
     const staff = await getStaffSessionFromRequest(req);

@@ -10,8 +10,6 @@ import {
   Users,
   X,
   Building,
-  Navigation,
-  MoreHorizontal,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -33,12 +31,6 @@ import {
   TableProvider,
   TableRow,
 } from "@/components/kibo-ui/table";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Select,
   SelectTrigger,
@@ -205,10 +197,7 @@ export default function AppointmentPage() {
               </AvatarFallback>
             </Avatar>
             <div
-              className="absolute right-0 bottom-0 h-2 w-2 rounded-full ring-2 ring-background"
-              style={{
-                backgroundColor: row.original.is_active ? "#10B981" : "#6B7280",
-              }}
+              className={`absolute right-0 bottom-0 h-2 w-2 rounded-full ring-2 ring-background ${row.original.is_active ? "bg-primary" : "bg-muted-foreground"}`}
             />
           </div>
           <div className="min-w-0 flex-1">
@@ -224,7 +213,7 @@ export default function AppointmentPage() {
               ) : null}
               <span
                 className={
-                  row.original.is_active ? "text-emerald-600" : "text-gray-500"
+                  row.original.is_active ? "text-primary" : "text-muted-foreground"
                 }
               >
                 {row.original.is_active ? "Active" : "Inactive"}
@@ -379,48 +368,43 @@ export default function AppointmentPage() {
               </div>
             </div>
             <div className="md:col-span-4 lg:col-span-3">
-              <div className="relative">
-                <Select value={filterType} onValueChange={setFilterType}>
-                  <SelectTrigger className="w-full h-14 rounded-xl border-2 border-input bg-background px-4 text-sm ring-offset-background focus:ring-2 focus:ring-ring focus:ring-offset-2">
-                    <SelectValue placeholder="All Facility Types" />
-                  </SelectTrigger>
-
-                  <SelectContent>
-                    <SelectItem value="all">All Facility Types</SelectItem>
-
-                    {facilityTypes.map((type) => (
-                      <SelectItem key={type} value={type}>
-                        {type}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <Filter className="absolute right-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground pointer-events-none" />
-              </div>
+              <Select value={filterType} onValueChange={setFilterType}>
+                <SelectTrigger className="w-full rounded-xl border-2">
+                  <SelectValue placeholder="All Facility Types" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Facility Types</SelectItem>
+                  {facilityTypes.map((type) => (
+                    <SelectItem key={type} value={type}>
+                      {type}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </div>
 
           {/* Stats Cards */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="border-2 border-blue-500/10 hover:border-blue-500/20 transition-all">
+            <Card className="border-2 border-primary/10 hover:border-primary/20 transition-all">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">
-                      Available Today
+                      Active Facilities
                     </p>
                     <h3 className="text-3xl font-bold mt-2">
-                      {facilities.length}
+                      {facilities.filter((f) => f.is_active).length}
                     </h3>
                   </div>
-                  <div className="p-3 rounded-full bg-blue-500/10 shrink-0">
-                    <Building className="h-6 w-6 text-blue-500" />
+                  <div className="p-3 rounded-full bg-primary/10 shrink-0">
+                    <Building className="h-6 w-6 text-primary" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-green-500/10 hover:border-green-500/20 transition-all">
+            <Card className="border-2 border-info/10 hover:border-info/20 transition-all">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -431,14 +415,14 @@ export default function AppointmentPage() {
                       {scheduledFacilitiesCount}
                     </h3>
                   </div>
-                  <div className="p-3 rounded-full bg-green-500/10 shrink-0">
-                    <Clock className="h-6 w-6 text-green-500" />
+                  <div className="p-3 rounded-full bg-info/10 shrink-0">
+                    <Clock className="h-6 w-6 text-info" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-amber-500/10 hover:border-amber-500/20 transition-all">
+            <Card className="border-2 border-warning/10 hover:border-warning/20 transition-all">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -449,14 +433,14 @@ export default function AppointmentPage() {
                       {facilityTypes.length}
                     </h3>
                   </div>
-                  <div className="p-3 rounded-full bg-amber-500/10 shrink-0">
-                    <Filter className="h-6 w-6 text-amber-500" />
+                  <div className="p-3 rounded-full bg-warning/10 shrink-0">
+                    <Filter className="h-6 w-6 text-warning" />
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            <Card className="border-2 border-purple-500/10 hover:border-purple-500/20 transition-all">
+            <Card className="border-2 border-secondary/10 hover:border-secondary/20 transition-all">
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                   <div>
@@ -467,8 +451,8 @@ export default function AppointmentPage() {
                       {specialtyCount}
                     </h3>
                   </div>
-                  <div className="p-3 rounded-full bg-purple-500/10 shrink-0">
-                    <Calendar className="h-6 w-6 text-purple-500" />
+                  <div className="p-3 rounded-full bg-secondary/10 shrink-0">
+                    <Calendar className="h-6 w-6 text-secondary" />
                   </div>
                 </div>
               </CardContent>

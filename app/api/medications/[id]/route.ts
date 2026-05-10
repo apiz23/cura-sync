@@ -5,6 +5,7 @@ import {
     type AnySession,
     type StaffSession,
 } from "@/lib/authz";
+import { logAudit, actorFromSession } from "@/lib/audit";
 
 function canManagePrescriptions(
     session: AnySession | NextResponse
@@ -37,11 +38,11 @@ export async function PATCH(
 
     const { data: existing, error: existingError } = await supabase
         .from("cura_medications")
-        .select("id, profile_id")
+        .select("id, profile_id, deleted_at")
         .eq("id", id)
         .single();
 
-    if (existingError || !existing) {
+    if (existingError || !existing || existing.deleted_at !== null) {
         return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -83,6 +84,13 @@ export async function PATCH(
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    void logAudit({
+        ...actorFromSession(session),
+        action: "UPDATE",
+        resource_type: "medication",
+        resource_id: id,
+    });
+
     return NextResponse.json(data);
 }
 
@@ -107,11 +115,11 @@ export async function DELETE(
 
     const { data: existing, error: existingError } = await supabase
         .from("cura_medications")
-        .select("id, profile_id")
+        .select("id, profile_id, deleted_at")
         .eq("id", id)
         .single();
 
-    if (existingError || !existing) {
+    if (existingError || !existing || existing.deleted_at !== null) {
         return NextResponse.json({ error: "Not found" }, { status: 404 });
     }
 
@@ -129,12 +137,19 @@ export async function DELETE(
 
     const { error } = await supabase
         .from("cura_medications")
-        .delete()
+        .update({ deleted_at: new Date().toISOString() })
         .eq("id", id);
 
     if (error) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
+
+    void logAudit({
+        ...actorFromSession(session),
+        action: "DELETE",
+        resource_type: "medication",
+        resource_id: id,
+    });
 
     return NextResponse.json({ success: true });
 }

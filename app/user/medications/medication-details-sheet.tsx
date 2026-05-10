@@ -28,6 +28,7 @@ import { useState } from "react";
 import { Medication } from "@/app/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import { isMedicationExpired, parseEndDate, parseStartDate } from "@/lib/medication-dates";
 
 interface MedicationDetailsSheetProps {
     open: boolean;
@@ -82,8 +83,10 @@ export default function MedicationDetailsSheet({
     const calculateProgress = () => {
         if (!medication.start_date || !medication.end_date) return 0;
 
-        const start = new Date(medication.start_date).getTime();
-        const end = new Date(medication.end_date).getTime();
+        const start = parseStartDate(medication.start_date)?.getTime();
+        const end = parseEndDate(medication.end_date)?.getTime();
+        if (start === undefined || end === undefined) return 0;
+        if (!Number.isFinite(start) || !Number.isFinite(end)) return 0;
         const now = new Date().getTime();
 
         if (now >= end) return 100;
@@ -138,9 +141,7 @@ export default function MedicationDetailsSheet({
 
     const statusConfig = getStatusConfig(medication.status);
     const isActive = medication.status === "ACTIVE";
-    const isExpired = medication.end_date
-        ? new Date(medication.end_date) < new Date()
-        : false;
+    const isExpired = isMedicationExpired(medication.end_date);
     const progress = isActive ? calculateProgress() : 0;
     const lastUpdated = medication.updated_at
         ? new Date(medication.updated_at)

@@ -61,6 +61,11 @@ export default function DashboardPage() {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
+    const role = String(user?.role ?? "").toLowerCase();
+    const isAdmin = role === "admin";
+    const isDoctor = role === "doctor";
+    const appointmentsHref = isDoctor ? "/admin/consultations" : "/admin/appointments";
+
     const loadDashboard = useCallback(async () => {
         if (!user?.facility_id) return;
 
@@ -121,8 +126,8 @@ export default function DashboardPage() {
 
     const todayIso = new Date().toISOString().slice(0, 10);
 
-    const confirmedAppointments = state.appointments.filter(
-        (appointment) => appointment.status === "CONFIRMED"
+    const confirmedAppointments = state.appointments.filter((appointment) =>
+        appointment.status === "CONFIRMED" || appointment.status === "CHECKED_IN"
     );
     const todayAppointments = state.appointments.filter(
         (appointment) => appointment.appointment_date === todayIso
@@ -204,12 +209,14 @@ export default function DashboardPage() {
                         <RefreshCw className="h-4 w-4" />
                         Refresh
                     </Button>
-                    <Link href="/admin/settings">
-                        <Button className="gap-2">
-                            <Settings className="h-4 w-4" />
-                            Facility settings
-                        </Button>
-                    </Link>
+                    {isAdmin ? (
+                        <Link href="/admin/settings">
+                            <Button className="gap-2">
+                                <Settings className="h-4 w-4" />
+                                Facility settings
+                            </Button>
+                        </Link>
+                    ) : null}
                 </div>
             </div>
 
@@ -258,14 +265,18 @@ export default function DashboardPage() {
                 <Card className="border shadow-sm">
                     <CardHeader className="flex flex-row items-center justify-between gap-4">
                         <div>
-                            <CardTitle>Upcoming appointments</CardTitle>
+                            <CardTitle>
+                                {isDoctor ? "Today's queue" : "Upcoming appointments"}
+                            </CardTitle>
                             <CardDescription>
-                                Immediate workload for this facility
+                                {isDoctor
+                                    ? "Patients confirmed or checked-in for today"
+                                    : "Immediate workload for this facility"}
                             </CardDescription>
                         </div>
-                        <Link href="/admin/appointments">
+                        <Link href={appointmentsHref}>
                             <Button variant="ghost" size="sm" className="gap-2">
-                                Open appointments
+                                {isDoctor ? "Open consultations" : "Open appointments"}
                                 <ArrowRight className="h-4 w-4" />
                             </Button>
                         </Link>
@@ -275,7 +286,7 @@ export default function DashboardPage() {
                             upcomingAppointments.map((appointment) => (
                                 <Link
                                     key={appointment.id}
-                                    href="/admin/appointments"
+                                    href={appointmentsHref}
                                     className="flex items-center justify-between rounded-xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
                                 >
                                     <div>
@@ -297,8 +308,8 @@ export default function DashboardPage() {
                             <EmptyState
                                 title="No upcoming appointments"
                                 description="Once patients book appointments, they will appear here."
-                                href="/admin/appointments"
-                                action="Manage appointments"
+                                href={appointmentsHref}
+                                action={isDoctor ? "Open consultations" : "Manage appointments"}
                             />
                         )}
                     </CardContent>
@@ -317,20 +328,24 @@ export default function DashboardPage() {
                                 label="Manage patients"
                             />
                             <QuickAction
-                                href="/admin/staff"
-                                icon={UserPlus}
-                                label="Manage staff"
-                            />
-                            <QuickAction
-                                href="/admin/appointments"
+                                href={appointmentsHref}
                                 icon={CalendarClock}
-                                label="Review appointments"
+                                label={isDoctor ? "Open consultations" : "Review appointments"}
                             />
-                            <QuickAction
-                                href="/admin/security"
-                                icon={Shield}
-                                label="Review security settings"
-                            />
+                            {isAdmin ? (
+                                <>
+                                    <QuickAction
+                                        href="/admin/staff"
+                                        icon={UserPlus}
+                                        label="Manage staff"
+                                    />
+                                    <QuickAction
+                                        href="/admin/security"
+                                        icon={Shield}
+                                        label="Review security settings"
+                                    />
+                                </>
+                            ) : null}
                         </CardContent>
                     </Card>
 
@@ -409,42 +424,44 @@ export default function DashboardPage() {
                     </CardContent>
                 </Card>
 
-                <Card className="border shadow-sm">
-                    <CardHeader>
-                        <CardTitle>Recent staff accounts</CardTitle>
-                        <CardDescription>Latest staff records for this facility</CardDescription>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                        {recentStaff.length ? (
-                            recentStaff.map((staffMember) => (
-                                <Link
-                                    key={staffMember.id}
+                {isAdmin ? (
+                    <Card className="border shadow-sm">
+                        <CardHeader>
+                            <CardTitle>Recent staff accounts</CardTitle>
+                            <CardDescription>Latest staff records for this facility</CardDescription>
+                        </CardHeader>
+                        <CardContent className="space-y-3">
+                            {recentStaff.length ? (
+                                recentStaff.map((staffMember) => (
+                                    <Link
+                                        key={staffMember.id}
+                                        href="/admin/staff"
+                                        className="flex items-center justify-between rounded-xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
+                                    >
+                                        <div>
+                                            <p className="font-medium text-foreground">
+                                                {staffMember.full_name}
+                                            </p>
+                                            <p className="text-sm text-muted-foreground">
+                                                {staffMember.email}
+                                            </p>
+                                        </div>
+                                        <Badge variant="outline" className="capitalize">
+                                            {staffMember.role ?? "unknown"}
+                                        </Badge>
+                                    </Link>
+                                ))
+                            ) : (
+                                <EmptyState
+                                    title="No staff records yet"
+                                    description="Add facility staff to manage care operations."
                                     href="/admin/staff"
-                                    className="flex items-center justify-between rounded-xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
-                                >
-                                    <div>
-                                        <p className="font-medium text-foreground">
-                                            {staffMember.full_name}
-                                        </p>
-                                        <p className="text-sm text-muted-foreground">
-                                            {staffMember.email}
-                                        </p>
-                                    </div>
-                                    <Badge variant="outline" className="capitalize">
-                                        {staffMember.role ?? "unknown"}
-                                    </Badge>
-                                </Link>
-                            ))
-                        ) : (
-                            <EmptyState
-                                title="No staff records yet"
-                                description="Add facility staff to manage care operations."
-                                href="/admin/staff"
-                                action="Open staff"
-                            />
-                        )}
-                    </CardContent>
-                </Card>
+                                    action="Open staff"
+                                />
+                            )}
+                        </CardContent>
+                    </Card>
+                ) : null}
             </div>
         </div>
     );

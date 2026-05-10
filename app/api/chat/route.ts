@@ -33,6 +33,7 @@ export async function POST(req: Request) {
 					session_id: session_id.trim(),
 					message: message.trim(),
 				}),
+				signal: AbortSignal.timeout(8000),
 			},
 		);
 

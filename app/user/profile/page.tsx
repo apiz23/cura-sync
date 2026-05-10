@@ -1,9 +1,13 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { format } from "date-fns";
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useForm } from "react-hook-form";
+import { Calendar } from "@/components/ui/calendar";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -146,11 +150,19 @@ function buildFormData(profile: UserProfile | null): ProfileFormState {
     };
 }
 
+function parseDobString(dateStr: string | undefined): Date | undefined {
+    if (!dateStr) return undefined;
+    const [year, month, day] = dateStr.split("-").map(Number);
+    if (!year || !month || !day) return undefined;
+    return new Date(year, month - 1, day);
+}
+
 export default function ProfilePage() {
     const { user, isLoaded: isClerkLoaded } = useUser();
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    const [dobOpen, setDobOpen] = useState(false);
     const form = useForm<ProfileFormState>({
         resolver: zodResolver(profileFormSchema),
         defaultValues: {
@@ -164,6 +176,8 @@ export default function ProfilePage() {
         register,
         handleSubmit,
         reset,
+        setValue,
+        watch,
         formState: { errors },
     } = form;
 
@@ -513,9 +527,7 @@ export default function ProfilePage() {
                                         </div>
                                     </div>
                                 </div>
-
                                 <Separator />
-
                                 <div className="space-y-4">
                                     <h3 className="text-sm font-medium text-foreground">
                                         Patient Profile
@@ -528,16 +540,42 @@ export default function ProfilePage() {
                                             >
                                                 Date of Birth
                                             </Label>
-                                            <div className="relative">
-                                                <CalendarDays className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                                                <Input
-                                                    id="date_of_birth"
-                                                    type="date"
-                                                    {...register("patient_profile.date_of_birth")}
-                                                    className="pl-9"
-                                                    aria-invalid={!!errors.patient_profile?.date_of_birth}
-                                                />
-                                            </div>
+                                            <Popover open={dobOpen} onOpenChange={setDobOpen}>
+                                                <PopoverTrigger asChild>
+                                                    <Button
+                                                        id="date_of_birth"
+                                                        type="button"
+                                                        variant="outline"
+                                                        className={cn(
+                                                            "w-full justify-start text-left font-normal",
+                                                            !watch("patient_profile.date_of_birth") && "text-muted-foreground"
+                                                        )}
+                                                    >
+                                                        <CalendarDays className="mr-2 h-4 w-4" />
+                                                        {watch("patient_profile.date_of_birth")
+                                                            ? format(parseDobString(watch("patient_profile.date_of_birth"))!, "PPP")
+                                                            : "Pick a date"}
+                                                    </Button>
+                                                </PopoverTrigger>
+                                                <PopoverContent className="w-auto p-0" align="start">
+                                                    <Calendar
+                                                        mode="single"
+                                                        captionLayout="dropdown"
+                                                        selected={parseDobString(watch("patient_profile.date_of_birth"))}
+                                                        onSelect={(date) => {
+                                                            setValue(
+                                                                "patient_profile.date_of_birth",
+                                                                date ? format(date, "yyyy-MM-dd") : "",
+                                                                { shouldValidate: true }
+                                                            );
+                                                            setDobOpen(false);
+                                                        }}
+                                                        startMonth={new Date(1900, 0)}
+                                                        endMonth={new Date()}
+                                                        disabled={(date) => date > new Date()}
+                                                    />
+                                                </PopoverContent>
+                                            </Popover>
                                             <FieldError
                                                 errors={[errors.patient_profile?.date_of_birth]}
                                             />

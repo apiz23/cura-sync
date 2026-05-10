@@ -133,6 +133,8 @@ export default function EditFacilityPage() {
                         start_time: s.start_time,
                         end_time: s.end_time,
                         slot_duration_minutes: s.slot_duration_minutes ?? null,
+                        break_start: s.break_start ?? null,
+                        break_end: s.break_end ?? null,
                     })),
                 }),
             });
@@ -186,6 +188,8 @@ export default function EditFacilityPage() {
             start_time: "09:00",
             end_time: "17:00",
             slot_duration_minutes: 30,
+            break_start: null,
+            break_end: null,
         };
         setSchedules([...schedules, newSchedule]);
     };
@@ -783,111 +787,149 @@ export default function EditFacilityPage() {
                                                 </Button>
                                             </div>
 
-                                            <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-                                                <div>
-                                                    <Label className="text-sm font-medium mb-2">
-                                                        Day
-                                                    </Label>
-                                                    <Select
-                                                        value={String(
-                                                            schedule.day_of_week
-                                                        )}
-                                                        onValueChange={(
-                                                            value
-                                                        ) =>
-                                                            handleScheduleChange(
-                                                                index,
-                                                                "day_of_week",
-                                                                parseInt(value)
-                                                            )
-                                                        }
-                                                    >
-                                                        <SelectTrigger className="w-full">
-                                                            <SelectValue placeholder="Select day" />
-                                                        </SelectTrigger>
-
-                                                        <SelectContent>
-                                                            {dayNames.map(
-                                                                (day, idx) => (
-                                                                    <SelectItem
-                                                                        key={
-                                                                            idx
-                                                                        }
-                                                                        value={String(
-                                                                            idx
-                                                                        )}
-                                                                    >
-                                                                        {day}
-                                                                    </SelectItem>
-                                                                )
+                                            <div className="space-y-3">
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                                    <div>
+                                                        <Label className="text-sm font-medium mb-2">
+                                                            Day
+                                                        </Label>
+                                                        <Select
+                                                            value={String(
+                                                                schedule.day_of_week
                                                             )}
-                                                        </SelectContent>
-                                                    </Select>
-                                                </div>
-
-                                                <div>
-                                                    <Label className="text-sm font-medium mb-2">
-                                                        Start Time
-                                                    </Label>
-                                                    <Input
-                                                        type="time"
-                                                        value={
-                                                            schedule.start_time
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleScheduleChange(
-                                                                index,
-                                                                "start_time",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        className="h-10"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <Label className="text-sm font-medium mb-2">
-                                                        End Time
-                                                    </Label>
-                                                    <Input
-                                                        type="time"
-                                                        value={
-                                                            schedule.end_time
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleScheduleChange(
-                                                                index,
-                                                                "end_time",
-                                                                e.target.value
-                                                            )
-                                                        }
-                                                        className="h-10"
-                                                    />
-                                                </div>
-
-                                                <div>
-                                                    <Label className="text-sm font-medium mb-2">
-                                                        Slot Duration (min)
-                                                    </Label>
-                                                    <Input
-                                                        type="number"
-                                                        value={
-                                                            schedule.slot_duration_minutes
-                                                        }
-                                                        onChange={(e) =>
-                                                            handleScheduleChange(
-                                                                index,
-                                                                "slot_duration_minutes",
-                                                                parseInt(
-                                                                    e.target
-                                                                        .value
+                                                            onValueChange={(
+                                                                value
+                                                            ) =>
+                                                                handleScheduleChange(
+                                                                    index,
+                                                                    "day_of_week",
+                                                                    parseInt(value)
                                                                 )
-                                                            )
-                                                        }
-                                                        min="5"
-                                                        max="120"
-                                                        className="h-10"
-                                                    />
+                                                            }
+                                                        >
+                                                            <SelectTrigger className="w-full">
+                                                                <SelectValue placeholder="Select day" />
+                                                            </SelectTrigger>
+                                                            <SelectContent>
+                                                                {dayNames.map(
+                                                                    (day, idx) => (
+                                                                        <SelectItem
+                                                                            key={idx}
+                                                                            value={String(idx)}
+                                                                        >
+                                                                            {day}
+                                                                        </SelectItem>
+                                                                    )
+                                                                )}
+                                                            </SelectContent>
+                                                        </Select>
+                                                    </div>
+
+                                                    <div>
+                                                        <Label className="text-sm font-medium mb-2">
+                                                            Start Time
+                                                        </Label>
+                                                        <Input
+                                                            type="time"
+                                                            value={schedule.start_time}
+                                                            onChange={(e) =>
+                                                                handleScheduleChange(
+                                                                    index,
+                                                                    "start_time",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            className="h-10"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <Label className="text-sm font-medium mb-2">
+                                                            End Time
+                                                        </Label>
+                                                        <Input
+                                                            type="time"
+                                                            value={schedule.end_time}
+                                                            onChange={(e) =>
+                                                                handleScheduleChange(
+                                                                    index,
+                                                                    "end_time",
+                                                                    e.target.value
+                                                                )
+                                                            }
+                                                            className="h-10"
+                                                        />
+                                                    </div>
+
+                                                    <div>
+                                                        <Label className="text-sm font-medium mb-2">
+                                                            Slot Duration (min)
+                                                        </Label>
+                                                        <Input
+                                                            type="number"
+                                                            value={schedule.slot_duration_minutes}
+                                                            onChange={(e) =>
+                                                                handleScheduleChange(
+                                                                    index,
+                                                                    "slot_duration_minutes",
+                                                                    parseInt(e.target.value)
+                                                                )
+                                                            }
+                                                            min="5"
+                                                            max="120"
+                                                            className="h-10"
+                                                        />
+                                                    </div>
+                                                </div>
+
+                                                {/* Break Time */}
+                                                <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1 border-t border-dashed border-border/60">
+                                                    <div className="flex items-center gap-2 md:col-span-1">
+                                                        <Clock className="h-4 w-4 text-amber-500" />
+                                                        <span className="text-xs font-medium text-muted-foreground">Break Time</span>
+                                                        <span className="text-xs text-muted-foreground">(optional)</span>
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-sm font-medium mb-2">
+                                                            Break Start
+                                                        </Label>
+                                                        <Input
+                                                            type="time"
+                                                            value={schedule.break_start ?? ""}
+                                                            onChange={(e) =>
+                                                                handleScheduleChange(
+                                                                    index,
+                                                                    "break_start",
+                                                                    e.target.value || null
+                                                                )
+                                                            }
+                                                            className="h-10"
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-sm font-medium mb-2">
+                                                            Break End
+                                                        </Label>
+                                                        <Input
+                                                            type="time"
+                                                            value={schedule.break_end ?? ""}
+                                                            onChange={(e) =>
+                                                                handleScheduleChange(
+                                                                    index,
+                                                                    "break_end",
+                                                                    e.target.value || null
+                                                                )
+                                                            }
+                                                            className="h-10"
+                                                        />
+                                                    </div>
+                                                    <div className="flex items-end pb-1">
+                                                        {schedule.break_start && schedule.break_end && (
+                                                            <span className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-2 py-1 rounded-md">
+                                                                {schedule.break_start.slice(0, 5)} – {schedule.break_end.slice(0, 5)} blocked
+                                                            </span>
+                                                        )}
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>

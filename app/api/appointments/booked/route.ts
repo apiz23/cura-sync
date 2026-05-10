@@ -24,11 +24,18 @@ export async function GET(req: Request) {
             );
         }
 
+        if (session.kind === "patient" && !facilityId) {
+            return NextResponse.json(
+                { error: "facilityId is required" },
+                { status: 400 },
+            );
+        }
+
         let query = supabase
             .from("cura_appointments")
             .select("start_time, end_time, status")
             .eq("appointment_date", date)
-            .in("status", ["PENDING", "CONFIRMED"]);
+            .in("status", ["PENDING", "CONFIRMED", "CHECKED_IN"]);
 
         if (facilityId) {
             if (session.kind === "staff" && facilityId !== session.facilityId) {

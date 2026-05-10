@@ -23,6 +23,7 @@ import {
 import { useState } from "react";
 import { Medication } from "@/app/types";
 import EditMedicationSheet from "./edit-medication-sheet";
+import { isMedicationExpired } from "@/lib/medication-dates";
 
 interface MedicationCardProps {
     medication: Medication;
@@ -87,9 +88,7 @@ export default function MedicationCard({
     };
 
     const isActive = medication.status === "ACTIVE";
-    const isExpired = medication.end_date
-        ? new Date(medication.end_date) < new Date()
-        : false;
+    const isExpired = isMedicationExpired(medication.end_date);
 
     const getTimeRemaining = () => {
         if (!medication.end_date || !isActive) return null;
@@ -133,10 +132,17 @@ export default function MedicationCard({
                                     <div className="flex items-center gap-1">
                                         {canEdit && (
                                             <Button
+                                                type="button"
                                                 variant="ghost"
                                                 size="icon"
                                                 className="h-7 w-7 rounded-lg opacity-100 group-hover:opacity-100 transition-opacity"
+                                                onPointerDown={(e) => {
+                                                    // Prevent Radix SheetTrigger from firing on pointer down.
+                                                    e.preventDefault();
+                                                    e.stopPropagation();
+                                                }}
                                                 onClick={(e) => {
+                                                    e.preventDefault();
                                                     e.stopPropagation();
                                                     setIsEditSheetOpen(true);
                                                 }}

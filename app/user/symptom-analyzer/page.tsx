@@ -333,6 +333,7 @@ export default function SymptomsCheckPage() {
 		setError(null);
 
 		try {
+			console.log("[symptom-analyzer] patientContext:", patientContext);
 			const res = await fetch("/api/analyze", {
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
@@ -351,7 +352,11 @@ export default function SymptomsCheckPage() {
 			setResult(data);
 		} catch (err) {
 			console.error(err);
-			setError("Something went wrong. Please try again.");
+			setError(
+				err instanceof Error
+					? err.message
+					: "Something went wrong. Please try again.",
+			);
 		} finally {
 			setLoading(false);
 		}
@@ -376,7 +381,7 @@ export default function SymptomsCheckPage() {
 							Symptom input
 						</CardTitle>
 						<CardDescription>
-							Detailed descriptions may improve the analysis summary.
+							Detailed descriptions improve the analysis. Saved profile context is optional and used when available.
 						</CardDescription>
 					</CardHeader>
 					<CardContent className="space-y-6">
@@ -417,11 +422,18 @@ export default function SymptomsCheckPage() {
 									))}
 								</div>
 								<p className="text-xs text-muted-foreground">
-									The analyzer will include your saved health profile details
-									when generating the summary.
+									Your saved health profile details will be included automatically.
+									You can still analyze symptoms even if your profile is incomplete.
 								</p>
 							</div>
-						) : null}
+						) : (
+							<div className="space-y-2 rounded-xl border border-dashed bg-muted/20 p-4">
+								<h3 className="text-sm font-semibold">No saved profile context</h3>
+								<p className="text-xs text-muted-foreground">
+									This analysis will use only the symptoms you enter. Add profile details later for more personalized context.
+								</p>
+							</div>
+						)}
 
 						{allSymptoms.length > 0 ? (
 							<div className="space-y-3">

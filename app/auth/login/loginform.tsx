@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useSignUp, useUser } from "@clerk/nextjs";
+import { useSignIn, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Stethoscope, Shield, Activity, Loader2 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
@@ -16,7 +16,7 @@ export function LoginForm({
 	className,
 	...props
 }: React.ComponentProps<"div">) {
-	const { isLoaded: isSignUpLoaded, signUp } = useSignUp();
+	const { isLoaded: isSignInLoaded, signIn } = useSignIn();
 	const { isLoaded: userLoaded, isSignedIn } = useUser();
 	const router = useRouter();
 
@@ -35,7 +35,7 @@ export function LoginForm({
 	const handleSocialAuth = async (
 		strategy: "oauth_google" | "oauth_facebook",
 	) => {
-		if (!isSignUpLoaded) return;
+		if (!isSignInLoaded) return;
 
 		setError("");
 		setLoadingStrategy(strategy);
@@ -48,7 +48,7 @@ export function LoginForm({
 				id: toastId,
 				duration: 10000,
 			});
-			await signUp.authenticateWithRedirect({
+			await signIn.authenticateWithRedirect({
 				strategy: strategy,
 				redirectUrl: "/user/sso-callback",
 				redirectUrlComplete: "/user/dashboard",

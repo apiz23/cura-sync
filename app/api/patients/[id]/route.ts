@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
 import { requireStaffSession } from "@/lib/authz";
+import { logAudit } from "@/lib/audit";
 
 async function ensurePatientInStaffFacility(
     staffFacilityId: string,
@@ -64,7 +65,28 @@ export async function GET(
             );
         }
 
-        return NextResponse.json(data);
+        // Flatten patient profile fields for UI consumers.
+        const medical = (data as any)?.patient_profiles?.[0] ?? {};
+
+        void logAudit({
+            actor_id: session.staffId,
+            actor_type: "staff",
+            action: "READ",
+            resource_type: "patient",
+            resource_id: id,
+        });
+
+        return NextResponse.json({
+            id: data.id,
+            profile_id: data.id,
+            email: data.email,
+            full_name: data.full_name,
+            role: data.role,
+            avatar_url: data.avatar_url,
+            phone_number: data.phone_number,
+            created_at: data.created_at,
+            ...medical,
+        });
     } catch (err: unknown) {
         console.error("Get patient error:", err);
         return NextResponse.json(

@@ -8,6 +8,7 @@ import {
     User,
     Stethoscope,
     Pill,
+    Activity,
 } from "lucide-react";
 
 export const userMenu = [
@@ -18,6 +19,11 @@ export const userMenu = [
                 title: "Dashboard",
                 url: "/user/dashboard",
                 icon: LayoutDashboard,
+            },
+            {
+                title: "Health Tracking",
+                url: "/user/health",
+                icon: Activity,
             },
         ],
     },

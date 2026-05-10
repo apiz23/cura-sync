@@ -41,6 +41,13 @@ import {
     PopoverContent,
     PopoverTrigger,
 } from "@/components/ui/popover";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Separator } from "@/components/ui/separator";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -90,6 +97,8 @@ type FacilitySchedule = {
     start_time: string;
     end_time: string;
     slot_duration_minutes: number | null;
+    break_start: string | null;
+    break_end: string | null;
 };
 
 function toMinutes(time: string) {
@@ -140,6 +149,8 @@ export default function AppointmentBookingPage() {
 
         return activeSchedules.flatMap((schedule) => {
             const duration = schedule.slot_duration_minutes ?? 60;
+            const breakStart = schedule.break_start ? toMinutes(schedule.break_start) : null;
+            const breakEnd = schedule.break_end ? toMinutes(schedule.break_end) : null;
             const slots: string[] = [];
 
             for (
@@ -147,9 +158,11 @@ export default function AppointmentBookingPage() {
                 start + duration <= toMinutes(schedule.end_time);
                 start += duration
             ) {
-                const startLabel = fromMinutes(start);
-                const endLabel = fromMinutes(start + duration);
-                slots.push(formatSlotLabel(startLabel, endLabel));
+                const end = start + duration;
+                if (breakStart !== null && breakEnd !== null) {
+                    if (start < breakEnd && end > breakStart) continue;
+                }
+                slots.push(formatSlotLabel(fromMinutes(start), fromMinutes(end)));
             }
 
             return slots;
@@ -696,73 +709,57 @@ export default function AppointmentBookingPage() {
                                             <div className="flex items-center justify-center py-8">
                                                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
                                             </div>
-                                        ) : (
-                                            availableSlots.length ? (
-                                                <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 sm:gap-3">
-                                                    {availableSlots.map((slot) => {
-                                                        const booked = isSlotBooked(slot);
-                                                        const isSelected =
-                                                            selectedSlot === slot;
-                                                        const [start] =
-                                                            slot.split(" - ");
-
-                                                        return (
-                                                            <button
-                                                                key={slot}
-                                                                disabled={booked}
-                                                                onClick={() => {
-                                                                    setSelectedSlot(slot);
-                                                                    toast.success(
-                                                                        "Time slot selected",
-                                                                        {
-                                                                            description: `${slot} on ${format(
-                                                                                selectedDate,
-                                                                                "MMM d, yyyy"
-                                                                            )}`,
-                                                                        }
-                                                                    );
-                                                                }}
-                                                                className={cn(
-                                                                    "group rounded-xl border p-3 text-center transition-all duration-200 sm:p-4",
-                                                                    booked
-                                                                        ? "cursor-not-allowed border-muted bg-muted/30"
-                                                                        : isSelected
-                                                                          ? "border-2 border-primary bg-linear-to-br from-primary/10 to-primary/5 shadow-sm"
-                                                                          : "hover:border-primary hover:bg-accent/50 hover:shadow-sm"
-                                                                )}
-                                                            >
-                                                                <div
-                                                                    className={cn(
-                                                                        "mb-1 font-semibold sm:text-lg",
-                                                                        booked
-                                                                            ? "text-muted-foreground"
-                                                                            : isSelected
-                                                                              ? "text-primary"
-                                                                              : "text-foreground"
-                                                                    )}
+                                        ) : availableSlots.length ? (
+                                            <div className="space-y-3">
+                                                <Select
+                                                    value={selectedSlot ?? ""}
+                                                    onValueChange={(val) => {
+                                                        setSelectedSlot(val);
+                                                        toast.success("Time slot selected", {
+                                                            description: `${val} on ${format(selectedDate, "MMM d, yyyy")}`,
+                                                        });
+                                                    }}
+                                                >
+                                                    <SelectTrigger className="h-12 w-full">
+                                                        <div className="flex items-center gap-2">
+                                                            <Clock className="h-4 w-4 text-primary" />
+                                                            <SelectValue placeholder="Select a time slot" />
+                                                        </div>
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {availableSlots.map((slot) => {
+                                                            const booked = isSlotBooked(slot);
+                                                            return (
+                                                                <SelectItem
+                                                                    key={slot}
+                                                                    value={slot}
+                                                                    disabled={booked}
+                                                                    className="py-3"
                                                                 >
-                                                                    {start}
-                                                                </div>
-                                                                <div className="text-xs text-muted-foreground">
-                                                                    {booked
-                                                                        ? "Booked"
-                                                                        : "Available"}
-                                                                </div>
-                                                                {!booked && (
-                                                                    <div className="mx-auto mt-2 h-1 w-6 rounded-full bg-primary/30 opacity-0 transition-opacity group-hover:opacity-100" />
-                                                                )}
-                                                            </button>
-                                                        );
-                                                    })}
-                                                </div>
-                                            ) : (
-                                                <div className="space-y-3 py-8 text-center">
-                                                    <Clock className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                                                    <p className="text-muted-foreground">
-                                                        No schedule is configured for this date yet.
-                                                    </p>
-                                                </div>
-                                            )
+                                                                    <div className="flex items-center justify-between gap-6 w-full">
+                                                                        <span className="font-medium">{slot}</span>
+                                                                        {booked ? (
+                                                                            <Badge variant="secondary" className="text-xs shrink-0">Booked</Badge>
+                                                                        ) : (
+                                                                            <Badge variant="outline" className="text-xs shrink-0 border-primary/30 text-primary">Available</Badge>
+                                                                        )}
+                                                                    </div>
+                                                                </SelectItem>
+                                                            );
+                                                        })}
+                                                    </SelectContent>
+                                                </Select>
+                                                <p className="text-xs text-muted-foreground">
+                                                    {availableSlots.filter((s) => !isSlotBooked(s)).length} of {availableSlots.length} slots available
+                                                </p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3 py-8 text-center">
+                                                <Clock className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                                                <p className="text-muted-foreground">
+                                                    No schedule is configured for this date yet.
+                                                </p>
+                                            </div>
                                         )
                                     ) : (
                                         <div className="space-y-3 py-8 text-center">

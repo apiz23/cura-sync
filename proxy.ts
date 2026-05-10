@@ -1,21 +1,20 @@
 import { clerkMiddleware, createRouteMatcher } from "@clerk/nextjs/server";
-import createMiddleware from "next-intl/middleware";
 import { NextResponse } from "next/server";
 import {
     STAFF_SESSION_COOKIE,
     verifyStaffSessionToken,
 } from "@/lib/staff-session";
-import { routing } from "@/i18n/routing";
 
 const isUserRoute = createRouteMatcher(["/user(.*)"]);
+const isSsoCallback = createRouteMatcher(["/user/sso-callback(.*)"]);
 const isAdminRoute = createRouteMatcher(["/admin(.*)"]);
-const intlMiddleware = createMiddleware(routing);
 
 export default clerkMiddleware(async (auth, req) => {
-    const pathname = req.nextUrl.pathname;
-
-    if (isUserRoute(req)) {
-        auth.protect();
+    if (isUserRoute(req) && !isSsoCallback(req)) {
+        const { userId, redirectToSignIn } = await auth();
+        if (!userId) {
+            return redirectToSignIn({ returnBackUrl: "/user/dashboard" });
+        }
     }
 
     if (isAdminRoute(req)) {
@@ -30,29 +29,12 @@ export default clerkMiddleware(async (auth, req) => {
         }
     }
 
-    if (shouldHandlePublicI18n(pathname)) {
-        return intlMiddleware(req);
-    }
-
     return NextResponse.next();
 });
 
 export const config = {
     matcher: [
-        // Skip Next.js internals and all static files, unless found in search params
         "/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)",
-        // Always run for API routes
         "/(api|trpc)(.*)",
     ],
 };
-
-function shouldHandlePublicI18n(pathname: string) {
-    return !(
-        pathname.startsWith("/api") ||
-        pathname.startsWith("/_next") ||
-        pathname.startsWith("/trpc") ||
-        pathname.startsWith("/auth") ||
-        pathname.startsWith("/admin") ||
-        pathname.startsWith("/user")
-    );
-}

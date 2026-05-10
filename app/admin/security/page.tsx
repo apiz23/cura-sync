@@ -1,7 +1,8 @@
 "use client";
 
 import { FormEvent, useState } from "react";
-import { KeyRound, Loader2, LogOut, Shield, ShieldAlert } from "lucide-react";
+import { KeyRound, Loader2, LogOut, ScrollText, Shield, ShieldAlert } from "lucide-react";
+import Link from "next/link";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/authprovideradmin";
@@ -133,6 +134,23 @@ export default function AdminSecurityPage() {
                     Manage your password and active admin sessions.
                 </p>
             </div>
+
+            <Card className="border-border/50 bg-muted/30">
+                <CardContent className="flex items-center justify-between py-4 px-5">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-primary/10 rounded-lg">
+                            <ScrollText className="h-5 w-5 text-primary" />
+                        </div>
+                        <div>
+                            <p className="font-medium text-sm">Audit Trail</p>
+                            <p className="text-xs text-muted-foreground">Append-only access log for all system actions · Admin only</p>
+                        </div>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                        <Link href="/admin/audit">View logs</Link>
+                    </Button>
+                </CardContent>
+            </Card>
 
             <div className="grid gap-6 lg:grid-cols-2">
                 <Card className="border-2 border-border/50">

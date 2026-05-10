@@ -74,9 +74,23 @@ async function getStaffAccount(staffId: string) {
         throw new Error(settingsError.message);
     }
 
+    let facility_name: string | null = null;
+    if (staff.facility_id) {
+        const { data: facility, error: facilityError } = await supabase
+            .from("cura_facilities")
+            .select("name")
+            .eq("id", staff.facility_id)
+            .maybeSingle();
+
+        if (!facilityError) {
+            facility_name = facility?.name ?? null;
+        }
+    }
+
     return {
         ...staff,
         role: normalizeStaffRole(staff.role),
+        facility_name,
         account_settings: settings
             ? {
                   ...settings,

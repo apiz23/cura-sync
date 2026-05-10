@@ -7,6 +7,9 @@ type ContactPayload = {
     message?: string;
 };
 
+const DEFAULT_CONTACT_TO_EMAIL = "piz230601@gmail.com";
+const DEFAULT_CONTACT_FROM_EMAIL = "CuraSync <onboarding@resend.dev>";
+
 function escapeHtml(value: string) {
     return value
         .replace(/&/g, "&amp;")
@@ -29,10 +32,10 @@ export async function POST(req: Request) {
         }
 
         const apiKey = process.env.RESEND_API_KEY;
-        const fromEmail = process.env.CONTACT_FROM_EMAIL;
-        const toEmail = process.env.CONTACT_TO_EMAIL;
+        const fromEmail = process.env.CONTACT_FROM_EMAIL ?? DEFAULT_CONTACT_FROM_EMAIL;
+        const toEmail = process.env.CONTACT_TO_EMAIL ?? DEFAULT_CONTACT_TO_EMAIL;
 
-        if (!apiKey || !fromEmail || !toEmail) {
+        if (!apiKey) {
             return NextResponse.json(
                 {
                     error: "Contact email service is not configured",

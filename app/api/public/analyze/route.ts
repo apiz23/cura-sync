@@ -5,6 +5,16 @@ import {
 } from "@/lib/public-demo-rate-limit";
 
 const MAX_SYMPTOM_LENGTH = 400;
+const PUBLIC_ANALYZE_TIMEOUT_MS = 8000;
+
+function isTimeoutError(err: unknown) {
+	return (
+		err instanceof Error &&
+		(err.name === "TimeoutError" ||
+			err.name === "AbortError" ||
+			err.message.includes("aborted due to timeout"))
+	);
+}
 
 export async function POST(req: NextRequest) {
 	try {
@@ -14,7 +24,8 @@ export async function POST(req: NextRequest) {
 		if (!limit.allowed) {
 			return NextResponse.json(
 				{
-					error: "Public demo limit reached. Please try again later or sign in for full access.",
+					error:
+						"Public demo limit reached. Please try again later or sign in for full access.",
 				},
 				{
 					status: 429,
@@ -27,7 +38,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { symptoms } = await req.json();
+		const { symptoms, patient_context } = await req.json();
 
 		if (!symptoms || !symptoms.trim()) {
 			return NextResponse.json(
@@ -53,15 +64,16 @@ export async function POST(req: NextRequest) {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ symptoms: trimmedSymptoms }),
+				body: JSON.stringify({ symptoms: trimmedSymptoms, patient_context }),
+				signal: AbortSignal.timeout(PUBLIC_ANALYZE_TIMEOUT_MS),
 			},
 		);
 
 		if (!aiRes.ok) {
 			const errData = await aiRes.json().catch(() => null);
 			return NextResponse.json(
-				{ error: errData?.detail || "Failed to analyze symptoms" },
-				{ status: 500 },
+				{ error: errData?.detail || errData?.error || "Failed to analyze symptoms" },
+				{ status: aiRes.status || 500 },
 			);
 		}
 
@@ -81,6 +93,7 @@ export async function POST(req: NextRequest) {
 						? urgency
 						: "unknown",
 				suggested_action: data.suggested_action,
+				source: data.source,
 				disclaimer:
 					data.disclaimer ||
 					"This demo is for informational purposes only and does not replace professional medical advice.",
@@ -92,6 +105,15 @@ export async function POST(req: NextRequest) {
 			},
 		);
 	} catch (err: unknown) {
+		if (isTimeoutError(err)) {
+			return NextResponse.json(
+				{
+					error:
+						"Public demo analysis timed out. Please try again shortly or sign in for the full analyzer experience.",
+				},
+				{ status: 504 },
+			);
+		}
 		if (err instanceof Error) {
 			return NextResponse.json({ error: err.message }, { status: 500 });
 		}

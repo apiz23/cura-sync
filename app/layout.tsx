@@ -2,33 +2,64 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
+import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
+/* 🔥 LOAD FONTS */
+const inter = Inter({
+	subsets: ["latin"],
+	weight: ["400", "500", "600", "700"],
+	variable: "--font-sans",
+	display: "swap",
+});
+
+const mono = JetBrains_Mono({
+	subsets: ["latin"],
+	weight: ["400", "500"],
+	variable: "--font-mono",
+	display: "swap",
+});
+
 export const metadata: Metadata = {
-    title: "CuraSync",
-    description: "AI-powered healthcare platform",
+	title: "CuraSync",
+	description: "AI-powered healthcare platform",
+	icons: {
+		icon: [
+			{ url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+			{ url: "/icons/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+		],
+		shortcut: "/icons/favicon.ico",
+		apple: "/icons/apple-touch-icon.png",
+	},
+	manifest: "/icons/site.webmanifest",
 };
 
 export default function RootLayout({
-    children,
-}: Readonly<{
-    children: React.ReactNode;
-}>) {
-    return (
-        <ClerkProvider>
-            <html lang="en" suppressHydrationWarning>
-                <body className="bg-background text-foreground antialiased">
-                    <ThemeProvider
-                        attribute="class"
-                        defaultTheme="dark"
-                        enableSystem
-                        disableTransitionOnChange
-                    >
-                        {children}
-                        <Toaster richColors />
-                    </ThemeProvider>
-                </body>
-            </html>
-        </ClerkProvider>
-    );
+	children,
+}: {
+	children: React.ReactNode;
+}) {
+	return (
+		<ClerkProvider>
+			<html
+				lang="en"
+				className={`${inter.variable} ${mono.variable}`}
+				suppressHydrationWarning
+			>
+				<body
+					className={`${inter.className} bg-background text-foreground font-sans antialiased`}
+				>
+					<ThemeProvider
+						attribute="class"
+						defaultTheme="dark"
+						enableSystem
+						disableTransitionOnChange
+					>
+						{children}
+						<Toaster richColors />
+					</ThemeProvider>
+				</body>
+			</html>
+		</ClerkProvider>
+	);
 }

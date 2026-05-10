@@ -32,6 +32,7 @@ import {
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 
@@ -67,16 +68,23 @@ type Coordinates = {
 	longitude: number;
 };
 
+type PatientContext = {
+	age?: number;
+	gender?: string;
+	allergies?: string;
+	chronic_conditions?: string;
+};
+
 function urgencyColor(urgency: AnalysisResult["urgency"]) {
 	switch (urgency) {
 		case "emergency":
-			return "bg-red-600 text-white";
+			return "bg-destructive text-destructive-foreground";
 		case "high":
-			return "bg-red-500 text-white";
+			return "bg-destructive/80 text-destructive-foreground";
 		case "medium":
-			return "bg-amber-500 text-white";
+			return "bg-warning text-warning-foreground";
 		case "low":
-			return "bg-emerald-500 text-white";
+			return "bg-primary text-primary-foreground";
 		default:
 			return "bg-muted text-foreground";
 	}
@@ -97,9 +105,28 @@ function urgencyTimeline(urgency: AnalysisResult["urgency"]) {
 	}
 }
 
+function sourceLabel(source: string | undefined): { label: string; className: string } | null {
+	switch (source) {
+		case "jamai_structured":
+			return { label: "AI-powered", className: "bg-primary/10 text-primary border-primary/20" };
+		case "knowledge_base":
+			return { label: "Knowledge Base", className: "bg-info/10 text-info border-info/20" };
+		case "rule_based_safety":
+			return { label: "Rule-based Triage", className: "bg-warning/10 text-foreground border-warning/20" };
+		case "fallback":
+			return { label: "General Guidance", className: "bg-muted text-muted-foreground border-border" };
+		default:
+			return null;
+	}
+}
+
 export default function AnalyzePage() {
 	const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
 	const [textInput, setTextInput] = useState("");
+	const [ageInput, setAgeInput] = useState("");
+	const [genderInput, setGenderInput] = useState("");
+	const [conditionsInput, setConditionsInput] = useState("");
+	const [allergiesInput, setAllergiesInput] = useState("");
 	const [result, setResult] = useState<AnalysisResult | null>(null);
 	const [loading, setLoading] = useState(false);
 	const [error, setError] = useState<string | null>(null);
@@ -164,6 +191,39 @@ export default function AnalyzePage() {
 			.filter(Boolean);
 	}, [result]);
 
+	const patientContext = useMemo(() => {
+		const age = Number.parseInt(ageInput, 10);
+		const context: PatientContext = {};
+
+		if (Number.isFinite(age) && age > 0) {
+			context.age = age;
+		}
+		if (genderInput.trim()) {
+			context.gender = genderInput.trim();
+		}
+		if (conditionsInput.trim()) {
+			context.chronic_conditions = conditionsInput.trim();
+		}
+		if (allergiesInput.trim()) {
+			context.allergies = allergiesInput.trim();
+		}
+
+		return Object.keys(context).length > 0 ? context : null;
+	}, [ageInput, allergiesInput, conditionsInput, genderInput]);
+
+	const patientContextItems = useMemo(() => {
+		if (!patientContext) return [];
+
+		return [
+			patientContext.age ? `${patientContext.age} years old` : null,
+			patientContext.gender ?? null,
+			patientContext.chronic_conditions
+				? `Conditions: ${patientContext.chronic_conditions}`
+				: null,
+			patientContext.allergies ? `Allergies: ${patientContext.allergies}` : null,
+		].filter(Boolean) as string[];
+	}, [patientContext]);
+
 	const recommendedFacilities = useMemo(() => {
 		const sorted = [...facilities].sort((left, right) => {
 			const leftDistance = distanceFromUser(left, userLocation);
@@ -192,6 +252,10 @@ export default function AnalyzePage() {
 	const clearAll = useCallback(() => {
 		setSelectedSymptoms([]);
 		setTextInput("");
+		setAgeInput("");
+		setGenderInput("");
+		setConditionsInput("");
+		setAllergiesInput("");
 		setResult(null);
 		setError(null);
 		setFeedbackGiven(false);
@@ -231,7 +295,10 @@ export default function AnalyzePage() {
 		const analyzePromise = fetch("/api/public/analyze", {
 			method: "POST",
 			headers: { "Content-Type": "application/json" },
-			body: JSON.stringify({ symptoms: allSymptoms.join(", ") }),
+			body: JSON.stringify({
+				symptoms: allSymptoms.join(", "),
+				patient_context: patientContext,
+			}),
 		})
 			.then(async (res) => {
 				if (!res.ok) {
@@ -255,11 +322,17 @@ export default function AnalyzePage() {
 			await analyzePromise;
 		} catch (err) {
 			console.error(err);
-			setError("Something went wrong. Please try again.");
+			setError(
+				err instanceof Error
+					? err.message
+					: "Something went wrong. Please try again.",
+			);
 		} finally {
 			setLoading(false);
 		}
 	};
+
+	const sourceBadgeProps = result ? sourceLabel(result.source) : null;
 
 	return (
 		<div className="min-h-screen bg-background px-4 pb-12 pt-20 md:px-6">
@@ -296,9 +369,16 @@ export default function AnalyzePage() {
 										need medical advice.
 									</CardDescription>
 								</div>
-								<Badge className={urgencyColor(result.urgency)}>
-									{result.urgency.toUpperCase()}
-								</Badge>
+								<div className="flex flex-wrap items-center gap-2">
+									<Badge className={urgencyColor(result.urgency)}>
+										{result.urgency.toUpperCase()}
+									</Badge>
+									{sourceBadgeProps && (
+										<Badge className={sourceBadgeProps.className}>
+											{sourceBadgeProps.label}
+										</Badge>
+									)}
+								</div>
 							</CardHeader>
 							<CardContent className="space-y-6">
 								<div className="grid gap-4 md:grid-cols-2">
@@ -520,6 +600,77 @@ export default function AnalyzePage() {
 									/>
 								</div>
 
+								<div className="space-y-3 rounded-xl border bg-muted/20 p-4">
+									<div className="space-y-1">
+										<h3 className="text-sm font-semibold">Optional health context</h3>
+										<p className="text-xs text-muted-foreground">
+											Use this anonymously. Adding a few details can improve the analysis, but it is not required.
+										</p>
+									</div>
+									<div className="grid gap-3 md:grid-cols-2">
+										<div className="space-y-2">
+											<label className="text-xs font-medium text-muted-foreground">
+												Age
+											</label>
+											<Input
+												type="number"
+												min="0"
+												inputMode="numeric"
+												value={ageInput}
+												onChange={(e) => setAgeInput(e.target.value)}
+												placeholder="e.g. 34"
+											/>
+										</div>
+										<div className="space-y-2">
+											<label className="text-xs font-medium text-muted-foreground">
+												Sex or gender
+											</label>
+											<select
+												value={genderInput}
+												onChange={(e) => setGenderInput(e.target.value)}
+												className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background"
+											>
+												<option value="">Prefer not to say</option>
+												<option value="Female">Female</option>
+												<option value="Male">Male</option>
+												<option value="Intersex">Intersex</option>
+												<option value="Other">Other</option>
+											</select>
+										</div>
+									</div>
+									<div className="grid gap-3 md:grid-cols-2">
+										<div className="space-y-2">
+											<label className="text-xs font-medium text-muted-foreground">
+												Known conditions
+											</label>
+											<Input
+												value={conditionsInput}
+												onChange={(e) => setConditionsInput(e.target.value)}
+												placeholder="e.g. asthma, diabetes"
+											/>
+										</div>
+										<div className="space-y-2">
+											<label className="text-xs font-medium text-muted-foreground">
+												Allergies
+											</label>
+											<Input
+												value={allergiesInput}
+												onChange={(e) => setAllergiesInput(e.target.value)}
+												placeholder="e.g. penicillin, peanuts"
+											/>
+										</div>
+									</div>
+									{patientContextItems.length ? (
+										<div className="flex flex-wrap gap-2">
+											{patientContextItems.map((item) => (
+												<Badge key={item} variant="outline">
+													{item}
+												</Badge>
+											))}
+										</div>
+									) : null}
+								</div>
+
 								{allSymptoms.length > 0 ? (
 									<div className="space-y-3">
 										<div className="flex items-center justify-between">
@@ -575,12 +726,12 @@ export default function AnalyzePage() {
 						</CardTitle>
 							</CardHeader>
 							<CardContent className="space-y-4 text-sm text-muted-foreground">
-								<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">
+								<div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-foreground">
 									If you have chest pain, severe breathing difficulty, severe bleeding,
 									or loss of consciousness, seek urgent medical care now.
 								</div>
 								<p>
-									Public demo access is limited to 3 analyses per hour per device/IP.
+									Public demo access is limited. You can use the analyzer without signing in, and optional health context can improve the result.
 								</p>
 								<p>
 									This tool is designed to help organize symptom information. It does

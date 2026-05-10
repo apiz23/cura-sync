@@ -193,7 +193,7 @@ export default function ProfessionalProfilePage() {
                                         </div>
                                         <div className="text-center">
                                             <p className="text-2xl font-bold text-foreground">
-                                                {user.facility_id ? "Yes" : "No"}
+                                                {user.facility_name || user.facility_id ? "Yes" : "No"}
                                             </p>
                                             <p className="text-xs text-muted-foreground">
                                                 Facility
@@ -283,10 +283,10 @@ export default function ProfessionalProfilePage() {
                                         </div>
                                         <div className="space-y-2">
                                             <p className="text-sm text-muted-foreground">
-                                                Facility ID
+                                                Facility
                                             </p>
                                             <p className="font-medium text-foreground">
-                                                {user.facility_id || "Not assigned"}
+                                                {user.facility_name || user.facility_id || "Not assigned"}
                                             </p>
                                         </div>
                                         <div className="space-y-2">
