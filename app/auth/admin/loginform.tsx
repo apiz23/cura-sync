@@ -30,6 +30,24 @@ export function AdminLoginForm({
         router.prefetch("/admin/dashboard");
     }, [router]);
 
+    async function waitForAdminSession() {
+        for (let attempt = 0; attempt < 5; attempt += 1) {
+            const res = await fetch("/api/staff/me", {
+                method: "GET",
+                headers: { "Content-Type": "application/json" },
+                cache: "no-store",
+            });
+
+            if (res.ok) {
+                return true;
+            }
+
+            await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
+        }
+
+        return false;
+    }
+
     async function handleLogin(e: React.FormEvent) {
         e.preventDefault();
 
@@ -40,33 +58,37 @@ export function AdminLoginForm({
 
         if (loading) return;
         setLoading(true);
+        const loadingToast = toast.loading("Authenticating admin...");
 
-        toast.promise(
-            (async () => {
-                const res = await fetch("/api/auth/admin-login", {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ email, password }),
-                });
+        try {
+            const res = await fetch("/api/auth/admin-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ email, password }),
+            });
 
-                const data = await res.json();
+            const data = await res.json();
 
-                if (!res.ok) {
-                    throw new Error(data.error || "Invalid credentials");
-                }
-
-                return data;
-            })(),
-            {
-                loading: "Authenticating admin...",
-                success: () => {
-                    router.replace("/admin/dashboard");
-                    return "Admin login successful!";
-                },
-                error: (err) => err.message || "Login failed",
-                finally: () => setLoading(false),
+            if (!res.ok) {
+                throw new Error(data.error || "Invalid credentials");
             }
-        );
+
+            const hasSession = await waitForAdminSession();
+
+            if (!hasSession) {
+                throw new Error("Login succeeded but admin session was not ready");
+            }
+
+            toast.success("Admin login successful!", { id: loadingToast });
+            window.location.assign("/admin/dashboard");
+        } catch (error) {
+            toast.error(
+                error instanceof Error ? error.message : "Login failed",
+                { id: loadingToast }
+            );
+        } finally {
+            setLoading(false);
+        }
     }
 
     return (
