@@ -36,6 +36,7 @@ export interface Appointment {
 }
 
 export type StaffRole = "doctor" | "staff" | "admin";
+export type FacilityPlan = "basic" | "clinic" | "enterprise";
 export type DayOfWeek =
 	| "monday"
 	| "tuesday"
@@ -79,6 +80,9 @@ export type Medication = {
 	end_date?: string | null;
 	notes?: string | null;
 	prescribed_by?: string | null;
+	prescribed_by_name?: string | null;
+	prescribed_by_facility_name?: string | null;
+	prescribed_by_display?: string | null;
 	created_at: string;
 	updated_at: string;
 };
@@ -98,6 +102,7 @@ export type FacilityEdit = {
 	capacity: number | null;
 	services: string[] | null;
 	is_active: boolean;
+	plan: FacilityPlan;
 	created_at: string;
 	updated_at: string | null;
 };
