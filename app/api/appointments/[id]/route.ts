@@ -3,8 +3,52 @@ import supabase from "@/lib/supabase";
 import { ensureFacilityAccess, requireAnySession, requireStaffSession } from "@/lib/authz";
 import { z } from "zod";
 import { logAudit } from "@/lib/audit";
+import { sendAppointmentStatusEmail } from "@/lib/smtp-mailer";
 
 const statusSchema = z.enum(["PENDING", "CONFIRMED", "CHECKED_IN", "COMPLETED", "CANCELLED"]);
+
+async function sendPushIfConfirmed({
+    profileId,
+    facilityName,
+    appointmentDate,
+    appointmentTime,
+    previousStatus,
+    nextStatus,
+}: {
+    profileId: string | null;
+    facilityName: string;
+    appointmentDate: string;
+    appointmentTime: string;
+    previousStatus: string;
+    nextStatus: string;
+}): Promise<void> {
+    if (
+        String(previousStatus).toUpperCase() !== "PENDING" ||
+        String(nextStatus).toUpperCase() !== "CONFIRMED"
+    ) return;
+
+    if (!profileId) return;
+
+    const { data: profile } = await supabase
+        .from("cura_profiles")
+        .select("expo_push_token")
+        .eq("id", profileId)
+        .maybeSingle();
+
+    const token = profile?.expo_push_token;
+    if (!token) return;
+
+    await fetch("https://exp.host/--/api/v2/push/send", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+            to: token,
+            title: "Appointment Confirmed",
+            body: `Your appointment at ${facilityName} on ${appointmentDate} at ${appointmentTime} is confirmed.`,
+            data: { type: "APPOINTMENT_CONFIRMED" },
+        }),
+    });
+}
 
 function canTransition(from: string, to: string) {
     const f = String(from ?? "").toUpperCase();
@@ -19,6 +63,66 @@ function canTransition(from: string, to: string) {
     if (f === "CHECKED_IN") return t === "COMPLETED" || t === "CANCELLED";
 
     return false;
+}
+
+async function sendPatientStatusEmailIfNeeded({
+    profileId,
+    facilityId,
+    appointmentDate,
+    appointmentTime,
+    previousStatus,
+    nextStatus,
+}: {
+    profileId: string | null;
+    facilityId: string | null;
+    appointmentDate: string;
+    appointmentTime: string;
+    previousStatus: string;
+    nextStatus: "PENDING" | "CONFIRMED" | "CHECKED_IN" | "COMPLETED" | "CANCELLED";
+}) {
+    const previous = String(previousStatus ?? "").toUpperCase();
+    if (!profileId || !facilityId) return;
+
+    const shouldSendConfirmed = previous === "PENDING" && nextStatus === "CONFIRMED";
+    const shouldSendCancelled = nextStatus === "CANCELLED";
+
+    if (!shouldSendConfirmed && !shouldSendCancelled) {
+        return;
+    }
+
+    const [{ data: patient, error: patientError }, { data: facility, error: facilityError }] =
+        await Promise.all([
+            supabase
+                .from("cura_profiles")
+                .select("email, full_name")
+                .eq("id", profileId)
+                .maybeSingle(),
+            supabase
+                .from("cura_facilities")
+                .select("name")
+                .eq("id", facilityId)
+                .maybeSingle(),
+        ]);
+
+    if (patientError || facilityError) {
+        throw new Error(
+            patientError?.message || facilityError?.message || "Failed to load email recipients"
+        );
+    }
+
+    const patientEmail = patient?.email?.trim();
+    if (!patientEmail) {
+        return;
+    }
+
+    await sendAppointmentStatusEmail({
+        to: patientEmail,
+        patientName: patient?.full_name ?? "Patient",
+        facilityName: facility?.name ?? "CuraSync Facility",
+        appointmentDate,
+        appointmentTime,
+        status: shouldSendConfirmed ? "CONFIRMED" : "CANCELLED",
+    });
 }
 
 export async function PATCH(
@@ -174,6 +278,27 @@ export async function PATCH(
         resource_id: id,
         metadata: { status: nextStatus, role: session.role },
     });
+
+    try {
+        await sendPatientStatusEmailIfNeeded({
+            profileId: existing.profile_id,
+            facilityId: existing.facility_id,
+            appointmentDate: existing.appointment_date,
+            appointmentTime: existing.start_time,
+            previousStatus: existing.status,
+            nextStatus,
+        });
+        await sendPushIfConfirmed({
+            profileId: existing.profile_id,
+            facilityName: "",
+            appointmentDate: existing.appointment_date,
+            appointmentTime: existing.start_time,
+            previousStatus: existing.status,
+            nextStatus: nextStatus,
+        });
+    } catch (emailError) {
+        console.error("Failed to send appointment status email", emailError);
+    }
 
     return NextResponse.json(data);
 }
