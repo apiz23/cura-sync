@@ -41,11 +41,20 @@ type FacilitySummary = {
     schedules: { id: string }[];
 };
 
+type AnalyticsData = {
+    appointmentsByMonth: { month: string; count: number }[];
+    totalPatients: number;
+    staffByRole: Record<string, number>;
+    totalAppointmentsThisMonth: number;
+    totalAppointmentsLastMonth: number;
+} | null;
+
 type DashboardState = {
     appointments: Appointment[];
     staff: Staff[];
     patients: PatientRecord[];
     facilitySummary: FacilitySummary | null;
+    analytics: AnalyticsData;
 };
 
 const initialState: DashboardState = {
@@ -53,6 +62,7 @@ const initialState: DashboardState = {
     staff: [],
     patients: [],
     facilitySummary: null,
+    analytics: null,
 };
 
 function getPlanBadgeVariant(plan: FacilityPlan): "default" | "secondary" | "outline" {
@@ -99,7 +109,7 @@ export default function DashboardPage() {
                       ),
                   ]);
 
-            const [appointmentsRes, staffRes, patientsRes, facilityResult] =
+            const [appointmentsRes, staffRes, patientsRes, facilityResult, analyticsResult] =
                 await Promise.all([
                     fetch(
                         `/api/appointments/by-facility?facilityId=${user.facility_id}`,
@@ -113,6 +123,7 @@ export default function DashboardPage() {
                         { cache: "no-store" }
                     ),
                     facilityRequest,
+                    isAdmin ? fetch("/api/admin/analytics", { cache: "no-store" }) : Promise.resolve(null),
                 ]);
 
             const [appointmentsData, staffData, patientsData] = await Promise.all([
@@ -153,6 +164,12 @@ export default function DashboardPage() {
                 throw new Error("Failed to load facility dashboard");
             }
 
+            let analyticsData: AnalyticsData = null;
+            if (isAdmin && analyticsResult) {
+                const raw = await (analyticsResult as Response).json().catch(() => null);
+                analyticsData = raw ?? null;
+            }
+
             setState({
                 appointments: Array.isArray(appointmentsData)
                     ? appointmentsData
@@ -160,6 +177,7 @@ export default function DashboardPage() {
                 staff: Array.isArray(staffData?.staff) ? staffData.staff : [],
                 patients: Array.isArray(patientsData) ? patientsData : [],
                 facilitySummary: facilityData,
+                analytics: analyticsData,
             });
         } catch (err) {
             console.error("Failed to load admin dashboard", err);
@@ -317,6 +335,55 @@ export default function DashboardPage() {
                     icon={ClipboardList}
                 />
             </div>
+
+            {isAdmin && state.analytics && (
+                <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardDescription>This Month</CardDescription>
+                            <CardTitle className="text-2xl">
+                                {state.analytics.totalAppointmentsThisMonth}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-xs text-muted-foreground">Appointments</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardDescription>Last Month</CardDescription>
+                            <CardTitle className="text-2xl">
+                                {state.analytics.totalAppointmentsLastMonth}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-xs text-muted-foreground">Appointments</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardDescription>Total Patients</CardDescription>
+                            <CardTitle className="text-2xl">
+                                {state.analytics.totalPatients}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-xs text-muted-foreground">Ever visited</p>
+                        </CardContent>
+                    </Card>
+                    <Card>
+                        <CardHeader className="pb-2">
+                            <CardDescription>Doctors</CardDescription>
+                            <CardTitle className="text-2xl">
+                                {state.analytics.staffByRole["doctor"] ?? 0}
+                            </CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                            <p className="text-xs text-muted-foreground">Active staff</p>
+                        </CardContent>
+                    </Card>
+                </div>
+            )}
 
             <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
                 <Card className="border shadow-sm">
