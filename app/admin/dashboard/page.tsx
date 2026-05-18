@@ -16,7 +16,7 @@ import {
     Users,
 } from "lucide-react";
 
-import type { Appointment, FacilityEdit, Staff } from "@/app/types";
+import type { Appointment, FacilityEdit, FacilityPlan, Staff } from "@/app/types";
 import { useAuth } from "@/components/authprovideradmin";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -55,6 +55,18 @@ const initialState: DashboardState = {
     facilitySummary: null,
 };
 
+function getPlanBadgeVariant(plan: FacilityPlan): "default" | "secondary" | "outline" {
+    if (plan === "enterprise") return "default";
+    if (plan === "clinic") return "secondary";
+    return "outline";
+}
+
+const PLAN_LABELS: Record<FacilityPlan, string> = {
+    basic: "Basic",
+    clinic: "Clinic",
+    enterprise: "Enterprise",
+};
+
 export default function DashboardPage() {
     const { user, loading: authLoading } = useAuth();
     const [state, setState] = useState<DashboardState>(initialState);
@@ -73,7 +85,21 @@ export default function DashboardPage() {
         setError(null);
 
         try {
-            const [appointmentsRes, staffRes, patientsRes, facilityRes] =
+            const facilityRequest = isAdmin
+                ? fetch("/api/facility/me", { cache: "no-store" })
+                : Promise.all([
+                      fetch(`/api/facility/${user.facility_id}`, {
+                          cache: "no-store",
+                      }),
+                      fetch(
+                          `/api/facility/schedule?facilityId=${encodeURIComponent(
+                              user.facility_id
+                          )}`,
+                          { cache: "no-store" }
+                      ),
+                  ]);
+
+            const [appointmentsRes, staffRes, patientsRes, facilityResult] =
                 await Promise.all([
                     fetch(
                         `/api/appointments/by-facility?facilityId=${user.facility_id}`,
@@ -86,18 +112,44 @@ export default function DashboardPage() {
                         `/api/patients/by-facility?facilityId=${user.facility_id}`,
                         { cache: "no-store" }
                     ),
-                    fetch("/api/facility/me", { cache: "no-store" }),
+                    facilityRequest,
                 ]);
 
-            const [appointmentsData, staffData, patientsData, facilityData] =
-                await Promise.all([
-                    appointmentsRes.json().catch(() => null),
-                    staffRes.json().catch(() => null),
-                    patientsRes.json().catch(() => null),
+            const [appointmentsData, staffData, patientsData] = await Promise.all([
+                appointmentsRes.json().catch(() => null),
+                staffRes.json().catch(() => null),
+                patientsRes.json().catch(() => null),
+            ]);
+
+            let facilityData: FacilitySummary | null = null;
+            let facilityOk = false;
+
+            if (isAdmin) {
+                const facilityRes = facilityResult as Response;
+                facilityData = await facilityRes.json().catch(() => null);
+                facilityOk = facilityRes.ok;
+            } else {
+                const [facilityRes, schedulesRes] = facilityResult as [
+                    Response,
+                    Response,
+                ];
+                const [facilityPayload, schedulesPayload] = await Promise.all([
                     facilityRes.json().catch(() => null),
+                    schedulesRes.json().catch(() => null),
                 ]);
 
-            if (!appointmentsRes.ok || !staffRes.ok || !patientsRes.ok || !facilityRes.ok) {
+                facilityOk = facilityRes.ok && schedulesRes.ok;
+                facilityData = facilityOk
+                    ? {
+                          facility: facilityPayload?.facility ?? null,
+                          schedules: Array.isArray(schedulesPayload?.schedules)
+                              ? schedulesPayload.schedules
+                              : [],
+                      }
+                    : null;
+            }
+
+            if (!appointmentsRes.ok || !staffRes.ok || !patientsRes.ok || !facilityOk) {
                 throw new Error("Failed to load facility dashboard");
             }
 
@@ -116,7 +168,7 @@ export default function DashboardPage() {
         } finally {
             setLoading(false);
         }
-    }, [user?.facility_id]);
+    }, [isAdmin, user?.facility_id]);
 
     useEffect(() => {
         if (!authLoading && user?.facility_id) {
@@ -203,6 +255,11 @@ export default function DashboardPage() {
                             "Your facility"}{" "}
                         operational summary using live appointments, patients, and staff data.
                     </p>
+                    {state.facilitySummary?.facility?.plan && (
+                        <Badge variant={getPlanBadgeVariant(state.facilitySummary.facility.plan as FacilityPlan)}>
+                            {PLAN_LABELS[state.facilitySummary.facility.plan as FacilityPlan]} Plan
+                        </Badge>
+                    )}
                 </div>
                 <div className="flex flex-wrap gap-3">
                     <Button variant="outline" onClick={loadDashboard} className="gap-2">
