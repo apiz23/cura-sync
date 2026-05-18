@@ -279,6 +279,16 @@ export async function PATCH(
         metadata: { status: nextStatus, role: session.role },
     });
 
+    let facilityNameForNotif = "";
+    if (existing.facility_id) {
+        const { data: facilityRow } = await supabase
+            .from("cura_facilities")
+            .select("name")
+            .eq("id", existing.facility_id)
+            .maybeSingle();
+        facilityNameForNotif = facilityRow?.name ?? "";
+    }
+
     try {
         await sendPatientStatusEmailIfNeeded({
             profileId: existing.profile_id,
@@ -290,7 +300,7 @@ export async function PATCH(
         });
         await sendPushIfConfirmed({
             profileId: existing.profile_id,
-            facilityName: "",
+            facilityName: facilityNameForNotif,
             appointmentDate: existing.appointment_date,
             appointmentTime: existing.start_time,
             previousStatus: existing.status,
