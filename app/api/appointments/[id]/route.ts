@@ -289,26 +289,23 @@ export async function PATCH(
         facilityNameForNotif = facilityRow?.name ?? "";
     }
 
-    try {
-        await sendPatientStatusEmailIfNeeded({
-            profileId: existing.profile_id,
-            facilityId: existing.facility_id,
-            appointmentDate: existing.appointment_date,
-            appointmentTime: existing.start_time,
-            previousStatus: existing.status,
-            nextStatus,
-        });
-        await sendPushIfConfirmed({
-            profileId: existing.profile_id,
-            facilityName: facilityNameForNotif,
-            appointmentDate: existing.appointment_date,
-            appointmentTime: existing.start_time,
-            previousStatus: existing.status,
-            nextStatus: nextStatus,
-        });
-    } catch (emailError) {
-        console.error("Failed to send appointment status email", emailError);
-    }
+    await sendPatientStatusEmailIfNeeded({
+        profileId: existing.profile_id,
+        facilityId: existing.facility_id,
+        appointmentDate: existing.appointment_date,
+        appointmentTime: existing.start_time,
+        previousStatus: existing.status,
+        nextStatus,
+    }).catch((err) => console.error("Failed to send appointment status email", err));
+
+    await sendPushIfConfirmed({
+        profileId: existing.profile_id,
+        facilityName: facilityNameForNotif,
+        appointmentDate: existing.appointment_date,
+        appointmentTime: existing.start_time,
+        previousStatus: existing.status,
+        nextStatus: nextStatus,
+    }).catch((err) => console.error("Failed to send push notification", err));
 
     return NextResponse.json(data);
 }
