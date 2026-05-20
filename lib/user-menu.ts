@@ -4,9 +4,7 @@ import {
     FileText,
     CalendarDays,
     ShieldCheck,
-    Settings,
     User,
-    Stethoscope,
     Pill,
     Activity,
     Lock,
@@ -70,11 +68,6 @@ export const userMenu = [
                 title: "Profile Settings",
                 url: "/user/profile",
                 icon: User,
-            },
-            {
-                title: "App Settings",
-                url: "/user/settings",
-                icon: Settings,
             },
             {
                 title: "Security",

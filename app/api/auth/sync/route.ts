@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { currentUser } from "@clerk/nextjs/server";
-import supabase from "@/lib/supabase";
+import supabaseAdmin from "@/lib/supabase-admin";
 
 export async function POST() {
     try {
@@ -19,16 +19,37 @@ export async function POST() {
         }`.trim();
         const email = user.emailAddresses[0]?.emailAddress;
 
+        if (!email) {
+            return NextResponse.json(
+                { error: "No email address on Clerk account" },
+                { status: 400 }
+            );
+        }
+
+        const newId = user.id;
+
+        // Detect email collision: same email, different Clerk ID (env mismatch or re-registration)
+        const { data: existingByEmail } = await supabaseAdmin
+            .from("cura_profiles")
+            .select("id")
+            .eq("email", email)
+            .neq("id", newId)
+            .maybeSingle();
+
+        if (existingByEmail?.id) {
+            await migrateProfileId(existingByEmail.id, newId);
+        }
+
         const userData = {
-            id: user.id,
-            email: email,
+            id: newId,
+            email,
             full_name: fullName,
             avatar_url: user.imageUrl,
             role: userRole.toLowerCase(),
             updated_at: new Date().toISOString(),
         };
 
-        const { data, error } = await supabase
+        const { data, error } = await supabaseAdmin
             .from("cura_profiles")
             .upsert(userData, { onConflict: "id" })
             .select();
@@ -46,4 +67,70 @@ export async function POST() {
             { status: 500 }
         );
     }
+}
+
+// Migrate all profile data from oldId to newId when a Clerk ID mismatch is detected.
+// This happens when a user's email exists in the DB under a different Clerk instance ID
+// (e.g. after switching from a dev Clerk environment to prod).
+async function migrateProfileId(oldId: string, newId: string) {
+    // Tables where profile_id is a non-PK text column referencing cura_profiles.id
+    const profileIdTables = [
+        "cura_conditions",
+        "cura_allergies",
+        "cura_medications",
+        "cura_medication_logs",
+        "cura_appointments",
+        "cura_encounters",
+        "cura_procedures",
+        "cura_health_sync_snapshots",
+        "cura_notifications",
+        "cura_patient_facilities",
+    ] as const;
+
+    await Promise.all(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        profileIdTables.map((table) =>
+            supabaseAdmin
+                .from(table as any)
+                .update({ profile_id: newId })
+                .eq("profile_id", oldId)
+        )
+    );
+
+    // cura_caregiver_links has two separate profile_id columns
+    await Promise.all([
+        supabaseAdmin
+            .from("cura_caregiver_links")
+            .update({ caregiver_profile_id: newId })
+            .eq("caregiver_profile_id", oldId),
+        supabaseAdmin
+            .from("cura_caregiver_links")
+            .update({ patient_profile_id: newId })
+            .eq("patient_profile_id", oldId),
+    ]);
+
+    // cura_patient_profiles: profile_id IS the primary key — must delete + re-insert
+    const { data: oldPatientProfile } = await supabaseAdmin
+        .from("cura_patient_profiles")
+        .select("*")
+        .eq("profile_id", oldId)
+        .maybeSingle();
+
+    if (oldPatientProfile) {
+        await supabaseAdmin
+            .from("cura_patient_profiles")
+            .upsert(
+                { ...oldPatientProfile, profile_id: newId },
+                { onConflict: "profile_id" }
+            );
+        await supabaseAdmin
+            .from("cura_patient_profiles")
+            .delete()
+            .eq("profile_id", oldId);
+    }
+
+    // Remove the old profile row — the caller's upsert will create the new one
+    await supabaseAdmin.from("cura_profiles").delete().eq("id", oldId);
+
+    console.log(`[sync] Migrated profile ${oldId} → ${newId}`);
 }
