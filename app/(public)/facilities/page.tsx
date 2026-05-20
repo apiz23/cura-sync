@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
     Map,
     useMap,
@@ -14,8 +14,6 @@ import { Button } from "@/components/ui/button";
 import {
     MapPin,
     Navigation,
-    Clock,
-    Phone,
     Calendar,
     RotateCcw,
     Mountain,
@@ -23,11 +21,13 @@ import {
     Stethoscope,
     Building,
     Heart,
+    Search,
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
 import PageTitle from "@/components/page-title";
+import { AnimatePresence, motion, useReducedMotion, type Easing } from "framer-motion";
 
 type Facility = {
     id: string;
@@ -39,6 +39,8 @@ type Facility = {
     distance?: number;
 };
 
+const SMOOTH_EASE: Easing = [0.16, 1, 0.3, 1];
+
 function useUserLocation() {
     const [location, setLocation] = useState<[number, number] | null>(null);
     const [error, setError] = useState<string | null>(null);
@@ -48,23 +50,13 @@ function useUserLocation() {
             setError("Geolocation not supported");
             return;
         }
-
         navigator.geolocation.getCurrentPosition(
-            (position) => {
-                setLocation([
-                    position.coords.longitude,
-                    position.coords.latitude,
-                ]);
-            },
+            (pos) => setLocation([pos.coords.longitude, pos.coords.latitude]),
             (err) => {
                 setError(err.message);
                 setLocation([103.8198, 1.3521]);
             },
-            {
-                enableHighAccuracy: true,
-                timeout: 10000,
-                maximumAge: 0,
-            }
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 },
         );
     }, []);
 
@@ -74,71 +66,127 @@ function useUserLocation() {
 function Map3DController() {
     const { map, isLoaded } = useMap();
     const [is3D, setIs3D] = useState(false);
-
-    const handle3DView = () => {
-        map?.easeTo({
-            pitch: 60,
-            bearing: -20,
-            duration: 1500,
-        });
-        setIs3D(true);
-    };
-
-    const handleReset = () => {
-        map?.easeTo({
-            pitch: 0,
-            bearing: 0,
-            duration: 1000,
-        });
-        setIs3D(false);
-    };
+    const reduced = useReducedMotion();
 
     if (!isLoaded) return null;
 
     return (
-        <div className="absolute bottom-4 left-15 z-10 flex flex-col gap-2">
-            <div className="flex gap-2 shadow-md rounded-md bg-background/80 backdrop-blur-sm p-1.5 border border-border/50">
+        <motion.div
+            initial={reduced ? false : { opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.3, ease: SMOOTH_EASE }}
+            className="absolute bottom-4 left-14 z-10"
+        >
+            <div className="flex gap-1 rounded-lg border border-[#EAEAEA] bg-white/90 p-1 shadow-[0_2px_8px_rgba(0,0,0,0.06)] backdrop-blur-md dark:border-border dark:bg-background/90">
                 <Button
                     size="sm"
-                    variant={is3D ? "secondary" : "ghost"}
-                    onClick={handle3DView}
-                    className="h-8 px-3 text-xs"
+                    variant={is3D ? "default" : "ghost"}
+                    onClick={() => {
+                        map?.easeTo({ pitch: 60, bearing: -20, duration: 1500 });
+                        setIs3D(true);
+                    }}
+                    className="h-7 px-2.5 text-xs"
                 >
-                    <Mountain className="size-3.5 mr-1.5" />
-                    3D View
+                    <Mountain className="mr-1 size-3" />
+                    3D
                 </Button>
                 <Button
                     size="sm"
                     variant="ghost"
-                    onClick={handleReset}
-                    className="h-8 px-3 text-xs"
+                    onClick={() => {
+                        map?.easeTo({ pitch: 0, bearing: 0, duration: 1000 });
+                        setIs3D(false);
+                    }}
+                    className="h-7 px-2.5 text-xs"
                 >
-                    <RotateCcw className="size-3.5 mr-1.5" />
+                    <RotateCcw className="mr-1 size-3" />
                     Reset
                 </Button>
+            </div>
+        </motion.div>
+    );
+}
+
+// Muted pastels for list items (minimalist-ui spec)
+function getFacilityPastel(type: string | null): { bg: string; text: string } {
+    if (type?.toLowerCase().includes("hospital"))
+        return { bg: "bg-[#EDF3EC]", text: "text-[#346538]" };
+    if (type?.toLowerCase().includes("clinic"))
+        return { bg: "bg-[#E1F3FE]", text: "text-[#1F6C9F]" };
+    if (type?.toLowerCase().includes("specialist"))
+        return { bg: "bg-[#FDEBEC]", text: "text-[#9F2F2D]" };
+    return { bg: "bg-[#FBF3DB]", text: "text-[#956400]" };
+}
+
+// Bright saturated colors for map markers (visibility on map tiles)
+function getFacilityMarkerColor(type: string | null): string {
+    if (type?.toLowerCase().includes("hospital")) return "bg-emerald-500";
+    if (type?.toLowerCase().includes("clinic")) return "bg-sky-500";
+    if (type?.toLowerCase().includes("specialist")) return "bg-rose-500";
+    return "bg-amber-500";
+}
+
+function FacilityIcon({ type, className = "size-4" }: { type: string | null; className?: string }) {
+    if (type?.toLowerCase().includes("hospital"))
+        return <Hospital className={className} />;
+    if (type?.toLowerCase().includes("clinic"))
+        return <Stethoscope className={className} />;
+    if (type?.toLowerCase().includes("specialist"))
+        return <Heart className={className} />;
+    return <Building className={className} />;
+}
+
+function LoadingSkeleton() {
+    return (
+        <div className="min-h-[100dvh] bg-background px-4 pb-16 pt-20">
+            <div className="mx-auto max-w-7xl space-y-8 pt-8">
+                <div className="space-y-2">
+                    <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
+                    <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
+                </div>
+                <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
+                <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
+                    <div className="relative h-[500px] overflow-hidden rounded-xl border border-[#EAEAEA] bg-muted">
+                        <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/10 to-transparent" />
+                    </div>
+                    <div className="space-y-3">
+                        {[1, 2, 3, 4].map((i) => (
+                            <div key={i} className="flex items-center gap-3 rounded-xl border border-[#EAEAEA] bg-background p-4">
+                                <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
+                                <div className="flex-1 space-y-2">
+                                    <div className="h-3.5 w-3/4 rounded-md bg-muted" />
+                                    <div className="h-3 w-1/2 rounded-md bg-muted" />
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
             </div>
         </div>
     );
 }
 
+const FACILITY_TYPES = [
+    { value: "all", label: "All facilities", icon: MapPin },
+    { value: "hospital", label: "Hospitals", icon: Hospital },
+    { value: "clinic", label: "Clinics", icon: Stethoscope },
+    { value: "specialist", label: "Specialists", icon: Heart },
+] as const;
+
 export default function FacilitiesMapPage() {
     const [facilities, setFacilities] = useState<Facility[]>([]);
     const [loading, setLoading] = useState(true);
+    const [selectedType, setSelectedType] = useState<string>("all");
     const { location: userLocation, error: locationError } = useUserLocation();
+    const reduced = useReducedMotion();
 
     useEffect(() => {
         async function loadFacilities() {
             try {
                 const res = await fetch("/api/facility");
                 if (!res.ok) throw new Error("Failed to fetch facilities");
-
                 const json = await res.json();
-
-                const facilities: Facility[] = Array.isArray(json.facility)
-                    ? json.facility
-                    : [];
-
-                setFacilities(facilities);
+                setFacilities(Array.isArray(json.facility) ? json.facility : []);
             } catch (err) {
                 console.error(err);
                 setFacilities([]);
@@ -146,314 +194,347 @@ export default function FacilitiesMapPage() {
                 setLoading(false);
             }
         }
-
         loadFacilities();
     }, []);
 
-    const facilitiesWithDistance = useMemo(() => {
-        if (!userLocation) return facilities;
-
-        return facilities.map((facility) => {
-            if (!facility.latitude || !facility.longitude) return facility;
-
-            const distance = calculateDistance(
-                userLocation[1],
-                userLocation[0],
-                parseFloat(facility.latitude),
-                parseFloat(facility.longitude)
-            );
-
-            return { ...facility, distance };
-        });
-    }, [facilities, userLocation]);
-
-    function calculateDistance(
-        lat1: number,
-        lon1: number,
-        lat2: number,
-        lon2: number
-    ): number {
+    function calculateDistance(lat1: number, lon1: number, lat2: number, lon2: number): number {
         const R = 6371;
         const dLat = ((lat2 - lat1) * Math.PI) / 180;
         const dLon = ((lon2 - lon1) * Math.PI) / 180;
         const a =
-            Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+            Math.sin(dLat / 2) ** 2 +
             Math.cos((lat1 * Math.PI) / 180) *
                 Math.cos((lat2 * Math.PI) / 180) *
-                Math.sin(dLon / 2) *
-                Math.sin(dLon / 2);
-        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-        return Math.round(R * c * 10) / 10;
+                Math.sin(dLon / 2) ** 2;
+        return Math.round(R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a)) * 10) / 10;
     }
+
+    const facilitiesWithDistance = useMemo(() => {
+        if (!userLocation) return facilities;
+        return facilities.map((f) => {
+            if (!f.latitude || !f.longitude) return f;
+            return {
+                ...f,
+                distance: calculateDistance(
+                    userLocation[1], userLocation[0],
+                    parseFloat(f.latitude), parseFloat(f.longitude),
+                ),
+            };
+        });
+    }, [facilities, userLocation]);
 
     const filteredFacilities = useMemo(() => {
-        const sorted = [...facilitiesWithDistance];
-
+        let list = [...facilitiesWithDistance];
+        if (selectedType !== "all")
+            list = list.filter((f) => f.type?.toLowerCase().includes(selectedType));
         if (userLocation) {
-            sorted.sort((a, b) => {
+            list.sort((a, b) => {
                 if (a.distance && b.distance) return a.distance - b.distance;
-                if (a.distance) return -1;
-                if (b.distance) return 1;
-                return 0;
+                return a.distance ? -1 : 1;
             });
         }
+        return list;
+    }, [facilitiesWithDistance, userLocation, selectedType]);
 
-        return sorted;
-    }, [facilitiesWithDistance, userLocation]);
-
-    function FacilityIcon({
-        type,
-        className = "size-5",
-    }: {
-        type: string | null;
-        className?: string;
-    }) {
-        if (type?.toLowerCase().includes("hospital")) {
-            return (
-                <Hospital className={`${className} text-primary-foreground`} />
-            );
-        }
-        if (type?.toLowerCase().includes("clinic")) {
-            return (
-                <Stethoscope
-                    className={`${className} text-accent-foreground`}
-                />
-            );
-        }
-        if (type?.toLowerCase().includes("specialist")) {
-            return (
-                <Heart className={`${className} text-destructive-foreground`} />
-            );
-        }
-        return (
-            <Building className={`${className} text-secondary-foreground`} />
-        );
-    }
-
-    function getFacilityColor(type: string | null) {
-        if (type?.toLowerCase().includes("hospital")) {
-            return "bg-primary";
-        }
-        if (type?.toLowerCase().includes("clinic")) {
-            return "bg-accent";
-        }
-        if (type?.toLowerCase().includes("specialist")) {
-            return "bg-destructive";
-        }
-        return "bg-secondary";
-    }
-
-    if (loading) {
-        return (
-            <div className="flex h-screen items-center justify-center bg-background">
-                <div className="text-center space-y-4">
-                    <div className="w-16 h-16 border-4 border-primary/20 border-t-primary rounded-full animate-spin mx-auto"></div>
-                    <div>
-                        <p className="text-lg font-semibold text-foreground">
-                            Loading Healthcare Facilities
-                        </p>
-                        <p className="text-sm text-muted-foreground">
-                            Discovering medical services in your area
-                        </p>
-                    </div>
-                </div>
-            </div>
-        );
-    }
+    if (loading) return <LoadingSkeleton />;
 
     const center = userLocation || [103.8198, 1.3521];
 
+    const fadeUp = (delay = 0) =>
+        reduced
+            ? {}
+            : {
+                  initial: { opacity: 0, y: 12 },
+                  animate: { opacity: 1, y: 0 },
+                  transition: { duration: 0.5, ease: SMOOTH_EASE, delay },
+              };
+
     return (
-        <div className="h-screen w-full bg-background flex flex-col">
-            <PageTitle title={"Facility"} />
-            {/* Map View */}
-            <div className="flex-1 relative">
-                {locationError ? (
-                    <div className="absolute left-4 right-4 top-4 z-20 rounded-xl border border-border/60 bg-card/95 p-4 shadow-lg backdrop-blur-sm md:left-auto md:right-4 md:w-[360px]">
-                        <p className="font-medium text-foreground">
-                            Using default map location
-                        </p>
+        <div className="min-h-[100dvh] bg-background px-4 pb-20 pt-20">
+            <PageTitle title="Facilities" />
+            <div className="mx-auto max-w-7xl space-y-7 pt-8">
+
+                {/* Header */}
+                <motion.div {...fadeUp(0)} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                    <div>
+                        <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground">
+                            Find a facility
+                        </h1>
                         <p className="mt-1 text-sm text-muted-foreground">
-                            Live geolocation was unavailable, so the map is using a fallback center. You can still browse facilities normally.
+                            {filteredFacilities.length > 0
+                                ? `${filteredFacilities.length} healthcare facilit${filteredFacilities.length === 1 ? "y" : "ies"}`
+                                : "No facilities found"}
+                            {userLocation && filteredFacilities.length > 0 ? " — sorted by distance" : ""}
                         </p>
                     </div>
-                ) : null}
-                <Map center={center} zoom={14}>
-                    {/* 3D Controls */}
-                    <Map3DController />
+                    <div className="flex gap-2">
+                        {locationError && (
+                            <Badge variant="outline" className="gap-1.5 text-muted-foreground">
+                                <MapPin className="h-3 w-3" />
+                                Using default location
+                            </Badge>
+                        )}
+                        {userLocation && !locationError && (
+                            <Badge variant="outline" className="gap-1.5 border-primary/30 text-primary">
+                                <Navigation className="h-3 w-3" />
+                                Live location
+                            </Badge>
+                        )}
+                    </div>
+                </motion.div>
 
-                    {/* Standard Controls */}
-                    <MapControls
-                        position="bottom-left"
-                        showZoom
-                        showCompass
-                        showLocate
-                    />
-
-                    {/* User Location Marker */}
-                    {userLocation && (
-                        <MapMarker
-                            longitude={userLocation[0]}
-                            latitude={userLocation[1]}
-                        >
-                            <MarkerContent>
-                                <div className="relative">
-                                    <div className="w-16 h-16 rounded-full bg-primary/20 border-4 border-background shadow-xl animate-pulse flex items-center justify-center">
-                                        <div className="w-8 h-8 rounded-full bg-primary/90 flex items-center justify-center">
-                                            <Navigation className="size-4 text-primary-foreground" />
-                                        </div>
-                                    </div>
-                                </div>
-                            </MarkerContent>
-                            <MarkerTooltip>Your Location</MarkerTooltip>
-                        </MapMarker>
-                    )}
-
-                    {/* Facility Markers */}
-                    {filteredFacilities.map((facility) => {
-                        if (!facility.latitude || !facility.longitude)
-                            return null;
-
-                        const colorClass = getFacilityColor(facility.type);
-
+                {/* Type filter */}
+                <motion.div {...fadeUp(0.08)} className="flex flex-wrap gap-2">
+                    {FACILITY_TYPES.map(({ value, label, icon: Icon }) => {
+                        const active = selectedType === value;
                         return (
-                            <MapMarker
-                                key={facility.id}
-                                longitude={Number(facility.longitude)}
-                                latitude={Number(facility.latitude)}
+                            <button
+                                key={value}
+                                onClick={() => setSelectedType(value)}
+                                className={[
+                                    "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
+                                    active
+                                        ? "border-foreground bg-foreground text-background"
+                                        : "border-[#EAEAEA] bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground dark:border-border",
+                                ].join(" ")}
                             >
-                                <MarkerContent>
-                                    <div className="relative group cursor-pointer transition-all duration-300 hover:scale-110 hover:shadow-2xl active:scale-95">
-                                        <div
-                                            className={`relative w-16 h-16 rounded-2xl border-4 border-background shadow-xl flex items-center justify-center transform transition-all ${colorClass}`}
-                                        >
-                                            <div className="w-12 h-12 rounded-xl bg-white/10 backdrop-blur-sm flex items-center justify-center shadow-inner">
-                                                <FacilityIcon
-                                                    type={facility.type}
-                                                />
-                                            </div>
-                                        </div>
-                                    </div>
-                                </MarkerContent>
-
-                                <MarkerTooltip>{facility.name}</MarkerTooltip>
-
-                                <MarkerPopup className="p-0 w-[420px]">
-                                    <Card className="border-border/50 shadow-2xl overflow-hidden backdrop-blur-sm bg-card/95 p-0">
-                                        <CardContent className="p-0">
-                                            {/* Popup Header with Gradient */}
-                                            <div
-                                                className={`p-6 ${colorClass
-                                                    .replace("bg-", "from-")
-                                                    .replace(
-                                                        " text-",
-                                                        " to-"
-                                                    )} bg-linear-to-br`}
-                                            >
-                                                <div className="flex items-start justify-between">
-                                                    <div className="flex-1">
-                                                        <div className="flex items-center gap-3 mb-3">
-                                                            <div
-                                                                className={`p-4 rounded-xl ${colorClass} shadow-lg`}
-                                                            >
-                                                                <FacilityIcon
-                                                                    type={
-                                                                        facility.type
-                                                                    }
-                                                                    className="size-6"
-                                                                />
-                                                            </div>
-                                                            <div className="flex-1">
-                                                                <h3 className="font-bold text-xl text-white">
-                                                                    {
-                                                                        facility.name
-                                                                    }
-                                                                </h3>
-                                                                <Badge
-                                                                    variant="secondary"
-                                                                    className="mt-2 bg-white/20 text-white border-white/30"
-                                                                >
-                                                                    {facility.type ||
-                                                                        "Healthcare Facility"}
-                                                                </Badge>
-                                                            </div>
-                                                        </div>
-
-                                                        {/* Quick Stats */}
-                                                        <div className="flex items-center gap-4 mt-4">
-                                                            {facility.distance && (
-                                                                <div className="flex items-center gap-2">
-                                                                    <Navigation className="size-4 text-white/80" />
-                                                                    <span className="text-white font-semibold">
-                                                                        {
-                                                                            facility.distance
-                                                                        }{" "}
-                                                                        km
-                                                                    </span>
-                                                                </div>
-                                                            )}
-                                                            <Badge className="bg-white/20 text-white border-white/30 gap-2">
-                                                                <Clock className="size-3" />
-                                                                Location available
-                                                            </Badge>
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            </div>
-
-                                            {/* Popup Content */}
-                                            <div className="p-6 space-y-6">
-                                                {/* Address */}
-                                                <div className="space-y-3">
-                                                    <div className="flex items-center gap-3">
-                                                        <MapPin className="size-5 text-primary" />
-                                                        <p className="text-sm font-medium text-foreground">
-                                                            Address
-                                                        </p>
-                                                    </div>
-                                                    <p className="text-sm text-muted-foreground pl-8">
-                                                        {facility.address}
-                                                    </p>
-                                                </div>
-
-                                                <div className="rounded-xl border border-border/60 bg-muted/30 p-4 text-sm text-muted-foreground">
-                                                    Only verified facility fields from the current database are shown here. Waiting times and service lists are not displayed unless they are stored in the system.
-                                                </div>
-
-                                                {/* Action Buttons */}
-                                                <div className="flex gap-3 pt-4">
-                                                    <Button
-                                                        variant="outline"
-                                                        className="flex-1 gap-3 h-11"
-                                                        onClick={() => {
-                                                            const url = `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`;
-                                                            window.open(
-                                                                url,
-                                                                "_blank"
-                                                            );
-                                                        }}
-                                                    >
-                                                        <Navigation className="size-4" />
-                                                        Get Directions
-                                                    </Button>
-                                                    <Link
-                                                        href={`/user/appointments?facilityId=${facility.id}`}
-                                                        className="flex-1"
-                                                    >
-                                                        <Button className="w-full gap-3 h-11 bg-primary hover:bg-primary/90">
-                                                            <Calendar className="size-4" />
-                                                            Book Appointment
-                                                        </Button>
-                                                    </Link>
-                                                </div>
-                                            </div>
-                                        </CardContent>
-                                    </Card>
-                                </MarkerPopup>
-                            </MapMarker>
+                                <Icon className="h-3.5 w-3.5" />
+                                {label}
+                            </button>
                         );
                     })}
-                </Map>
+                </motion.div>
+
+                {/* Map + list */}
+                <div className="grid gap-5 lg:grid-cols-[2fr_1fr]">
+
+                    {/* Map */}
+                    <motion.div {...fadeUp(0.14)}>
+                        <Card className="py-0 overflow-hidden border border-[#EAEAEA] shadow-[0_1px_4px_rgba(0,0,0,0.04)] rounded-xl dark:border-border">
+                            <div className="relative h-[500px] lg:h-[560px]">
+                                <Map center={center} zoom={14}>
+                                    <Map3DController />
+                                    <MapControls position="bottom-left" showZoom showCompass showLocate />
+
+                                    {userLocation && (
+                                        <MapMarker longitude={userLocation[0]} latitude={userLocation[1]}>
+                                            <MarkerContent>
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-primary/20 shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
+                                                    <motion.div
+                                                        animate={reduced ? {} : { scale: [1, 1.15, 1] }}
+                                                        transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                                        className="flex h-6 w-6 items-center justify-center rounded-full bg-primary"
+                                                    >
+                                                        <Navigation className="size-3 text-white" />
+                                                    </motion.div>
+                                                </div>
+                                            </MarkerContent>
+                                            <MarkerTooltip>Your Location</MarkerTooltip>
+                                        </MapMarker>
+                                    )}
+
+                                    {filteredFacilities.map((facility, idx) => {
+                                        if (!facility.latitude || !facility.longitude) return null;
+                                        const markerColor = getFacilityMarkerColor(facility.type);
+                                        return (
+                                            <MapMarker
+                                                key={facility.id}
+                                                longitude={Number(facility.longitude)}
+                                                latitude={Number(facility.latitude)}
+                                            >
+                                                <MarkerContent>
+                                                    <motion.div
+                                                        initial={reduced ? false : { scale: 0, opacity: 0 }}
+                                                        animate={{ scale: 1, opacity: 1 }}
+                                                        transition={{ delay: idx * 0.025, duration: 0.3, ease: SMOOTH_EASE }}
+                                                        className="cursor-pointer transition-transform duration-200 hover:scale-110 active:scale-95"
+                                                    >
+                                                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] ${markerColor}`}>
+                                                            <FacilityIcon type={facility.type} className="size-4 text-white" />
+                                                        </div>
+                                                    </motion.div>
+                                                </MarkerContent>
+
+                                                <MarkerTooltip>{facility.name}</MarkerTooltip>
+
+                                                <MarkerPopup className="p-0 w-[360px]">
+                                                    <Card className="overflow-hidden border border-[#EAEAEA] shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-xl dark:border-border">
+                                                        <CardContent className="p-0">
+                                                            {/* Popup header */}
+                                                            <div className="border-b border-[#EAEAEA] px-5 py-4 dark:border-border">
+                                                                <div className="flex items-start gap-3">
+                                                                    {(() => {
+                                                                        const p = getFacilityPastel(facility.type);
+                                                                        return (
+                                                                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${p.bg}`}>
+                                                                                <FacilityIcon type={facility.type} className={`size-4 ${p.text}`} />
+                                                                            </div>
+                                                                        );
+                                                                    })()}
+                                                                    <div className="flex-1 min-w-0">
+                                                                        <p className="font-semibold text-foreground truncate">{facility.name}</p>
+                                                                        <div className="mt-0.5 flex items-center gap-2">
+                                                                            <span className="text-xs text-muted-foreground">
+                                                                                {facility.type || "Healthcare Facility"}
+                                                                            </span>
+                                                                            {facility.distance && (
+                                                                                <>
+                                                                                    <span className="text-muted-foreground/30">·</span>
+                                                                                    <span className="text-xs text-muted-foreground">{facility.distance} km</span>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            {/* Popup body */}
+                                                            <div className="space-y-4 px-5 py-4">
+                                                                <div className="flex items-start gap-2">
+                                                                    <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                                                                    <p className="text-sm leading-relaxed text-muted-foreground">
+                                                                        {facility.address}
+                                                                    </p>
+                                                                </div>
+                                                                <div className="flex gap-2">
+                                                                    <Button
+                                                                        variant="outline"
+                                                                        size="sm"
+                                                                        className="h-9 flex-1 gap-1.5 border-[#EAEAEA] text-xs transition-colors duration-150 active:scale-[0.98] dark:border-border"
+                                                                        onClick={() =>
+                                                                            window.open(
+                                                                                `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`,
+                                                                                "_blank",
+                                                                            )
+                                                                        }
+                                                                    >
+                                                                        <Navigation className="h-3.5 w-3.5" />
+                                                                        Directions
+                                                                    </Button>
+                                                                    <Link href={`/user/appointments?facilityId=${facility.id}`} className="flex-1">
+                                                                        <Button
+                                                                            size="sm"
+                                                                            className="h-9 w-full gap-1.5 bg-[#111111] text-xs text-white hover:bg-[#333333] transition-colors duration-150 active:scale-[0.98] dark:bg-primary dark:hover:bg-primary/90"
+                                                                        >
+                                                                            <Calendar className="h-3.5 w-3.5" />
+                                                                            Book appointment
+                                                                        </Button>
+                                                                    </Link>
+                                                                </div>
+                                                            </div>
+                                                        </CardContent>
+                                                    </Card>
+                                                </MarkerPopup>
+                                            </MapMarker>
+                                        );
+                                    })}
+                                </Map>
+                            </div>
+                        </Card>
+                    </motion.div>
+
+                    {/* Facility list */}
+                    <motion.div
+                        {...fadeUp(0.18)}
+                        className="flex flex-col gap-2 lg:max-h-[560px] lg:overflow-y-auto lg:pr-0.5"
+                    >
+                        <AnimatePresence mode="popLayout">
+                            {filteredFacilities.length === 0 ? (
+                                <motion.div
+                                    key="empty"
+                                    initial={reduced ? false : { opacity: 0, y: 8 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, y: -8 }}
+                                    transition={{ duration: 0.3, ease: SMOOTH_EASE }}
+                                    className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[#EAEAEA] py-14 text-center dark:border-border"
+                                >
+                                    <Search className="h-6 w-6 text-muted-foreground/30" />
+                                    <div>
+                                        <p className="text-sm font-medium text-foreground">No facilities found</p>
+                                        <p className="mt-0.5 text-xs text-muted-foreground">Try adjusting your filter</p>
+                                    </div>
+                                </motion.div>
+                            ) : (
+                                filteredFacilities.map((facility, idx) => {
+                                    const p = getFacilityPastel(facility.type);
+                                    return (
+                                        <motion.div
+                                            key={facility.id}
+                                            layout
+                                            initial={reduced ? false : { opacity: 0, y: 12 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -8 }}
+                                            transition={{
+                                                duration: 0.4,
+                                                ease: SMOOTH_EASE,
+                                                delay: reduced ? 0 : idx * 0.04,
+                                                layout: { duration: 0.25 },
+                                            }}
+                                        >
+                                            <Card className="border border-[#EAEAEA] bg-background shadow-none transition-colors duration-150 hover:border-foreground/20 rounded-xl dark:border-border dark:hover:border-border/60">
+                                                <CardContent className="p-4">
+                                                    <div className="flex items-start gap-3">
+                                                        <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${p.bg}`}>
+                                                            <FacilityIcon type={facility.type} className={`size-3.5 ${p.text}`} />
+                                                        </div>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="flex items-start justify-between gap-2">
+                                                                <p className="truncate text-sm font-semibold text-foreground">
+                                                                    {facility.name}
+                                                                </p>
+                                                                {facility.distance && (
+                                                                    <span className="shrink-0 text-xs tabular-nums text-muted-foreground">
+                                                                        {facility.distance} km
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                            {facility.type && (
+                                                                <p className="mt-0.5 text-xs text-muted-foreground">
+                                                                    {facility.type}
+                                                                </p>
+                                                            )}
+                                                            {facility.address && (
+                                                                <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                                                                    {facility.address}
+                                                                </p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                    {facility.latitude && facility.longitude && (
+                                                        <div className="mt-3 flex gap-2 border-t border-[#EAEAEA] pt-3 dark:border-border">
+                                                            <Button
+                                                                variant="ghost"
+                                                                size="sm"
+                                                                className="h-8 flex-1 gap-1.5 text-xs text-muted-foreground transition-colors duration-150 hover:text-foreground active:scale-[0.98]"
+                                                                onClick={() =>
+                                                                    window.open(
+                                                                        `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`,
+                                                                        "_blank",
+                                                                    )
+                                                                }
+                                                            >
+                                                                <Navigation className="h-3.5 w-3.5" />
+                                                                Directions
+                                                            </Button>
+                                                            <Link href={`/user/appointments?facilityId=${facility.id}`} className="flex-1">
+                                                                <Button
+                                                                    size="sm"
+                                                                    className="h-8 w-full gap-1.5 bg-[#111111] text-xs text-white hover:bg-[#333333] transition-colors duration-150 active:scale-[0.98] dark:bg-primary dark:hover:bg-primary/90"
+                                                                >
+                                                                    <Calendar className="h-3.5 w-3.5" />
+                                                                    Book
+                                                                </Button>
+                                                            </Link>
+                                                        </div>
+                                                    )}
+                                                </CardContent>
+                                            </Card>
+                                        </motion.div>
+                                    );
+                                })
+                            )}
+                        </AnimatePresence>
+                    </motion.div>
+                </div>
             </div>
         </div>
     );

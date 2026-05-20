@@ -206,12 +206,31 @@ export default function ProfilePage() {
             if (!isClerkLoaded || !user) return;
 
             try {
-                const res = await fetch("/api/user/profile");
+                const syncRes = await fetch("/api/auth/sync", {
+                    method: "POST",
+                    cache: "no-store",
+                });
+
+                if (!syncRes.ok) {
+                    const syncError = await syncRes.json().catch(() => null);
+                    console.error(
+                        "Failed to sync user before profile fetch:",
+                        syncError?.error || syncRes.statusText
+                    );
+                }
+
+                const res = await fetch("/api/user/profile", {
+                    cache: "no-store",
+                });
                 if (res.ok) {
                     const data = (await res.json()) as UserProfile;
                     setProfile(data);
                 } else {
-                    console.error("Failed to fetch profile");
+                    const errorData = await res.json().catch(() => null);
+                    console.error(
+                        "Failed to fetch profile:",
+                        errorData?.error || res.statusText
+                    );
                 }
             } catch (error) {
                 console.error("Error fetching profile:", error);

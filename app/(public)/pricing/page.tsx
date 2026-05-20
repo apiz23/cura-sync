@@ -142,7 +142,7 @@ const faqs = [
     },
     {
         question: "How does CuraSync handle wearable and IoT health data?",
-        answer: "CuraSync integrates wearable health data through the mobile app's Health Connect interface, capturing synced metrics such as steps, sleep sessions, and heart rate. This data feeds the patient and clinical dashboards for longitudinal tracking and care coordination. Continuous real-time alert streaming is on the product roadmap for future releases.",
+        answer: "CuraSync integrates wearable health data through the mobile app's Health Connect interface, capturing synced metrics such as steps, sleep sessions, and heart rate. This data feeds the patient and clinical dashboards for longitudinal tracking and care coordination.",
     },
     {
         question: "Is the platform suitable for audit and access tracking?",
@@ -158,7 +158,7 @@ const faqs = [
     },
     {
         question: "Does CuraSync provide analytics for clinic admins?",
-        answer: "Yes. The admin dashboard includes a usage analytics section showing appointment trends over the past six months, total patients seen, and staff breakdown by role. This gives clinic managers an at-a-glance view of operational activity.",
+        answer: "Yes. The admin dashboard includes a usage analytics section showing appointment trends over the past six months, total patients seen, and staff breakdown by role.",
     },
     {
         question: "How do clinics get started on CuraSync?",
@@ -172,9 +172,9 @@ const faqs = [
 
 function FeatureCell({ value }: { value: boolean }) {
     return value ? (
-        <Check className="h-4 w-4 text-primary mx-auto" />
+        <Check className="mx-auto h-4 w-4 text-primary" />
     ) : (
-        <X className="h-4 w-4 text-muted-foreground mx-auto" />
+        <X className="mx-auto h-4 w-4 text-muted-foreground/40" />
     );
 }
 
@@ -183,26 +183,31 @@ export default function PricingPage() {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     return (
-        <div className="min-h-screen bg-background pt-20 pb-16 px-4">
+        <div className="min-h-[100dvh] bg-background px-4 pb-16 pt-20">
             <PageTitle title="Pricing" />
-            <div className="max-w-5xl mx-auto space-y-20 pt-10">
+            <div className="mx-auto max-w-5xl space-y-20 pt-10">
 
-                {/* Header */}
-                <div className="space-y-6 max-w-2xl">
-                    <Badge variant="secondary" className="bg-primary/10 text-primary">
-                        Clinic pricing
-                    </Badge>
-                    <h1 className="text-4xl font-bold text-foreground leading-tight">
-                        Pricing built for real clinic workflows
-                    </h1>
-                    <p className="text-lg text-muted-foreground leading-relaxed">
-                        Appointments, patient records, medications, AI symptom
-                        analysis, and audit-ready admin controls in one platform.
-                        Priced per branch, not per user.
-                    </p>
+                {/* Header — left-aligned, asymmetric */}
+                <div
+                    className="flex flex-col gap-8 lg:flex-row lg:items-end lg:justify-between animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{ animationFillMode: "both" }}
+                >
+                    <div className="space-y-5 max-w-xl">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary">
+                            Clinic pricing
+                        </Badge>
+                        <h1 className="text-4xl font-bold leading-tight tracking-tight text-foreground">
+                            Pricing built for real clinic workflows
+                        </h1>
+                        <p className="text-base leading-relaxed text-muted-foreground">
+                            Appointments, patient records, medications, AI symptom analysis,
+                            and audit-ready admin controls — one platform, priced per branch.
+                        </p>
+                    </div>
 
-                    <div className="flex items-center gap-4 pt-2">
-                        <span className={cn("text-sm font-medium", !isAnnual ? "text-foreground" : "text-muted-foreground")}>
+                    {/* Billing toggle — right-aligned on lg */}
+                    <div className="flex items-center gap-3 shrink-0">
+                        <span className={cn("text-sm font-medium transition-colors", !isAnnual ? "text-foreground" : "text-muted-foreground")}>
                             Monthly
                         </span>
                         <Switch
@@ -211,7 +216,7 @@ export default function PricingPage() {
                             className="data-[state=checked]:bg-primary"
                         />
                         <div className="flex items-center gap-2">
-                            <span className={cn("text-sm font-medium", isAnnual ? "text-foreground" : "text-muted-foreground")}>
+                            <span className={cn("text-sm font-medium transition-colors", isAnnual ? "text-foreground" : "text-muted-foreground")}>
                                 Annual
                             </span>
                             <Badge variant="secondary" className="bg-primary/10 text-primary text-xs">
@@ -221,15 +226,18 @@ export default function PricingPage() {
                     </div>
                 </div>
 
-                {/* Pricing Cards */}
-                <div className="grid md:grid-cols-2 gap-6">
+                {/* Pricing Cards — asymmetric: Clinic gets more visual weight */}
+                <div
+                    className="grid gap-6 md:grid-cols-2 lg:grid-cols-[3fr_2fr] animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{ animationDelay: "100ms", animationFillMode: "both" }}
+                >
                     {plans.map((plan) => (
                         <Card
                             key={plan.name}
                             className={cn(
                                 "relative border transition-shadow duration-200",
                                 plan.popular
-                                    ? "ring-2 ring-primary border-primary/30"
+                                    ? "border-primary/40 bg-primary/[0.03] shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
                                     : "border-border"
                             )}
                         >
@@ -240,61 +248,53 @@ export default function PricingPage() {
                                     </Badge>
                                 </div>
                             )}
-                            <CardContent className="p-8 space-y-8">
-                                {/* Plan header */}
+                            <CardContent className={cn("space-y-8", plan.popular ? "p-8" : "p-6")}>
                                 <div className="space-y-1">
-                                    <h2 className="text-2xl font-bold text-foreground">
+                                    <h2 className={cn("font-bold text-foreground", plan.popular ? "text-2xl" : "text-xl")}>
                                         {plan.name}
                                     </h2>
-                                    <p className="text-sm text-muted-foreground">
-                                        {plan.description}
-                                    </p>
+                                    <p className="text-sm text-muted-foreground">{plan.description}</p>
                                 </div>
 
-                                {/* Price */}
                                 <div className="space-y-1">
                                     {plan.price ? (
                                         <>
                                             <div className="flex items-baseline gap-1">
                                                 <span className="text-sm font-medium text-muted-foreground">RM</span>
-                                                <span className="text-5xl font-bold text-foreground tabular-nums">
+                                                <span className="text-5xl font-bold tracking-tighter text-foreground tabular-nums">
                                                     {isAnnual ? plan.price.annual : plan.price.monthly}
                                                 </span>
                                                 <span className="text-sm text-muted-foreground">/mo per branch</span>
                                             </div>
                                             {isAnnual && (
-                                                <p className="text-xs text-muted-foreground">
-                                                    {plan.annualTotal}
-                                                </p>
+                                                <p className="text-xs text-muted-foreground">{plan.annualTotal}</p>
                                             )}
                                         </>
                                     ) : (
                                         <div className="flex items-baseline gap-2">
-                                            <span className="text-5xl font-bold text-foreground">
-                                                {plan.priceLabel}
-                                            </span>
+                                            <span className="text-4xl font-bold text-foreground">{plan.priceLabel}</span>
                                             <span className="text-sm text-muted-foreground">pricing</span>
                                         </div>
                                     )}
                                 </div>
 
-                                {/* Features */}
-                                <ul className="space-y-3">
+                                <ul className="space-y-2.5">
                                     {plan.features.map((feature, i) => (
-                                        <li key={i} className="flex items-start gap-3">
-                                            <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
-                                            <span className="text-sm text-foreground">
-                                                {feature}
-                                            </span>
+                                        <li
+                                            key={i}
+                                            className="flex items-start gap-3"
+                                            style={{ animationDelay: `${i * 30}ms` }}
+                                        >
+                                            <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+                                            <span className="text-sm text-foreground">{feature}</span>
                                         </li>
                                     ))}
                                 </ul>
 
-                                {/* CTA */}
                                 <Button
                                     asChild
                                     className={cn(
-                                        "w-full",
+                                        "w-full transition-all duration-200 active:scale-[0.99]",
                                         plan.popular
                                             ? "bg-primary hover:bg-primary/90 text-primary-foreground"
                                             : "bg-secondary hover:bg-secondary/80 text-secondary-foreground"
@@ -311,34 +311,31 @@ export default function PricingPage() {
                 </div>
 
                 {/* Feature Comparison */}
-                <div className="space-y-8">
-                    <div className="space-y-1">
-                        <h2 className="text-2xl font-bold text-foreground">
-                            Compare features
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
-                            Full breakdown by plan
-                        </p>
+                <div
+                    className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{ animationDelay: "150ms", animationFillMode: "both" }}
+                >
+                    <div>
+                        <h2 className="text-2xl font-bold text-foreground">Compare features</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">Full breakdown by plan</p>
                     </div>
 
-                    <div className="rounded-xl border border-border overflow-hidden">
-                        {/* Table header */}
-                        <div className="grid grid-cols-[1fr_100px_100px] bg-muted/50 px-6 py-3 border-b border-border">
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide">
+                    <div className="overflow-hidden rounded-xl border border-border">
+                        <div className="grid grid-cols-[1fr_100px_100px] border-b border-border bg-muted/50 px-6 py-3">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 Feature
                             </span>
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">
+                            <span className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 Clinic
                             </span>
-                            <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wide text-center">
+                            <span className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
                                 Enterprise
                             </span>
                         </div>
 
                         {comparisonData.map((section, si) => (
                             <div key={si}>
-                                {/* Category row */}
-                                <div className="grid grid-cols-[1fr_100px_100px] px-6 py-3 bg-muted/20 border-b border-border">
+                                <div className="grid grid-cols-[1fr_100px_100px] border-b border-border bg-muted/20 px-6 py-3">
                                     <div className="flex items-center gap-2">
                                         <section.icon className="h-4 w-4 text-primary" />
                                         <span className="text-sm font-semibold text-foreground">
@@ -346,19 +343,15 @@ export default function PricingPage() {
                                         </span>
                                     </div>
                                 </div>
-
-                                {/* Feature rows */}
                                 {section.features.map((feature, fi) => (
                                     <div
                                         key={fi}
                                         className={cn(
-                                            "grid grid-cols-[1fr_100px_100px] px-6 py-3 border-b border-border last:border-b-0 items-center",
+                                            "grid grid-cols-[1fr_100px_100px] items-center border-b border-border px-6 py-3 last:border-b-0",
                                             fi % 2 === 0 ? "bg-background" : "bg-muted/10"
                                         )}
                                     >
-                                        <span className="text-sm text-foreground">
-                                            {feature.name}
-                                        </span>
+                                        <span className="text-sm text-foreground">{feature.name}</span>
                                         <FeatureCell value={feature.clinic} />
                                         <FeatureCell value={feature.enterprise} />
                                     </div>
@@ -369,36 +362,37 @@ export default function PricingPage() {
                 </div>
 
                 {/* FAQ */}
-                <div className="space-y-8">
-                    <div className="space-y-1">
-                        <h2 className="text-2xl font-bold text-foreground">
-                            Frequently asked questions
-                        </h2>
-                        <p className="text-sm text-muted-foreground">
+                <div
+                    className="space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{ animationDelay: "200ms", animationFillMode: "both" }}
+                >
+                    <div>
+                        <h2 className="text-2xl font-bold text-foreground">Frequently asked questions</h2>
+                        <p className="mt-1 text-sm text-muted-foreground">
                             Common questions about CuraSync pricing and scope
                         </p>
                     </div>
 
-                    <div className="divide-y divide-border rounded-xl border border-border overflow-hidden">
+                    <div className="divide-y divide-border overflow-hidden rounded-xl border border-border">
                         {faqs.map((faq, i) => (
                             <div key={i} className="bg-background">
                                 <button
                                     onClick={() => setOpenFaq(openFaq === i ? null : i)}
-                                    className="w-full flex items-center justify-between px-6 py-4 text-left hover:bg-muted/30 transition-colors duration-150"
+                                    className="flex w-full items-center justify-between px-6 py-4 text-left transition-colors duration-150 hover:bg-muted/30"
                                 >
-                                    <span className="text-sm font-medium text-foreground pr-4">
+                                    <span className="pr-4 text-sm font-medium text-foreground">
                                         {faq.question}
                                     </span>
                                     <ChevronDown
                                         className={cn(
-                                            "h-4 w-4 text-muted-foreground shrink-0 transition-transform duration-200",
+                                            "h-4 w-4 shrink-0 text-muted-foreground transition-transform duration-200",
                                             openFaq === i && "rotate-180"
                                         )}
                                     />
                                 </button>
                                 {openFaq === i && (
                                     <div className="px-6 pb-4">
-                                        <p className="text-sm text-muted-foreground leading-relaxed max-w-2xl">
+                                        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
                                             {faq.answer}
                                         </p>
                                     </div>
@@ -408,61 +402,59 @@ export default function PricingPage() {
                     </div>
                 </div>
 
-                {/* Enterprise CTA */}
-                <div className="rounded-xl border border-border bg-muted/20 p-10 space-y-6">
-                    <div className="flex items-start gap-4">
-                        <div className="p-3 rounded-lg bg-primary/10 shrink-0">
-                            <Building2 className="h-6 w-6 text-primary" />
+                {/* Enterprise CTA — left-aligned block */}
+                <div
+                    className="rounded-xl border border-border bg-muted/20 p-10 animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    style={{ animationDelay: "250ms", animationFillMode: "both" }}
+                >
+                    <div className="flex flex-col gap-6 lg:flex-row lg:items-center lg:justify-between">
+                        <div className="flex items-start gap-4">
+                            <div className="shrink-0 rounded-lg bg-primary/10 p-3">
+                                <Building2 className="h-6 w-6 text-primary" />
+                            </div>
+                            <div className="space-y-1">
+                                <h2 className="text-xl font-bold text-foreground">
+                                    Need a multi-branch rollout or custom deployment?
+                                </h2>
+                                <p className="max-w-xl text-sm leading-relaxed text-muted-foreground">
+                                    Talk to us about onboarding, migration, reporting requirements,
+                                    and operational support for larger clinic teams.
+                                </p>
+                            </div>
                         </div>
-                        <div className="space-y-1">
-                            <h2 className="text-xl font-bold text-foreground">
-                                Need a multi-branch rollout or custom deployment?
-                            </h2>
-                            <p className="text-sm text-muted-foreground max-w-xl leading-relaxed">
-                                Talk to us about onboarding, migration, reporting
-                                requirements, and operational support for larger
-                                clinic teams.
-                            </p>
+                        <div className="flex shrink-0 flex-wrap gap-3">
+                            <Button
+                                asChild
+                                className="bg-primary hover:bg-primary/90 text-primary-foreground transition-all duration-200 active:scale-[0.99]"
+                            >
+                                <Link href="/contact">
+                                    Contact Sales
+                                    <ArrowRight className="ml-2 h-4 w-4" />
+                                </Link>
+                            </Button>
+                            <Button variant="outline" className="transition-all duration-200 active:scale-[0.99]">
+                                Schedule Demo
+                                <Calendar className="ml-2 h-4 w-4" />
+                            </Button>
                         </div>
-                    </div>
-                    <div className="flex flex-wrap gap-3 pl-16">
-                        <Button className="bg-primary hover:bg-primary/90 text-primary-foreground">
-                            Contact Sales
-                            <ArrowRight className="ml-2 h-4 w-4" />
-                        </Button>
-                        <Button variant="outline">
-                            Schedule Demo
-                            <Calendar className="ml-2 h-4 w-4" />
-                        </Button>
                     </div>
                 </div>
 
-                {/* Trust footer */}
-                <div className="flex flex-wrap items-center justify-center gap-8 text-muted-foreground pb-4">
-                    <div className="flex items-center gap-2">
-                        <Shield className="h-4 w-4" />
-                        <span className="text-sm">Role-based access control</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Brain className="h-4 w-4" />
-                        <span className="text-sm">AI symptom analysis</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <ClipboardList className="h-4 w-4" />
-                        <span className="text-sm">Audit-ready admin logs</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Bell className="h-4 w-4" />
-                        <span className="text-sm">Push notifications</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <BarChart3 className="h-4 w-4" />
-                        <span className="text-sm">Usage analytics</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                        <Building2 className="h-4 w-4" />
-                        <span className="text-sm">Cloud SaaS platform</span>
-                    </div>
+                {/* Trust strip */}
+                <div className="flex flex-wrap items-center justify-center gap-x-8 gap-y-3 border-t pt-8 text-muted-foreground">
+                    {[
+                        { icon: Shield, label: "Role-based access control" },
+                        { icon: Brain, label: "AI symptom analysis" },
+                        { icon: ClipboardList, label: "Audit-ready admin logs" },
+                        { icon: Bell, label: "Push notifications" },
+                        { icon: BarChart3, label: "Usage analytics" },
+                        { icon: Building2, label: "Cloud SaaS platform" },
+                    ].map(({ icon: Icon, label }) => (
+                        <div key={label} className="flex items-center gap-2">
+                            <Icon className="h-4 w-4" />
+                            <span className="text-sm">{label}</span>
+                        </div>
+                    ))}
                 </div>
             </div>
         </div>

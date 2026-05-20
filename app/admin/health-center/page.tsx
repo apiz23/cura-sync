@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
@@ -48,9 +49,11 @@ import {
     SelectItem,
 } from "@/components/ui/select";
 import { Facility, FacilitySchedule } from "@/app/types";
+import { normalizeStaffRole } from "@/lib/staff-role";
 
 export default function EditFacilityPage() {
     const { user, loading: authLoading } = useAuth();
+    const isAdmin = normalizeStaffRole(user?.role ?? "") === "admin";
     const [facility, setFacility] = useState<Facility | null>(null);
     const [schedules, setSchedules] = useState<FacilitySchedule[]>([]);
     const [loading, setLoading] = useState(true);
@@ -87,13 +90,18 @@ export default function EditFacilityPage() {
             return;
         }
 
+        if (!isAdmin) {
+            setLoading(false);
+            return;
+        }
+
         if (!user.facility_id) {
             toast.error("No facility assigned");
             return;
         }
 
         fetchFacilityData();
-    }, [authLoading, user, fetchFacilityData]);
+    }, [authLoading, user, isAdmin, fetchFacilityData]);
 
     const handleSave = async () => {
         if (!facility) return;
@@ -210,6 +218,29 @@ export default function EditFacilityPage() {
                         <Skeleton className="h-64 rounded-xl" />
                     </div>
                 </div>
+            </div>
+        );
+    }
+
+    if (user && !isAdmin) {
+        return (
+            <div className="min-h-screen flex items-center justify-center p-6">
+                <Card>
+                    <CardContent className="p-8 text-center">
+                        <div className="w-16 h-16 rounded-full bg-destructive/10 flex items-center justify-center mx-auto mb-4">
+                            <AlertCircle className="w-8 h-8 text-destructive" />
+                        </div>
+                        <h2 className="text-xl font-bold mb-2">
+                            Admin Access Required
+                        </h2>
+                        <p className="text-muted-foreground mb-4">
+                            Only admin accounts can manage health center details.
+                        </p>
+                        <Button asChild variant="outline">
+                            <Link href="/admin/dashboard">Return to Dashboard</Link>
+                        </Button>
+                    </CardContent>
+                </Card>
             </div>
         );
     }

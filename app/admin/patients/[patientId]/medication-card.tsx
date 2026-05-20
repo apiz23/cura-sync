@@ -24,6 +24,10 @@ import { useState } from "react";
 import { Medication } from "@/app/types";
 import EditMedicationSheet from "./edit-medication-sheet";
 import { isMedicationExpired } from "@/lib/medication-dates";
+import {
+    normalizeMedicationFrequency,
+    normalizeMedicationSchedule,
+} from "@/lib/medication-options";
 
 interface MedicationCardProps {
     medication: Medication;
@@ -105,6 +109,11 @@ export default function MedicationCard({
     };
 
     const timeRemaining = getTimeRemaining();
+    const frequencyLabel = normalizeMedicationFrequency(medication.frequency);
+    const scheduleLabel = normalizeMedicationSchedule(
+        medication.frequency,
+        medication.schedule
+    );
 
     return (
         <>
@@ -169,7 +178,7 @@ export default function MedicationCard({
                                     </Badge>
                                     <div className="text-sm text-muted-foreground flex items-center gap-1">
                                         <Clock3 className="h-3.5 w-3.5" />
-                                        {medication.frequency}
+                                        {frequencyLabel}
                                     </div>
                                 </div>
 
@@ -255,18 +264,18 @@ export default function MedicationCard({
                                         <span>Frequency</span>
                                     </div>
                                     <p className="font-medium text-foreground">
-                                        {medication.frequency}
+                                        {frequencyLabel}
                                     </p>
                                 </div>
 
-                                {medication.schedule && (
+                                {scheduleLabel && (
                                     <div className="space-y-1.5">
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <Clock className="h-4 w-4" />
                                             <span>Schedule</span>
                                         </div>
                                         <p className="font-medium text-foreground">
-                                            {medication.schedule}
+                                            {scheduleLabel}
                                         </p>
                                     </div>
                                 )}

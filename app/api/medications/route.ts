@@ -4,6 +4,7 @@ import supabase from "@/lib/supabase";
 import { requireAnySession } from "@/lib/authz";
 import { MEDICATION_STATUS } from "@/lib/constants";
 import { logAudit, actorFromSession } from "@/lib/audit";
+import { presentMedications } from "@/lib/medication-presenter";
 
 const createMedicationSchema = z.object({
     profile_id: z.string().optional(),
@@ -72,7 +73,7 @@ export async function GET(req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data);
+    return NextResponse.json(await presentMedications(data ?? []));
 }
 
 /* =========================

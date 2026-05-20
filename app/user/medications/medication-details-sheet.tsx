@@ -44,6 +44,10 @@ export default function MedicationDetailsSheet({
     onUpdate,
 }: MedicationDetailsSheetProps) {
     const [isTaking, setIsTaking] = useState(false);
+    const prescribedByLabel =
+        medication.prescribed_by_display ||
+        medication.prescribed_by_name ||
+        medication.prescribed_by;
 
     const getStatusConfig = (status: string) => {
         const configs = {
@@ -314,17 +318,17 @@ export default function MedicationDetailsSheet({
                     </Card>
 
                     {/* Additional Information */}
-                    {(medication.prescribed_by || medication.notes) && (
+                    {(prescribedByLabel || medication.notes) && (
                         <Card className="p-4">
                             <div className="space-y-4">
-                                {medication.prescribed_by && (
+                                {prescribedByLabel && (
                                     <div className="space-y-2">
                                         <div className="flex items-center gap-2 text-sm text-muted-foreground">
                                             <User className="h-4 w-4" />
                                             <span>Prescribed By</span>
                                         </div>
                                         <p className="font-medium text-sm">
-                                            Dr. {medication.prescribed_by}
+                                            {prescribedByLabel}
                                         </p>
                                     </div>
                                 )}

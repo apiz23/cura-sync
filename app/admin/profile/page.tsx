@@ -49,6 +49,7 @@ function formatDateTime(value: string | null | undefined) {
 export default function ProfessionalProfilePage() {
     const { user, loading, updateUser } = useAuth();
     const [isEditing, setIsEditing] = useState(false);
+    const isAdmin = normalizeStaffRole(user?.role ?? "") === "admin";
 
     const initials =
         (user?.full_name?.split(" ")[0]?.[0] || "") +
@@ -354,11 +355,17 @@ export default function ProfessionalProfilePage() {
                                     Quick Actions
                                 </CardTitle>
                                 <CardDescription>
-                                    Real account actions now point to working pages.
+                                    Real account actions for this staff account.
                                 </CardDescription>
                             </CardHeader>
                             <CardContent>
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div
+                                    className={`grid gap-3 ${
+                                        isAdmin
+                                            ? "grid-cols-2 md:grid-cols-3"
+                                            : "grid-cols-1 md:grid-cols-1"
+                                    }`}
+                                >
                                     <Button
                                         variant="outline"
                                         className="h-14 rounded-xl border-border hover:bg-muted/50 gap-2"
@@ -367,24 +374,22 @@ export default function ProfessionalProfilePage() {
                                         <Edit className="w-5 h-5" />
                                         <span>Edit Profile</span>
                                     </Button>
-                                    <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
-                                        <Link href="/admin/security">
-                                            <Shield className="w-5 h-5" />
-                                            <span className="text-sm">Security</span>
-                                        </Link>
-                                    </Button>
-                                    <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
-                                        <Link href="/admin/settings">
-                                            <Bell className="w-5 h-5" />
-                                            <span className="text-sm">Preferences</span>
-                                        </Link>
-                                    </Button>
-                                    <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
-                                        <Link href="/admin/health-center">
-                                            <Building2 className="w-5 h-5" />
-                                            <span className="text-sm">Facility</span>
-                                        </Link>
-                                    </Button>
+                                    {isAdmin && (
+                                        <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
+                                            <Link href="/admin/security">
+                                                <Shield className="w-5 h-5" />
+                                                <span className="text-sm">Security</span>
+                                            </Link>
+                                        </Button>
+                                    )}
+                                    {isAdmin && (
+                                        <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
+                                            <Link href="/admin/settings">
+                                                <Bell className="w-5 h-5" />
+                                                <span className="text-sm">Preferences</span>
+                                            </Link>
+                                        </Button>
+                                    )}
                                 </div>
                             </CardContent>
                         </Card>

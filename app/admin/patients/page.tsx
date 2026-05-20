@@ -25,7 +25,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
     Select,
@@ -46,6 +45,10 @@ import {
     TableRow,
 } from "@/components/kibo-ui/table";
 import AddPatientSheet from "./addPatientSheet";
+import {
+    calculatePatientAge,
+    calculatePatientBmi,
+} from "@/lib/patient-profile";
 
 export interface Patient {
     id: string;
@@ -119,28 +122,6 @@ export default function PatientListPage() {
         fetchPatients();
     }, [fetchPatients]);
 
-    const getAge = (dateOfBirth?: string) => {
-        if (!dateOfBirth) return null;
-        const today = new Date();
-        const birthDate = new Date(dateOfBirth);
-        let age = today.getFullYear() - birthDate.getFullYear();
-        const monthDelta = today.getMonth() - birthDate.getMonth();
-
-        if (
-            monthDelta < 0 ||
-            (monthDelta === 0 && today.getDate() < birthDate.getDate())
-        ) {
-            age--;
-        }
-
-        return age;
-    };
-
-    const calculateBMI = (height?: number, weight?: number) => {
-        if (!height || !weight) return null;
-        return (weight / (height / 100) ** 2).toFixed(1);
-    };
-
     const getRecordCompletion = (patient: Patient) => {
         const completedFields = [
             patient.date_of_birth,
@@ -188,7 +169,7 @@ export default function PatientListPage() {
 
     const averageAge = useMemo(() => {
         const ages = patients
-            .map((patient) => getAge(patient.date_of_birth))
+            .map((patient) => calculatePatientAge(patient.date_of_birth))
             .filter((age): age is number => age !== null);
 
         if (!ages.length) return 0;
@@ -197,15 +178,6 @@ export default function PatientListPage() {
 
     const openPatientProfile = (patientId: string) => {
         router.push(`/admin/patients/${patientId}`);
-    };
-
-    const formatDate = (dateString?: string) => {
-        if (!dateString) return "Unknown";
-        return new Date(dateString).toLocaleDateString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-        });
     };
 
     const columns: ColumnDef<Patient>[] = [
@@ -224,7 +196,7 @@ export default function PatientListPage() {
                 <TableColumnHeader column={column} title="Patient" />
             ),
             cell: ({ row }) => {
-                const age = getAge(row.original.date_of_birth);
+                const age = calculatePatientAge(row.original.date_of_birth);
                 return (
                     <button
                         type="button"
@@ -284,7 +256,7 @@ export default function PatientListPage() {
                 <TableColumnHeader column={column} title="Health Profile" />
             ),
             cell: ({ row }) => {
-                const bmi = calculateBMI(
+                const bmi = calculatePatientBmi(
                     row.original.height_cm,
                     row.original.weight_kg
                 );

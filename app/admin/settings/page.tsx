@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
 import { Switch } from "@/components/ui/switch";
+import { normalizeStaffRole } from "@/lib/staff-role";
 
 type PreferenceState = {
     email_notifications: boolean;
@@ -19,6 +20,7 @@ type PreferenceState = {
 
 export default function AdminSettingsPage() {
     const { user, loading, updateUser } = useAuth();
+    const isAdmin = normalizeStaffRole(user?.role ?? "") === "admin";
     const [form, setForm] = useState<PreferenceState>({
         email_notifications: true,
         sms_notifications: false,
@@ -42,6 +44,21 @@ export default function AdminSettingsPage() {
 
     if (loading || !user) {
         return null;
+    }
+
+    if (!isAdmin) {
+        return (
+            <div className="p-6">
+                <Card className="border-destructive/30">
+                    <CardHeader>
+                        <CardTitle>Access Restricted</CardTitle>
+                        <CardDescription>
+                            Preferences is available to admin accounts only.
+                        </CardDescription>
+                    </CardHeader>
+                </Card>
+            </div>
+        );
     }
 
     async function savePreferences() {

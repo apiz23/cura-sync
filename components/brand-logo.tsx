@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-
+import logo from "@/public/icons/android-chrome-512x512.png";
 import { cn } from "@/lib/utils";
 
 type BrandLogoProps = {
@@ -23,7 +23,7 @@ export function BrandLogo({
 			)}
 		>
 			<Image
-				src="/icons/android-chrome-512x512.png"
+				src={logo}
 				alt={alt}
 				width={48}
 				height={48}

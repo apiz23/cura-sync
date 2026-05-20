@@ -1,40 +1,37 @@
 "use client";
 
 import {
-	AlertCircle,
-	AlertTriangle,
-	Brain,
-	Check,
-	Clock,
-	FileText,
-	Hospital,
-	Loader2,
-	MapPin,
-	Shield,
-	Sparkles,
-	Stethoscope,
-	Thermometer,
-	ThumbsDown,
-	ThumbsUp,
-	User,
-} from "lucide-react";
+	PiWarningCircle,
+	PiWarning,
+	PiBrain,
+	PiCheck,
+	PiFileText,
+	PiHospital,
+	PiCircleNotch,
+	PiMapPin,
+	PiShieldCheck,
+	PiSparkleFill,
+	PiThumbsDown,
+	PiThumbsUp,
+	PiArrowRight,
+	PiArrowCounterClockwise,
+	PiSmileyWink,
+	PiX,
+} from "react-icons/pi";
+import Image from "next/image";
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Link from "next/link";
 import { toast } from "sonner";
 import { AnalysisResult } from "@/app/types";
 import AnimatedTags from "@/components/smoothui/animated-tags";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+// ── Constants ────────────────────────────────────────────────────────────────
 
 const COMMON_SYMPTOMS = [
 	"Fever",
@@ -53,6 +50,8 @@ const COMMON_SYMPTOMS = [
 	"Abdominal Pain",
 ];
 
+// ── Types ────────────────────────────────────────────────────────────────────
+
 type Facility = {
 	id: string;
 	name: string;
@@ -61,6 +60,7 @@ type Facility = {
 	address: string;
 	latitude?: string | null;
 	longitude?: string | null;
+	distanceKm?: number | null;
 };
 
 type Coordinates = {
@@ -75,50 +75,161 @@ type PatientContext = {
 	chronic_conditions?: string;
 };
 
-function urgencyColor(urgency: AnalysisResult["urgency"]) {
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function urgencyConfig(urgency: AnalysisResult["urgency"]) {
 	switch (urgency) {
 		case "emergency":
-			return "bg-destructive text-destructive-foreground";
+			return {
+				label: "Emergency",
+				filled: 4,
+				barColor: "bg-destructive",
+				badgeClass: "bg-destructive/10 text-destructive border-destructive/20",
+			};
 		case "high":
-			return "bg-destructive/80 text-destructive-foreground";
+			return {
+				label: "High urgency",
+				filled: 3,
+				barColor: "bg-orange-500",
+				badgeClass:
+					"bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400",
+			};
 		case "medium":
-			return "bg-warning text-warning-foreground";
+			return {
+				label: "Medium urgency",
+				filled: 2,
+				barColor: "bg-yellow-500",
+				badgeClass:
+					"bg-yellow-500/10 text-yellow-700 border-yellow-500/20 dark:text-yellow-400",
+			};
 		case "low":
-			return "bg-primary text-primary-foreground";
+			return {
+				label: "Low urgency",
+				filled: 1,
+				barColor: "bg-primary",
+				badgeClass: "bg-primary/10 text-primary border-primary/20",
+			};
 		default:
-			return "bg-muted text-foreground";
+			return {
+				label: "Unknown",
+				filled: 0,
+				barColor: "bg-muted-foreground",
+				badgeClass: "bg-muted text-muted-foreground border-border",
+			};
 	}
 }
 
 function urgencyTimeline(urgency: AnalysisResult["urgency"]) {
 	switch (urgency) {
 		case "emergency":
-			return "Immediate care";
+			return "Seek immediate care";
 		case "high":
 			return "As soon as possible";
 		case "medium":
 			return "Within 2 to 3 days";
 		case "low":
-			return "Monitor and follow up as needed";
+			return "Monitor and follow up";
 		default:
 			return "Use clinical judgment";
 	}
 }
 
-function sourceLabel(source: string | undefined): { label: string; className: string } | null {
+function sourceLabel(source: string | undefined): { label: string; class: string } | null {
 	switch (source) {
 		case "jamai_structured":
-			return { label: "AI-powered", className: "bg-primary/10 text-primary border-primary/20" };
+			return { label: "AI-powered", class: "bg-primary/10 text-primary border-primary/20" };
 		case "knowledge_base":
-			return { label: "Knowledge Base", className: "bg-info/10 text-info border-info/20" };
+			return {
+				label: "Knowledge Base",
+				class: "bg-info/10 text-info border-info/20",
+			};
 		case "rule_based_safety":
-			return { label: "Rule-based Triage", className: "bg-warning/10 text-foreground border-warning/20" };
+			return {
+				label: "Rule-based Triage",
+				class: "bg-warning/10 text-warning-foreground border-warning/20",
+			};
 		case "fallback":
-			return { label: "General Guidance", className: "bg-muted text-muted-foreground border-border" };
+			return {
+				label: "General Guidance",
+				class: "bg-muted text-muted-foreground border-border",
+			};
 		default:
 			return null;
 	}
 }
+
+function distanceFromUser(facility: Facility, userLocation: Coordinates | null) {
+	if (!userLocation || !facility.latitude || !facility.longitude) return null;
+	const lat = Number(facility.latitude);
+	const lon = Number(facility.longitude);
+	if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
+	return haversineKm(userLocation.latitude, userLocation.longitude, lat, lon);
+}
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+	const toRad = (v: number) => (v * Math.PI) / 180;
+	const R = 6371;
+	const dLat = toRad(lat2 - lat1);
+	const dLon = toRad(lon2 - lon1);
+	const a =
+		Math.sin(dLat / 2) ** 2 +
+		Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+	return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function mapHref(facility: Facility) {
+	if (facility.latitude && facility.longitude)
+		return `https://www.google.com/maps/search/?api=1&query=${facility.latitude},${facility.longitude}`;
+	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(facility.address)}`;
+}
+
+// ── Sub-components ───────────────────────────────────────────────────────────
+
+function UrgencySeverityBar({ urgency }: { urgency: AnalysisResult["urgency"] }) {
+	const { filled, barColor } = urgencyConfig(urgency);
+	return (
+		<div className="flex gap-1.5">
+			{Array.from({ length: 4 }, (_, i) => (
+				<motion.div
+					key={i}
+					className={cn("h-2 flex-1 rounded-full", i < filled ? barColor : "bg-muted")}
+					initial={{ scaleX: 0, opacity: 0 }}
+					animate={{ scaleX: 1, opacity: 1 }}
+					transition={{
+						type: "spring",
+						stiffness: 120,
+						damping: 22,
+						delay: 0.15 + i * 0.06,
+					}}
+					style={{ originX: 0 }}
+				/>
+			))}
+		</div>
+	);
+}
+
+// ── Variants ─────────────────────────────────────────────────────────────────
+
+const stagger: Variants = {
+	hidden: {},
+	visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+
+const fadeUp: Variants = {
+	hidden: { opacity: 0, y: 14 },
+	visible: {
+		opacity: 1,
+		y: 0,
+		transition: { type: "spring", stiffness: 90, damping: 22 },
+	},
+};
+
+const fadeIn: Variants = {
+	hidden: { opacity: 0 },
+	visible: { opacity: 1, transition: { duration: 0.35 } },
+};
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function AnalyzePage() {
 	const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -137,49 +248,36 @@ export default function AnalyzePage() {
 
 	useEffect(() => {
 		let cancelled = false;
-
 		const loadFacilities = async () => {
 			try {
 				const res = await fetch("/api/facilities");
 				if (!res.ok) return;
 				const data = (await res.json()) as Facility[];
-				if (!cancelled) {
-					setFacilities(Array.isArray(data) ? data : []);
-				}
-			} catch (facilityError) {
-				console.error("Facility suggestion fetch error:", facilityError);
+				if (!cancelled) setFacilities(Array.isArray(data) ? data : []);
+			} catch (e) {
+				console.error("Facility fetch error:", e);
 			}
 		};
-
 		void loadFacilities();
-
-		return () => {
-			cancelled = true;
-		};
+		return () => { cancelled = true; };
 	}, []);
 
 	useEffect(() => {
 		if (typeof window === "undefined" || !("geolocation" in navigator)) return;
-
 		navigator.geolocation.getCurrentPosition(
-			(position) => {
+			(pos) =>
 				setUserLocation({
-					latitude: position.coords.latitude,
-					longitude: position.coords.longitude,
-				});
-			},
-			() => {
-				setUserLocation(null);
-			},
+					latitude: pos.coords.latitude,
+					longitude: pos.coords.longitude,
+				}),
+			() => setUserLocation(null),
 			{ enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 },
 		);
 	}, []);
 
 	const allSymptoms = useMemo(() => {
 		const list = [...selectedSymptoms];
-		if (textInput.trim()) {
-			list.push(textInput.trim());
-		}
+		if (textInput.trim()) list.push(textInput.trim());
 		return list;
 	}, [selectedSymptoms, textInput]);
 
@@ -193,53 +291,36 @@ export default function AnalyzePage() {
 
 	const patientContext = useMemo(() => {
 		const age = Number.parseInt(ageInput, 10);
-		const context: PatientContext = {};
-
-		if (Number.isFinite(age) && age > 0) {
-			context.age = age;
-		}
-		if (genderInput.trim()) {
-			context.gender = genderInput.trim();
-		}
-		if (conditionsInput.trim()) {
-			context.chronic_conditions = conditionsInput.trim();
-		}
-		if (allergiesInput.trim()) {
-			context.allergies = allergiesInput.trim();
-		}
-
-		return Object.keys(context).length > 0 ? context : null;
+		const ctx: PatientContext = {};
+		if (Number.isFinite(age) && age > 0) ctx.age = age;
+		if (genderInput.trim()) ctx.gender = genderInput.trim();
+		if (conditionsInput.trim()) ctx.chronic_conditions = conditionsInput.trim();
+		if (allergiesInput.trim()) ctx.allergies = allergiesInput.trim();
+		return Object.keys(ctx).length > 0 ? ctx : null;
 	}, [ageInput, allergiesInput, conditionsInput, genderInput]);
 
 	const patientContextItems = useMemo(() => {
 		if (!patientContext) return [];
-
 		return [
-			patientContext.age ? `${patientContext.age} years old` : null,
+			patientContext.age ? `${patientContext.age} yrs` : null,
 			patientContext.gender ?? null,
-			patientContext.chronic_conditions
-				? `Conditions: ${patientContext.chronic_conditions}`
-				: null,
-			patientContext.allergies ? `Allergies: ${patientContext.allergies}` : null,
+			patientContext.chronic_conditions ? `Cond: ${patientContext.chronic_conditions}` : null,
+			patientContext.allergies ? `Allergy: ${patientContext.allergies}` : null,
 		].filter(Boolean) as string[];
 	}, [patientContext]);
 
 	const recommendedFacilities = useMemo(() => {
-		const sorted = [...facilities].sort((left, right) => {
-			const leftDistance = distanceFromUser(left, userLocation);
-			const rightDistance = distanceFromUser(right, userLocation);
-
-			if (leftDistance !== null && rightDistance !== null) {
-				return leftDistance - rightDistance;
-			}
-			if (leftDistance !== null) return -1;
-			if (rightDistance !== null) return 1;
-			return left.name.localeCompare(right.name);
+		const sorted = [...facilities].sort((a, b) => {
+			const da = distanceFromUser(a, userLocation);
+			const db = distanceFromUser(b, userLocation);
+			if (da !== null && db !== null) return da - db;
+			if (da !== null) return -1;
+			if (db !== null) return 1;
+			return a.name.localeCompare(b.name);
 		});
-
-		return sorted.slice(0, 3).map((facility) => ({
-			...facility,
-			distanceKm: distanceFromUser(facility, userLocation),
+		return sorted.slice(0, 3).map((f) => ({
+			...f,
+			distanceKm: distanceFromUser(f, userLocation),
 		}));
 	}, [facilities, userLocation]);
 
@@ -262,29 +343,32 @@ export default function AnalyzePage() {
 		setFeedbackSent(false);
 	}, []);
 
-	const handleFeedback = useCallback(async (wasAccurate: boolean) => {
-		if (!result || feedbackGiven) return;
-		setFeedbackGiven(true);
-		try {
-			await fetch("/api/public/feedback", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					symptoms: allSymptoms.join(", "),
-					was_accurate: wasAccurate,
-					possible_disease: result.possible_disease,
-				}),
-			});
-			setFeedbackSent(true);
-		} catch {
-			// silent
-		}
-	}, [result, feedbackGiven, allSymptoms]);
+	const handleFeedback = useCallback(
+		async (wasAccurate: boolean) => {
+			if (!result || feedbackGiven) return;
+			setFeedbackGiven(true);
+			try {
+				await fetch("/api/public/feedback", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						symptoms: allSymptoms.join(", "),
+						was_accurate: wasAccurate,
+						possible_disease: result.possible_disease,
+					}),
+				});
+				setFeedbackSent(true);
+			} catch {
+				// silent
+			}
+		},
+		[result, feedbackGiven, allSymptoms],
+	);
 
 	const handleAnalyze = async () => {
 		if (allSymptoms.length === 0) {
 			toast.warning("No symptoms selected", {
-				description: "Please select or describe your symptoms first.",
+				description: "Select or describe your symptoms first.",
 			});
 			return;
 		}
@@ -314,273 +398,445 @@ export default function AnalyzePage() {
 
 		toast.promise(analyzePromise, {
 			loading: "Analyzing your symptoms...",
-			success: "Analysis completed successfully",
+			success: "Analysis complete",
 			error: (err) => err.message,
 		});
 
 		try {
 			await analyzePromise;
 		} catch (err) {
-			console.error(err);
 			setError(
-				err instanceof Error
-					? err.message
-					: "Something went wrong. Please try again.",
+				err instanceof Error ? err.message : "Something went wrong. Please try again.",
 			);
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const sourceBadgeProps = result ? sourceLabel(result.source) : null;
+	const urgencyCfg = result ? urgencyConfig(result.urgency) : null;
+	const sourceBadge = result ? sourceLabel(result.source) : null;
 
 	return (
-		<div className="min-h-screen bg-background px-4 pb-12 pt-20 md:px-6">
-			<div className="mx-auto max-w-5xl space-y-8">
-				<div className="text-center">
-					<div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-lg">
-						<Stethoscope className="h-8 w-8" />
+		<div className="min-h-[100dvh] bg-background">
+			<div className="mx-auto max-w-[1400px] px-6 pb-20 pt-10 lg:px-10">
+
+				{/* ── Page header — left-aligned, not centered ─────────────── */}
+				<motion.div
+					variants={stagger}
+					initial="hidden"
+					animate="visible"
+					className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+				>
+					<div>
+						<motion.div variants={fadeUp} className="mb-4 flex items-center gap-2">
+							<span className="inline-flex h-8 w-8 items-center justify-center rounded-xl bg-primary/10">
+								<PiBrain className="h-4 w-4 text-primary" />
+							</span>
+							<span className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-muted-foreground">
+								Symptom Analyzer
+							</span>
+						</motion.div>
+						<motion.h1
+							variants={fadeUp}
+							className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl"
+						>
+							What are you
+							<br />
+							experiencing?
+						</motion.h1>
+						<motion.p
+							variants={fadeUp}
+							className="mt-4 max-w-[52ch] text-[15px] leading-relaxed text-muted-foreground"
+						>
+							AI-powered clinical insights using BioClinicalBERT and JamAIBase RAG.
+							Organize what you feel before speaking with a clinician. No account
+							required.
+						</motion.p>
 					</div>
-					<h1 className="text-4xl font-bold text-primary md:text-5xl">
-						CuraSync Symptom Analyzer
-					</h1>
-					<p className="mx-auto mt-3 max-w-2xl text-lg text-muted-foreground">
-						AI-powered symptom insights to help organize what you are feeling before
-						you speak with a clinician.
+
+					<motion.div
+						variants={fadeUp}
+						className="flex flex-wrap gap-2 lg:flex-col lg:items-end lg:gap-2"
+					>
+						{[
+							{ label: "BioClinicalBERT", color: "bg-primary/10 text-primary border-primary/20" },
+							{ label: "JamAIBase RAG", color: "bg-info/10 text-info border-info/20" },
+							{ label: "Informational only", color: "bg-muted text-muted-foreground border-border" },
+						].map((b) => (
+							<span
+								key={b.label}
+								className={cn(
+									"rounded-full border px-3 py-1 font-mono text-[11px] font-medium",
+									b.color,
+								)}
+							>
+								{b.label}
+							</span>
+						))}
+					</motion.div>
+				</motion.div>
+
+				{/* ── Emergency banner — always visible ───────────────────── */}
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.15 }}
+					className="mb-6 flex items-start gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 px-5 py-4"
+				>
+					<PiWarning className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
+					<p className="text-sm leading-relaxed text-foreground">
+						<span className="font-semibold text-destructive">Emergency: </span>
+						If you have chest pain, severe breathing difficulty, severe bleeding, or
+						loss of consciousness — seek urgent medical care now.
 					</p>
-					<div className="mt-6 flex flex-wrap justify-center gap-3">
-						<Badge variant="secondary">AI-assisted review</Badge>
-						<Badge variant="secondary">Privacy-conscious design</Badge>
-						<Badge variant="secondary">Informational guidance only</Badge>
-					</div>
-				</div>
+				</motion.div>
 
-				{result ? (
-					<div className="space-y-6">
-						<Card className="border shadow-sm">
-							<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-								<div>
-									<CardTitle className="flex items-center gap-2 text-2xl">
-										<Sparkles className="h-6 w-6 text-primary" />
-										Analysis complete
-									</CardTitle>
-									<CardDescription>
-										Review this summary with a qualified healthcare professional if you
-										need medical advice.
-									</CardDescription>
-								</div>
-								<div className="flex flex-wrap items-center gap-2">
-									<Badge className={urgencyColor(result.urgency)}>
-										{result.urgency.toUpperCase()}
-									</Badge>
-									{sourceBadgeProps && (
-										<Badge className={sourceBadgeProps.className}>
-											{sourceBadgeProps.label}
-										</Badge>
-									)}
-								</div>
-							</CardHeader>
-							<CardContent className="space-y-6">
-								<div className="grid gap-4 md:grid-cols-2">
-									<Card>
-										<CardHeader>
-											<CardTitle className="text-base">Possible condition</CardTitle>
-										</CardHeader>
-										<CardContent>
-											<p className="text-2xl font-semibold text-primary">
-												{result.possible_disease}
-											</p>
-										</CardContent>
-									</Card>
-									<Card>
-										<CardHeader>
-											<CardTitle className="text-base">Suggested timeline</CardTitle>
-										</CardHeader>
-										<CardContent className="flex items-center gap-3">
-											<Clock className="h-5 w-5 text-primary" />
-											<p className="font-medium">{urgencyTimeline(result.urgency)}</p>
-										</CardContent>
-									</Card>
-								</div>
-
-								<div className="grid gap-4 md:grid-cols-2">
-									<div className="rounded-xl border bg-muted/40 p-4">
-										<div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-											<Thermometer className="h-4 w-4 text-primary" />
-											Assessment confidence
-										</div>
-										<p className="text-lg font-medium capitalize">
-											{result.confidence_level}
-										</p>
-									</div>
-									<div className="rounded-xl border bg-muted/40 p-4">
-										<div className="mb-2 flex items-center gap-2 text-sm font-semibold">
-											<User className="h-4 w-4 text-primary" />
-											Recommended follow-up
-										</div>
-										<p className="text-sm text-muted-foreground">
-											Consult a qualified healthcare professional for diagnosis and
-											treatment decisions.
-										</p>
-									</div>
-								</div>
-
-								{result.normalized_symptoms?.length ? (
-									<div className="space-y-3">
-										<h3 className="text-sm font-semibold">Recognized symptoms</h3>
-										<div className="flex flex-wrap gap-2">
-											{result.normalized_symptoms.map((symptom) => (
-												<Badge key={symptom} variant="outline">
-													{symptom}
-												</Badge>
-											))}
-										</div>
-									</div>
-								) : null}
-
-								<Separator />
-
-								<div className="space-y-3">
-									<h3 className="flex items-center gap-2 text-lg font-semibold">
-										<AlertTriangle className="h-5 w-5 text-primary" />
-										Recommended actions
-									</h3>
-									<div className="space-y-3">
-										{actionLines.map((line, index) => (
-											<div
-												key={`${line}-${index}`}
-												className="flex items-start gap-3 rounded-lg bg-muted p-3"
-											>
-												<div className="mt-0.5 rounded-full bg-primary/10 p-1">
-													<Check className="h-3 w-3 text-primary" />
-												</div>
-												<span className="text-sm leading-relaxed">{line}</span>
-											</div>
-										))}
-									</div>
-								</div>
-
-								<div className="rounded-xl border bg-accent p-4">
-									<div className="flex items-start gap-3">
-										<Shield className="mt-0.5 h-5 w-5 text-primary" />
+				<AnimatePresence mode="wait">
+					{result ? (
+						/* ── RESULTS VIEW ──────────────────────────────────────── */
+						<motion.div
+							key="results"
+							variants={stagger}
+							initial="hidden"
+							animate="visible"
+							exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
+							className="space-y-4"
+						>
+							{/* Hero result card */}
+							<motion.div
+								variants={fadeUp}
+								className="overflow-hidden rounded-3xl border border-border bg-card"
+							>
+								<div className="p-8">
+									<div className="flex flex-wrap items-start justify-between gap-4">
 										<div>
-											<p className="font-semibold">Medical disclaimer</p>
-											<p className="mt-1 text-sm text-muted-foreground">
-												{result.disclaimer ||
-													"This analysis is for informational purposes only and does not replace professional medical advice."}
+											<p className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">
+												Possible condition
+											</p>
+											<h2 className="mt-2 text-4xl font-bold tracking-tight text-foreground">
+												{result.possible_disease}
+											</h2>
+										</div>
+										<div className="flex flex-wrap gap-2">
+											{urgencyCfg && (
+												<span
+													className={cn(
+														"rounded-full border px-3 py-1 text-xs font-bold uppercase tracking-wide",
+														urgencyCfg.badgeClass,
+													)}
+												>
+													{urgencyCfg.label}
+												</span>
+											)}
+											{sourceBadge && (
+												<span
+													className={cn(
+														"rounded-full border px-3 py-1 text-xs font-medium",
+														sourceBadge.class,
+													)}
+												>
+													{sourceBadge.label}
+												</span>
+											)}
+										</div>
+									</div>
+
+									{/* Severity bar */}
+									<div className="mt-6">
+										<div className="mb-2 flex items-center justify-between">
+											<p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
+												Severity level
+											</p>
+											<p className="font-mono text-[11px] text-muted-foreground">
+												{urgencyCfg?.filled}/4
+											</p>
+										</div>
+										<UrgencySeverityBar urgency={result.urgency} />
+									</div>
+
+									{/* Stats strip — horizontal, divided, NOT 3-col cards */}
+									<div className="mt-6 grid grid-cols-1 divide-y divide-border overflow-hidden rounded-2xl border border-border sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+										<div className="px-5 py-4">
+											<p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+												Confidence
+											</p>
+											<p className="mt-1.5 text-sm font-semibold capitalize text-foreground">
+												{result.confidence_level}
+											</p>
+										</div>
+										<div className="px-5 py-4">
+											<p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+												Suggested timeline
+											</p>
+											<p className="mt-1.5 text-sm font-medium text-foreground">
+												{urgencyTimeline(result.urgency)}
+											</p>
+										</div>
+										<div className="px-5 py-4">
+											<p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+												Next step
+											</p>
+											<p className="mt-1.5 text-sm text-muted-foreground">
+												Consult a healthcare professional.
 											</p>
 										</div>
 									</div>
 								</div>
+							</motion.div>
 
-								<div className="flex items-center gap-3 rounded-xl border bg-muted/30 p-4">
-									<p className="flex-1 text-sm text-muted-foreground">Was this analysis helpful?</p>
-									{feedbackSent ? (
-										<p className="text-sm text-muted-foreground">Thanks for your feedback!</p>
-									) : (
-										<div className="flex gap-2">
-											<Button
-												variant="outline"
-												size="sm"
-												disabled={feedbackGiven}
-												onClick={() => void handleFeedback(true)}
-											>
-												<ThumbsUp className="mr-1 h-4 w-4" /> Yes
-											</Button>
-											<Button
-												variant="outline"
-												size="sm"
-												disabled={feedbackGiven}
-												onClick={() => void handleFeedback(false)}
-											>
-												<ThumbsDown className="mr-1 h-4 w-4" /> No
-											</Button>
-										</div>
-									)}
+							{/* Two-column: actions + sidebar info */}
+							<div className="grid gap-4 lg:grid-cols-[1fr_360px]">
+
+								{/* Left — recognized symptoms + actions */}
+								<div className="space-y-4">
+									{result.normalized_symptoms?.length ? (
+										<motion.div
+											variants={fadeUp}
+											className="rounded-2xl border border-border bg-card p-6"
+										>
+											<h3 className="mb-4 text-sm font-semibold text-foreground">
+												Recognized symptoms
+											</h3>
+											<div className="flex flex-wrap gap-2">
+												{result.normalized_symptoms.map((s) => (
+													<span
+														key={s}
+														className="rounded-full border border-border bg-muted px-3 py-1 font-mono text-[11px] text-muted-foreground"
+													>
+														{s}
+													</span>
+												))}
+											</div>
+										</motion.div>
+									) : null}
+
+									{actionLines.length ? (
+										<motion.div
+											variants={fadeUp}
+											className="rounded-2xl border border-border bg-card p-6"
+										>
+											<h3 className="mb-4 flex items-center gap-2 text-sm font-semibold text-foreground">
+												<PiBrain className="h-4 w-4 text-primary" />
+												Recommended actions
+											</h3>
+											<div className="space-y-2">
+												{actionLines.map((line, i) => (
+													<motion.div
+														key={`${line}-${i}`}
+														initial={{ opacity: 0, x: -8 }}
+														animate={{ opacity: 1, x: 0 }}
+														transition={{
+															type: "spring",
+															stiffness: 100,
+															damping: 20,
+															delay: 0.1 + i * 0.05,
+														}}
+														className="flex items-start gap-3 rounded-xl bg-muted/40 px-4 py-3"
+													>
+														<PiCheck className="mt-0.5 h-3.5 w-3.5 shrink-0 text-primary" />
+														<span className="text-sm leading-relaxed text-foreground">
+															{line}
+														</span>
+													</motion.div>
+												))}
+											</div>
+										</motion.div>
+									) : null}
 								</div>
 
-								{recommendedFacilities.length ? (
-									<div className="space-y-4">
-										<h3 className="flex items-center gap-2 text-lg font-semibold">
-											<Hospital className="h-5 w-5 text-primary" />
-											Registered care options nearby
-										</h3>
-										<div className="grid gap-3">
-											{recommendedFacilities.map((facility) => (
-												<div
-													key={facility.id}
-													className="rounded-xl border bg-muted/30 p-4"
+								{/* Right sidebar — disclaimer + feedback */}
+								<div className="space-y-4">
+									{/* Disclaimer */}
+									<motion.div
+										variants={fadeUp}
+										className="rounded-2xl border border-border bg-card p-5"
+									>
+										<div className="flex items-start gap-3">
+											<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-muted">
+												<PiShieldCheck className="h-4 w-4 text-muted-foreground" />
+											</div>
+											<div>
+												<p className="text-sm font-semibold text-foreground">
+													Medical disclaimer
+												</p>
+												<p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+													{result.disclaimer ||
+														"This analysis is for informational purposes only. It does not replace professional medical advice, diagnosis, or treatment."}
+												</p>
+											</div>
+										</div>
+									</motion.div>
+
+									{/* Feedback */}
+									<motion.div
+										variants={fadeUp}
+										className="rounded-2xl border border-border bg-card p-5"
+									>
+										<AnimatePresence mode="wait">
+											{feedbackSent ? (
+												<motion.div
+													key="sent"
+													variants={fadeIn}
+													initial="hidden"
+													animate="visible"
+													className="flex items-center gap-2"
 												>
-													<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-														<div className="space-y-2">
-															<div className="flex flex-wrap items-center gap-2">
-																<p className="font-semibold">
-																	{facility.name}
-																</p>
-																{facility.type ? (
-																	<Badge variant="secondary">
-																		{facility.type}
-																	</Badge>
-																) : null}
-																{facility.distanceKm !== null ? (
-																	<Badge variant="outline">
-																		{facility.distanceKm.toFixed(1)} km away
-																	</Badge>
-																) : null}
-															</div>
-															<p className="text-sm text-muted-foreground">
-																{facility.specialty || "General care"}
-															</p>
-															<div className="flex items-start gap-2 text-sm text-muted-foreground">
-																<MapPin className="mt-0.5 h-4 w-4 text-primary" />
-																<span>{facility.address}</span>
-															</div>
-														</div>
-														<div className="flex flex-wrap gap-2">
-															<Button asChild variant="outline" size="sm">
-																<a
-																	href={mapHref(facility)}
-																	target="_blank"
-																	rel="noreferrer"
-																>
-																	Open map
-																</a>
-															</Button>
-															<Button asChild size="sm">
-																<Link href="/sign-in">
-																	Sign in to book
-																</Link>
-															</Button>
-														</div>
+													<PiSmileyWink className="h-4 w-4 text-primary" />
+													<p className="text-sm font-medium text-foreground">
+														Thanks for your feedback.
+													</p>
+												</motion.div>
+											) : (
+												<motion.div key="form" variants={fadeIn} initial="hidden" animate="visible">
+													<p className="mb-3 text-sm font-medium text-foreground">
+														Was this analysis accurate?
+													</p>
+													<div className="flex gap-2">
+														<motion.button
+															whileTap={{ scale: 0.96 }}
+															disabled={feedbackGiven}
+															onClick={() => void handleFeedback(true)}
+															className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80 disabled:cursor-not-allowed disabled:opacity-50"
+														>
+															<PiThumbsUp className="h-4 w-4" />
+															Yes
+														</motion.button>
+														<motion.button
+															whileTap={{ scale: 0.96 }}
+															disabled={feedbackGiven}
+															onClick={() => void handleFeedback(false)}
+															className="flex flex-1 items-center justify-center gap-1.5 rounded-xl border border-border bg-muted py-2 text-sm font-medium text-foreground transition-colors hover:bg-muted/80 disabled:cursor-not-allowed disabled:opacity-50"
+														>
+															<PiThumbsDown className="h-4 w-4" />
+															No
+														</motion.button>
+													</div>
+												</motion.div>
+											)}
+										</AnimatePresence>
+									</motion.div>
+								</div>
+							</div>
+
+							{/* Nearby facilities */}
+							{recommendedFacilities.length ? (
+								<motion.div
+									variants={fadeUp}
+									className="rounded-2xl border border-border bg-card p-6"
+								>
+									<h3 className="mb-5 flex items-center gap-2 text-sm font-semibold text-foreground">
+										<PiHospital className="h-4 w-4 text-primary" />
+										Registered care options nearby
+									</h3>
+									<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+										{recommendedFacilities.map((facility, i) => (
+											<motion.div
+												key={facility.id}
+												initial={{ opacity: 0, y: 12 }}
+												animate={{ opacity: 1, y: 0 }}
+												transition={{
+													type: "spring",
+													stiffness: 100,
+													damping: 22,
+													delay: i * 0.07,
+												}}
+												className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4"
+											>
+												<div>
+													<div className="flex flex-wrap items-center gap-1.5">
+														<p className="text-sm font-semibold text-foreground">
+															{facility.name}
+														</p>
+														{facility.distanceKm !== null && (
+															<span className="rounded-full bg-primary/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-primary">
+																{facility.distanceKm!.toFixed(1)} km
+															</span>
+														)}
+													</div>
+													<p className="mt-0.5 text-xs text-muted-foreground">
+														{facility.specialty || "General care"}
+													</p>
+													{facility.type && (
+														<span className="mt-1 inline-block rounded-full border border-border font-mono text-[10px] px-2 py-0.5 text-muted-foreground">
+															{facility.type}
+														</span>
+													)}
+													<div className="mt-2 flex items-start gap-1.5">
+														<PiMapPin className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+														<p className="text-xs text-muted-foreground">{facility.address}</p>
 													</div>
 												</div>
-											))}
-										</div>
+												<div className="flex gap-2 pt-1">
+													<a
+														href={mapHref(facility)}
+														target="_blank"
+														rel="noreferrer"
+														className="flex-1 rounded-lg border border-border bg-background py-1.5 text-center text-xs font-medium text-foreground transition-colors hover:bg-muted"
+													>
+														Open map
+													</a>
+													<Link
+														href="/sign-in"
+														className="flex-1 rounded-lg bg-primary py-1.5 text-center text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
+													>
+														Book
+													</Link>
+												</div>
+											</motion.div>
+										))}
 									</div>
-								) : null}
+								</motion.div>
+							) : null}
 
-								<Button onClick={clearAll} variant="outline" className="w-full">
+							{/* Reset */}
+							<motion.div variants={fadeUp}>
+								<motion.button
+									whileTap={{ scale: 0.98 }}
+									onClick={clearAll}
+									className="flex w-full items-center justify-center gap-2 rounded-2xl border border-border bg-card py-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+								>
+									<PiArrowCounterClockwise className="h-4 w-4" />
 									Start a new analysis
-								</Button>
-							</CardContent>
-						</Card>
-					</div>
-				) : (
-					<div className="grid gap-6 lg:grid-cols-[1.3fr_0.7fr]">
-						<Card className="border shadow-sm">
-							<CardHeader>
-								<CardTitle className="flex items-center gap-2">
-									<Brain className="h-5 w-5 text-primary" />
-									Symptom input
-								</CardTitle>
-								<CardDescription>
-									Select symptoms or describe them in your own words. Detailed
-									descriptions may improve the analysis.
-								</CardDescription>
-							</CardHeader>
-							<CardContent className="space-y-6">
-								<div className="space-y-3">
-									<h3 className="text-sm font-semibold">Common symptoms</h3>
+								</motion.button>
+							</motion.div>
+						</motion.div>
+
+					) : (
+
+						/* ── INPUT VIEW ────────────────────────────────────────── */
+						<motion.div
+							key="input"
+							variants={stagger}
+							initial="hidden"
+							animate="visible"
+							exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
+							className="grid gap-5 lg:grid-cols-[1fr_340px]"
+						>
+							{/* Left — symptom input */}
+							<motion.div
+								variants={fadeUp}
+								className="space-y-6 rounded-3xl border border-border bg-card p-7"
+							>
+								{/* Section label */}
+								<div className="flex items-center gap-3">
+									<div className="flex h-9 w-9 items-center justify-center rounded-xl bg-primary/10">
+										<PiBrain className="h-5 w-5 text-primary" />
+									</div>
+									<div>
+										<h2 className="text-sm font-semibold text-foreground">
+											Select or describe symptoms
+										</h2>
+										<p className="text-xs text-muted-foreground">
+											Detailed descriptions improve accuracy
+										</p>
+									</div>
+								</div>
+
+								{/* Quick-select tags */}
+								<div className="space-y-2">
+									<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+										Quick select
+									</label>
 									<AnimatedTags
 										initialTags={COMMON_SYMPTOMS}
 										onChange={handleTagChange}
@@ -589,27 +845,33 @@ export default function AnalyzePage() {
 									/>
 								</div>
 
-								<div className="space-y-3">
-									<label className="text-sm font-semibold">Additional details</label>
+								{/* Free-text */}
+								<div className="space-y-2">
+									<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+										Additional details
+									</label>
 									<Textarea
 										value={textInput}
 										onChange={(e) => setTextInput(e.target.value)}
-										placeholder="Describe duration, severity, or any other details..."
+										placeholder="Describe duration, severity, or any other context..."
 										rows={4}
-										className="min-h-[120px] resize-none"
+										className="min-h-[110px] resize-none rounded-xl border-border bg-muted/20 focus-visible:ring-1 focus-visible:ring-primary"
 									/>
 								</div>
 
-								<div className="space-y-3 rounded-xl border bg-muted/20 p-4">
-									<div className="space-y-1">
-										<h3 className="text-sm font-semibold">Optional health context</h3>
-										<p className="text-xs text-muted-foreground">
-											Use this anonymously. Adding a few details can improve the analysis, but it is not required.
+								{/* Optional health context */}
+								<div className="rounded-2xl border border-border/50 bg-muted/20 p-5 space-y-4">
+									<div>
+										<p className="text-sm font-semibold text-foreground">
+											Optional health context
+										</p>
+										<p className="mt-0.5 text-xs text-muted-foreground">
+											Anonymous — not stored. Improves analysis accuracy.
 										</p>
 									</div>
-									<div className="grid gap-3 md:grid-cols-2">
-										<div className="space-y-2">
-											<label className="text-xs font-medium text-muted-foreground">
+									<div className="grid grid-cols-2 gap-3">
+										<div className="space-y-1.5">
+											<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
 												Age
 											</label>
 											<Input
@@ -618,17 +880,18 @@ export default function AnalyzePage() {
 												inputMode="numeric"
 												value={ageInput}
 												onChange={(e) => setAgeInput(e.target.value)}
-												placeholder="e.g. 34"
+												placeholder="34"
+												className="rounded-xl border-border bg-background"
 											/>
 										</div>
-										<div className="space-y-2">
-											<label className="text-xs font-medium text-muted-foreground">
-												Sex or gender
+										<div className="space-y-1.5">
+											<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+												Sex / Gender
 											</label>
 											<select
 												value={genderInput}
 												onChange={(e) => setGenderInput(e.target.value)}
-												className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm outline-none ring-offset-background"
+												className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring"
 											>
 												<option value="">Prefer not to say</option>
 												<option value="Female">Female</option>
@@ -637,154 +900,207 @@ export default function AnalyzePage() {
 												<option value="Other">Other</option>
 											</select>
 										</div>
-									</div>
-									<div className="grid gap-3 md:grid-cols-2">
-										<div className="space-y-2">
-											<label className="text-xs font-medium text-muted-foreground">
+										<div className="space-y-1.5">
+											<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
 												Known conditions
 											</label>
 											<Input
 												value={conditionsInput}
 												onChange={(e) => setConditionsInput(e.target.value)}
-												placeholder="e.g. asthma, diabetes"
+												placeholder="asthma, diabetes..."
+												className="rounded-xl border-border bg-background"
 											/>
 										</div>
-										<div className="space-y-2">
-											<label className="text-xs font-medium text-muted-foreground">
+										<div className="space-y-1.5">
+											<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
 												Allergies
 											</label>
 											<Input
 												value={allergiesInput}
 												onChange={(e) => setAllergiesInput(e.target.value)}
-												placeholder="e.g. penicillin, peanuts"
+												placeholder="penicillin, peanuts..."
+												className="rounded-xl border-border bg-background"
 											/>
 										</div>
 									</div>
-									{patientContextItems.length ? (
-										<div className="flex flex-wrap gap-2">
+
+									{patientContextItems.length > 0 && (
+										<div className="flex flex-wrap gap-1.5">
 											{patientContextItems.map((item) => (
-												<Badge key={item} variant="outline">
+												<Badge key={item} variant="outline" className="font-mono text-[11px]">
 													{item}
 												</Badge>
 											))}
 										</div>
-									) : null}
+									)}
 								</div>
 
-								{allSymptoms.length > 0 ? (
-									<div className="space-y-3">
-										<div className="flex items-center justify-between">
-											<h3 className="text-sm font-semibold">Ready to analyze</h3>
-											<Button variant="ghost" size="sm" onClick={clearAll}>
-												Clear all
-											</Button>
-										</div>
-										<div className="flex flex-wrap gap-2 rounded-lg bg-muted p-3">
-											{allSymptoms.map((symptom, index) => (
-												<Badge key={`${symptom}-${index}`} variant="secondary">
-													{symptom}
-												</Badge>
-											))}
-										</div>
-									</div>
-								) : null}
+								{/* Selected preview */}
+								<AnimatePresence>
+									{allSymptoms.length > 0 && (
+										<motion.div
+											initial={{ opacity: 0, height: 0 }}
+											animate={{ opacity: 1, height: "auto" }}
+											exit={{ opacity: 0, height: 0 }}
+											transition={{ type: "spring", stiffness: 120, damping: 22 }}
+											className="overflow-hidden"
+										>
+											<div className="rounded-xl bg-primary/5 px-4 py-3">
+												<div className="mb-2 flex items-center justify-between">
+													<p className="font-mono text-[11px] font-medium text-primary">
+														{allSymptoms.length} symptom{allSymptoms.length > 1 ? "s" : ""} queued
+													</p>
+													<button
+														onClick={clearAll}
+														className="flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground"
+													>
+														<PiX className="h-3 w-3" />
+														Clear
+													</button>
+												</div>
+												<div className="flex flex-wrap gap-1.5">
+													{allSymptoms.map((s, i) => (
+														<span
+															key={`${s}-${i}`}
+															className="rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] text-primary"
+														>
+															{s}
+														</span>
+													))}
+												</div>
+											</div>
+										</motion.div>
+									)}
+								</AnimatePresence>
 
-								{error ? (
-									<div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-										<div className="flex items-center gap-2 font-medium">
-											<AlertCircle className="h-4 w-4" />
+								{/* Error */}
+								<AnimatePresence>
+									{error && (
+										<motion.div
+											initial={{ opacity: 0, y: 6 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: 6 }}
+											className="flex items-center gap-2 rounded-xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive"
+										>
+											<PiWarningCircle className="h-4 w-4 shrink-0" />
 											{error}
-										</div>
-									</div>
-								) : null}
+										</motion.div>
+									)}
+								</AnimatePresence>
 
-								<Button
+								{/* Analyze CTA */}
+								<motion.button
+									whileTap={{ scale: 0.98 }}
 									onClick={handleAnalyze}
 									disabled={loading || allSymptoms.length === 0}
-									className="h-12 w-full"
+									className={cn(
+										"flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all",
+										"bg-foreground text-background hover:bg-foreground/90",
+										"disabled:cursor-not-allowed disabled:opacity-40",
+									)}
 								>
 									{loading ? (
 										<>
-											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											<PiCircleNotch className="h-4 w-4 animate-spin" />
 											Analyzing symptoms...
 										</>
 									) : (
 										<>
-											<Sparkles className="mr-2 h-4 w-4" />
+											<PiSparkleFill className="h-4 w-4" />
 											Analyze with AI
+											<PiArrowRight className="h-4 w-4" />
 										</>
 									)}
-								</Button>
-							</CardContent>
-						</Card>
+								</motion.button>
+							</motion.div>
 
-						<Card className="border shadow-sm">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<FileText className="h-5 w-5 text-primary" />
-							Important notes
-						</CardTitle>
-							</CardHeader>
-							<CardContent className="space-y-4 text-sm text-muted-foreground">
-								<div className="rounded-lg border border-warning/30 bg-warning/10 p-3 text-foreground">
-									If you have chest pain, severe breathing difficulty, severe bleeding,
-									or loss of consciousness, seek urgent medical care now.
-								</div>
-								<p>
-									Public demo access is limited. You can use the analyzer without signing in, and optional health context can improve the result.
-								</p>
-								<p>
-									This tool is designed to help organize symptom information. It does
-									not provide a diagnosis.
-								</p>
-								<p>
-									Bring this summary to a clinician if you need help explaining what
-									you have been experiencing.
-								</p>
-							</CardContent>
-						</Card>
-					</div>
-				)}
+							{/* Right — info sidebar */}
+							<div className="space-y-4">
+
+								{/* About tool */}
+								<motion.div
+									variants={fadeUp}
+									className="rounded-2xl border border-border bg-card p-5 space-y-4"
+								>
+									<div className="flex items-center gap-2">
+										<div className="flex h-8 w-8 items-center justify-center rounded-xl bg-muted">
+											<PiFileText className="h-4 w-4 text-muted-foreground" />
+										</div>
+										<h3 className="text-sm font-semibold text-foreground">
+											About this tool
+										</h3>
+									</div>
+									<div className="space-y-3 text-[13px] leading-relaxed text-muted-foreground">
+										<p>
+											Public demo access. Use without signing in. Optional health
+											context can improve results.
+										</p>
+										<p>
+											Powered by BioClinicalBERT (clinical NLP) and JamAIBase RAG —
+											grounding responses in a verified medical knowledge base.
+										</p>
+										<p>
+											Designed to help organize symptom information before a clinical
+											visit. Does not provide a diagnosis.
+										</p>
+									</div>
+								</motion.div>
+
+								{/* Empty state — shown when no symptoms */}
+								<AnimatePresence>
+									{allSymptoms.length === 0 && (
+										<motion.div
+											key="empty"
+											initial={{ opacity: 0, y: 8 }}
+											animate={{ opacity: 1, y: 0 }}
+											exit={{ opacity: 0, y: -8 }}
+											transition={{ type: "spring", stiffness: 100, damping: 22 }}
+											className="rounded-2xl border border-dashed border-border bg-card p-6 text-center"
+										>
+											<div className="mx-auto mb-3 flex h-10 w-10 items-center justify-center rounded-2xl bg-muted">
+												<PiBrain className="h-5 w-5 text-muted-foreground" />
+											</div>
+											<p className="text-sm font-medium text-foreground">
+												No symptoms selected
+											</p>
+											<p className="mt-1 text-xs text-muted-foreground">
+												Use the quick-select tags or describe your symptoms in the
+												text field.
+											</p>
+										</motion.div>
+									)}
+								</AnimatePresence>
+
+								{/* Project attribution */}
+								<motion.div
+									variants={fadeUp}
+									className="rounded-2xl border border-border bg-card p-4"
+								>
+									<div className="flex items-center gap-3">
+										<Image
+											src="/icons/android-chrome-192x192.png"
+											alt="CuraSync"
+											width={32}
+											height={32}
+											className="rounded-xl"
+										/>
+										<div>
+											<p className="text-xs font-bold text-foreground">CuraSync</p>
+											<p className="font-mono text-[10px] text-muted-foreground">
+												UTHM Final Year Project · 2025/2026
+											</p>
+										</div>
+									</div>
+									<p className="mt-3 font-mono text-[11px] leading-5 text-muted-foreground">
+										Pilot: Klinik Al-Fattah, Batu Pahat. AI + Blockchain + IoT
+										healthcare platform.
+									</p>
+								</motion.div>
+							</div>
+						</motion.div>
+					)}
+				</AnimatePresence>
 			</div>
 		</div>
 	);
-}
-
-function distanceFromUser(facility: Facility, userLocation: Coordinates | null) {
-	if (!userLocation || !facility.latitude || !facility.longitude) return null;
-
-	const latitude = Number(facility.latitude);
-	const longitude = Number(facility.longitude);
-
-	if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null;
-
-	return haversineKm(
-		userLocation.latitude,
-		userLocation.longitude,
-		latitude,
-		longitude,
-	);
-}
-
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-	const toRad = (value: number) => (value * Math.PI) / 180;
-	const earthRadiusKm = 6371;
-	const dLat = toRad(lat2 - lat1);
-	const dLon = toRad(lon2 - lon1);
-	const a =
-		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.cos(toRad(lat1)) *
-			Math.cos(toRad(lat2)) *
-			Math.sin(dLon / 2) *
-			Math.sin(dLon / 2);
-
-	return 2 * earthRadiusKm * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function mapHref(facility: Facility) {
-	if (facility.latitude && facility.longitude) {
-		return `https://www.google.com/maps/search/?api=1&query=${facility.latitude},${facility.longitude}`;
-	}
-
-	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(facility.address)}`;
 }

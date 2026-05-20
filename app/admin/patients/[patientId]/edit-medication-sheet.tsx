@@ -44,6 +44,12 @@ import {
 import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
+import {
+    getScheduleOptionsForFrequency,
+    MEDICATION_FREQUENCY_OPTIONS,
+    normalizeMedicationFrequency,
+    normalizeMedicationSchedule,
+} from "@/lib/medication-options";
 
 interface EditMedicationSheetProps {
     open: boolean;
@@ -58,20 +64,26 @@ export default function EditMedicationSheet({
     medication,
     onUpdated,
 }: EditMedicationSheetProps) {
+    const buildInitialForm = () => {
+        const frequency = normalizeMedicationFrequency(medication.frequency);
+
+        return {
+            name: medication.name,
+            dosage: medication.dosage,
+            frequency,
+            schedule: normalizeMedicationSchedule(frequency, medication.schedule),
+            start_date: medication.start_date,
+            end_date: medication.end_date ?? "",
+            notes: medication.notes ?? "",
+            prescribed_by: medication.prescribed_by ?? "",
+            status: medication.status,
+            is_ongoing: !medication.end_date,
+        };
+    };
+
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
-    const [form, setForm] = useState({
-        name: medication.name,
-        dosage: medication.dosage,
-        frequency: medication.frequency,
-        schedule: medication.schedule ?? "",
-        start_date: medication.start_date,
-        end_date: medication.end_date ?? "",
-        notes: medication.notes ?? "",
-        prescribed_by: medication.prescribed_by ?? "",
-        status: medication.status,
-        is_ongoing: !medication.end_date,
-    });
+    const [form, setForm] = useState(buildInitialForm);
 
     const statusColors = {
         ACTIVE: "bg-green-500/10 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-800",
@@ -83,18 +95,7 @@ export default function EditMedicationSheet({
 
     useEffect(() => {
         if (open) {
-            setForm({
-                name: medication.name,
-                dosage: medication.dosage,
-                frequency: medication.frequency,
-                schedule: medication.schedule ?? "",
-                start_date: medication.start_date,
-                end_date: medication.end_date ?? "",
-                notes: medication.notes ?? "",
-                prescribed_by: medication.prescribed_by ?? "",
-                status: medication.status,
-                is_ongoing: !medication.end_date,
-            });
+            setForm(buildInitialForm());
             setError(null);
         }
     }, [open, medication]);
@@ -103,6 +104,30 @@ export default function EditMedicationSheet({
         key: K,
         value: (typeof form)[K]
     ) {
+        if (key === "frequency") {
+            const nextFrequency = normalizeMedicationFrequency(String(value));
+            setForm((prev) => ({
+                ...prev,
+                frequency: nextFrequency,
+                schedule: normalizeMedicationSchedule(
+                    nextFrequency,
+                    prev.schedule
+                ),
+            }));
+            return;
+        }
+
+        if (key === "schedule") {
+            setForm((prev) => ({
+                ...prev,
+                schedule: normalizeMedicationSchedule(
+                    prev.frequency,
+                    String(value)
+                ),
+            }));
+            return;
+        }
+
         setForm((prev) => ({ ...prev, [key]: value }));
     }
 
@@ -117,6 +142,10 @@ export default function EditMedicationSheet({
         }
         if (!form.frequency.trim()) {
             setError("Frequency is required");
+            return false;
+        }
+        if (!form.schedule.trim()) {
+            setError("Schedule is required");
             return false;
         }
         if (!form.start_date) {
@@ -143,6 +172,8 @@ export default function EditMedicationSheet({
 
     const endDate = form.end_date ? new Date(form.end_date) : undefined;
 
+    const scheduleOptions = getScheduleOptionsForFrequency(form.frequency);
+
     async function handleSave() {
         if (!validateForm()) return;
 
@@ -153,8 +184,11 @@ export default function EditMedicationSheet({
             const payload = {
                 name: form.name,
                 dosage: form.dosage,
-                frequency: form.frequency,
-                schedule: form.schedule,
+                frequency: normalizeMedicationFrequency(form.frequency),
+                schedule: normalizeMedicationSchedule(
+                    form.frequency,
+                    form.schedule
+                ),
                 start_date: form.start_date,
                 end_date: form.is_ongoing ? null : form.end_date || null,
                 notes: form.notes || null,
@@ -344,34 +378,54 @@ export default function EditMedicationSheet({
                                     <Label className="text-sm font-medium text-foreground">
                                         Frequency *
                                     </Label>
-                                    <Input
+                                    <Select
                                         value={form.frequency}
-                                        onChange={(e) =>
-                                            updateField(
-                                                "frequency",
-                                                e.target.value
-                                            )
+                                        onValueChange={(value) =>
+                                            updateField("frequency", value)
                                         }
-                                        placeholder="e.g., Twice daily"
-                                        className="bg-background border-border/60 focus:border-primary rounded-xl h-11"
-                                    />
+                                    >
+                                        <SelectTrigger className="bg-background border-border/60 focus:border-primary rounded-xl h-11">
+                                            <SelectValue placeholder="Select frequency" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-border/60">
+                                            {MEDICATION_FREQUENCY_OPTIONS.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                    className="rounded-lg focus:bg-muted"
+                                                >
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
 
                                 <div className="space-y-2.5">
                                     <Label className="text-sm font-medium text-foreground">
                                         Specific Schedule
                                     </Label>
-                                    <Input
+                                    <Select
                                         value={form.schedule}
-                                        onChange={(e) =>
-                                            updateField(
-                                                "schedule",
-                                                e.target.value
-                                            )
+                                        onValueChange={(value) =>
+                                            updateField("schedule", value)
                                         }
-                                        placeholder="e.g., 8:00 AM & 8:00 PM"
-                                        className="bg-background border-border/60 focus:border-primary rounded-xl h-11"
-                                    />
+                                    >
+                                        <SelectTrigger className="bg-background border-border/60 focus:border-primary rounded-xl h-11">
+                                            <SelectValue placeholder="Select schedule" />
+                                        </SelectTrigger>
+                                        <SelectContent className="rounded-xl border-border/60">
+                                            {scheduleOptions.map((option) => (
+                                                <SelectItem
+                                                    key={option.value}
+                                                    value={option.value}
+                                                    className="rounded-lg focus:bg-muted"
+                                                >
+                                                    {option.label}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
                                 </div>
                             </div>
                         </div>

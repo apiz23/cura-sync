@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Activity } from "lucide-react";
+import { Activity, X, AlertTriangle } from "lucide-react";
 
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -20,12 +20,24 @@ type HealthSyncResponse = {
     };
 };
 
+type HealthNotification = {
+    id: string;
+    type: string;
+    title: string;
+    body: string;
+    severity: "INFO" | "WARNING" | "CRITICAL";
+    read: boolean;
+    metadata: Record<string, unknown> | null;
+    created_at: string;
+};
+
 export default function HealthTrackingPage() {
     const { user, isLoaded } = useUser();
     const [snapshots, setSnapshots] = useState<HealthSyncSnapshot[]>([]);
     const [latest, setLatest] = useState<HealthSyncSnapshot | null>(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [alerts, setAlerts] = useState<HealthNotification[]>([]);
 
     useEffect(() => {
         if (!isLoaded || !user) return;
@@ -37,20 +49,28 @@ export default function HealthTrackingPage() {
             setError(null);
 
             try {
-                const res = await fetch("/api/user/health-sync?days=7", {
-                    cache: "no-store",
-                });
+                const [syncRes, notifRes] = await Promise.all([
+                    fetch("/api/user/health-sync?days=7", { cache: "no-store" }),
+                    fetch("/api/user/notifications", { cache: "no-store" }),
+                ]);
 
-                if (!res.ok) {
+                if (!syncRes.ok) {
                     setError("Failed to load health data.");
                     return;
                 }
 
-                const json = (await res.json()) as HealthSyncResponse;
+                const json = (await syncRes.json()) as HealthSyncResponse;
 
                 if (!cancelled) {
                     setSnapshots(json.data?.recent ?? []);
                     setLatest(json.data?.latest ?? null);
+                }
+
+                if (notifRes.ok) {
+                    const notifJson = await notifRes.json();
+                    if (!cancelled) {
+                        setAlerts((notifJson.data ?? []) as HealthNotification[]);
+                    }
                 }
             } catch {
                 if (!cancelled) {
@@ -70,6 +90,21 @@ export default function HealthTrackingPage() {
         };
     }, [isLoaded, user]);
 
+    function dismissAlert(id: string) {
+        setAlerts((prev) => prev.filter((a) => a.id !== id));
+        fetch("/api/user/notifications", {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ ids: [id] }),
+        }).catch(() => undefined);
+    }
+
+    const severityStyles: Record<string, string> = {
+        CRITICAL: "border-destructive/40 bg-destructive/10 text-destructive",
+        WARNING: "border-amber-400/40 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300",
+        INFO: "border-blue-400/40 bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300",
+    };
+
     return (
         <UserPageShell>
             <UserPageHeader
@@ -77,6 +112,30 @@ export default function HealthTrackingPage() {
                 title="Health Tracking"
                 description="Your health data synced from the CuraSync mobile app over the last 7 days."
             />
+
+            {alerts.length > 0 && (
+                <div className="space-y-2">
+                    {alerts.map((alert) => (
+                        <div
+                            key={alert.id}
+                            className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${severityStyles[alert.severity] ?? severityStyles.WARNING}`}
+                        >
+                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                            <div className="flex-1">
+                                <span className="font-semibold">{alert.title}.</span>{" "}
+                                {alert.body}
+                            </div>
+                            <button
+                                onClick={() => dismissAlert(alert.id)}
+                                className="shrink-0 opacity-60 hover:opacity-100"
+                                aria-label="Dismiss alert"
+                            >
+                                <X className="h-4 w-4" />
+                            </button>
+                        </div>
+                    ))}
+                </div>
+            )}
 
             {loading ? (
                 <div className="space-y-4">

@@ -5,7 +5,6 @@ import { useSignIn, useUser } from "@clerk/nextjs";
 import { useRouter } from "next/navigation";
 import { Stethoscope, Shield, Activity, Loader2 } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
-import { FaFacebook } from "react-icons/fa";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -23,14 +22,19 @@ export function LoginForm({
 	const [error, setError] = useState("");
 	const [loadingStrategy, setLoadingStrategy] = useState<string | null>(null);
 	const [hoveredStrategy, setHoveredStrategy] = useState<string | null>(null);
+	const [hasMounted, setHasMounted] = useState(false);
 
 	useEffect(() => {
-		if (!userLoaded) return;
+		setHasMounted(true);
+	}, []);
+
+	useEffect(() => {
+		if (!hasMounted || !userLoaded) return;
 
 		if (isSignedIn) {
 			router.replace("/user/dashboard");
 		}
-	}, [userLoaded, isSignedIn, router]);
+	}, [hasMounted, userLoaded, isSignedIn, router]);
 
 	const handleSocialAuth = async (
 		strategy: "oauth_google" | "oauth_facebook",
@@ -83,7 +87,7 @@ export function LoginForm({
 	};
 
 	// Show loading state while checking authentication
-	if (!userLoaded) {
+	if (!hasMounted || !userLoaded) {
 		return (
 			<Card className="border-0 shadow-none bg-transparent">
 				<CardContent className="p-0">

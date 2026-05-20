@@ -20,13 +20,11 @@ async function exists(p) {
 async function main() {
   if (await exists(lockFile)) {
     await fs.rm(lockFile, { force: true });
-    // eslint-disable-next-line no-console
     console.log(`Removed stale lock: ${path.relative(projectRoot, lockFile)}`);
   }
 
   if (!lockOnly && (await exists(nextDir))) {
     await fs.rm(nextDir, { recursive: true, force: true });
-    // eslint-disable-next-line no-console
     console.log(`Removed: ${path.relative(projectRoot, nextDir)}`);
   }
 }

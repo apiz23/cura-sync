@@ -20,7 +20,7 @@ import {
     useSidebar,
 } from "@/components/ui/sidebar";
 import { AuthUser } from "@/app/types";
-import { getStaffRoleLabel } from "@/lib/staff-role";
+import { getStaffRoleLabel, normalizeStaffRole } from "@/lib/staff-role";
 
 interface AdminProfileMenuProps {
     user: AuthUser;
@@ -28,6 +28,7 @@ interface AdminProfileMenuProps {
 
 export function AdminProfileMenu({ user }: AdminProfileMenuProps) {
     const { isMobile } = useSidebar();
+    const isAdmin = normalizeStaffRole(user.role) === "admin";
 
     const initials =
         (user.full_name?.split(" ")[0]?.[0] || "") +
@@ -111,25 +112,29 @@ export function AdminProfileMenu({ user }: AdminProfileMenuProps) {
                                 </Link>
                             </DropdownMenuItem>
 
-                            <DropdownMenuItem asChild>
-                                <Link
-                                    href="/admin/settings"
-                                    className="flex items-center gap-2"
-                                >
-                                    <Settings className="h-4 w-4" />
-                                    <span>Preferences</span>
-                                </Link>
-                            </DropdownMenuItem>
+                            {isAdmin && (
+                                <DropdownMenuItem asChild>
+                                    <Link
+                                        href="/admin/settings"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Settings className="h-4 w-4" />
+                                        <span>Preferences</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            )}
 
-                            <DropdownMenuItem asChild>
-                                <Link
-                                    href="/admin/security"
-                                    className="flex items-center gap-2"
-                                >
-                                    <Shield className="h-4 w-4" />
-                                    <span>Security</span>
-                                </Link>
-                            </DropdownMenuItem>
+                            {isAdmin && (
+                                <DropdownMenuItem asChild>
+                                    <Link
+                                        href="/admin/security"
+                                        className="flex items-center gap-2"
+                                    >
+                                        <Shield className="h-4 w-4" />
+                                        <span>Security</span>
+                                    </Link>
+                                </DropdownMenuItem>
+                            )}
                         </DropdownMenuGroup>
 
                         <DropdownMenuSeparator />

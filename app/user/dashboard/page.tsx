@@ -118,6 +118,15 @@ export default function UserDashboardPage() {
             setError(null);
 
             try {
+                const syncRes = await fetch("/api/auth/sync", {
+                    method: "POST",
+                    cache: "no-store",
+                });
+
+                if (!syncRes.ok) {
+                    await syncRes.json().catch(() => null);
+                }
+
                 const [
                     profileResult,
                     appointmentsResult,

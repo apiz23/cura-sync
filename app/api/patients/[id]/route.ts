@@ -65,8 +65,12 @@ export async function GET(
             );
         }
 
-        // Flatten patient profile fields for UI consumers.
-        const medical = (data as any)?.patient_profiles?.[0] ?? {};
+        // Supabase relationship payloads can come back as either an object or
+        // a single-item array depending on the query shape/config.
+        const patientProfile = (data as any)?.patient_profiles;
+        const medical = Array.isArray(patientProfile)
+            ? (patientProfile[0] ?? {})
+            : patientProfile ?? {};
 
         void logAudit({
             actor_id: session.staffId,

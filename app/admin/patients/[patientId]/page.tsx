@@ -25,27 +25,49 @@ import {
 	Clock,
 	MapPin,
 	Edit,
-	Share2,
 	Printer,
-	Download,
-	Bell,
-	MessageSquare,
 	ArrowLeft,
+	Scissors,
+	AlertTriangle,
+	Plus,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useRef } from "react";
+import { toast } from "sonner";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
+import {
+	Sheet,
+	SheetContent,
+	SheetHeader,
+	SheetTitle,
+	SheetTrigger,
+} from "@/components/ui/sheet";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import MedicationCard from "./medication-card";
 import { Medication } from "@/app/types";
 import AddMedicationSheet from "./add-medication-sheet";
 import { useAuth } from "@/components/authprovideradmin";
 import {
-    PatientHealthView,
-    type HealthSyncSnapshot,
+	calculatePatientAge,
+	calculatePatientBmi,
+	formatPatientDate,
+} from "@/lib/patient-profile";
+import {
+	PatientHealthView,
+	type HealthSyncSnapshot,
 } from "@/components/patient-health-view";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -54,6 +76,8 @@ import {
 	DropdownMenuItem,
 	DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+
+// ── Types ─────────────────────────────────────────────────────────────────────
 
 interface Patient {
 	id: string;
@@ -75,6 +99,71 @@ interface Patient {
 	chronic_conditions?: string;
 }
 
+type MedCondition = {
+	id: string;
+	name: string;
+	status: "ACTIVE" | "RESOLVED" | "CHRONIC";
+	severity: "MILD" | "MODERATE" | "SEVERE" | null;
+	onset_date: string | null;
+	resolved_date: string | null;
+	notes: string | null;
+};
+
+type MedAllergy = {
+	id: string;
+	allergen: string;
+	reaction: string | null;
+	severity: "MILD" | "MODERATE" | "SEVERE" | null;
+	status: "ACTIVE" | "RESOLVED";
+	notes: string | null;
+};
+
+type MedProcedure = {
+	id: string;
+	name: string;
+	procedure_date: string | null;
+	facility_name: string | null;
+	outcome: string | null;
+	notes: string | null;
+};
+
+type MedEncounter = {
+	id: string;
+	encounter_type: "CLINIC" | "ER" | "HOSPITAL" | "TELEHEALTH";
+	encounter_date: string;
+	facility_name: string | null;
+	provider_name: string | null;
+	reason: string | null;
+	diagnosis_summary: string | null;
+	notes: string | null;
+};
+
+type MedicalRecordsData = {
+	conditions: MedCondition[];
+	allergies: MedAllergy[];
+	procedures: MedProcedure[];
+	encounters: MedEncounter[];
+};
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+function formatDate(value: string | null) {
+	if (!value) return "—";
+	return new Date(value).toLocaleDateString("en-MY", {
+		day: "numeric",
+		month: "short",
+		year: "numeric",
+	});
+}
+
+function severityClass(severity: string | null) {
+	if (severity === "SEVERE") return "text-destructive";
+	if (severity === "MODERATE") return "text-warning-foreground";
+	return "text-muted-foreground";
+}
+
+// ── Page ──────────────────────────────────────────────────────────────────────
+
 export default function PatientDetailPage() {
 	const params = useParams<{ patientId: string }>();
 	const patientId = params.patientId;
@@ -83,6 +172,8 @@ export default function PatientDetailPage() {
 	const [activeTab, setActiveTab] = useState("overview");
 	const [medications, setMedications] = useState<Medication[]>([]);
 	const [medLoading, setMedLoading] = useState(false);
+	const [medicalRecords, setMedicalRecords] = useState<MedicalRecordsData | null>(null);
+	const [medicalLoading, setMedicalLoading] = useState(false);
 	const [healthSnapshots, setHealthSnapshots] = useState<HealthSyncSnapshot[]>([]);
 	const [healthLatest, setHealthLatest] = useState<HealthSyncSnapshot | null>(null);
 	const [healthLoading, setHealthLoading] = useState(false);
@@ -91,8 +182,7 @@ export default function PatientDetailPage() {
 
 	const staffId = user?.id ?? null;
 	const staffName = user?.full_name || user?.email || "Unknown User";
-	const canManagePrescriptions =
-		user?.role === "doctor" || user?.role === "admin";
+	const canManage = user?.role === "doctor" || user?.role === "admin";
 
 	const medsControllerRef = useRef<AbortController | null>(null);
 
@@ -102,7 +192,6 @@ export default function PatientDetailPage() {
 		async function fetchPatient() {
 			setLoading(true);
 			setPatient(null);
-			// Prevent "previous patient's meds" flashing when navigating quickly.
 			setMedications([]);
 
 			try {
@@ -133,13 +222,10 @@ export default function PatientDetailPage() {
 		}
 
 		fetchPatient();
-
 		return () => controller.abort();
 	}, [patientId]);
 
 	const fetchMedications = useCallback(async () => {
-		// Keep this callable for "Add Medication -> refresh" but make it deterministic by id.
-		// Abort any previous request so older responses can't overwrite the latest patient.
 		medsControllerRef.current?.abort();
 		const controller = new AbortController();
 		medsControllerRef.current = controller;
@@ -161,10 +247,9 @@ export default function PatientDetailPage() {
 			}
 
 			const rows = Array.isArray(data) ? (data as Medication[]) : [];
-			// Extra safety: never render meds that don't belong to this patient.
 			setMedications(rows.filter((m) => m?.profile_id === patientId));
 		} catch (err) {
-			if ((err as any)?.name !== "AbortError") {
+			if ((err as { name?: string })?.name !== "AbortError") {
 				console.error("Failed to fetch medications", err);
 				setMedications([]);
 			}
@@ -173,11 +258,29 @@ export default function PatientDetailPage() {
 		}
 	}, [patientId]);
 
-	useEffect(() => {
-		if (activeTab === "medication") {
-			fetchMedications();
+	const fetchMedicalRecords = useCallback(async () => {
+		setMedicalLoading(true);
+		setMedicalRecords(null);
+		try {
+			const res = await fetch(`/api/patients/${patientId}/records`, { cache: "no-store" });
+			if (!res.ok) throw new Error("Failed to load records");
+			const data = (await res.json()) as MedicalRecordsData;
+			setMedicalRecords(data);
+		} catch (err) {
+			console.error("Failed to fetch medical records", err);
+			setMedicalRecords({ conditions: [], allergies: [], procedures: [], encounters: [] });
+		} finally {
+			setMedicalLoading(false);
 		}
+	}, [patientId]);
+
+	useEffect(() => {
+		if (activeTab === "medication") fetchMedications();
 	}, [activeTab, fetchMedications]);
+
+	useEffect(() => {
+		if (activeTab === "medical") void fetchMedicalRecords();
+	}, [activeTab, fetchMedicalRecords]);
 
 	useEffect(() => {
 		if (activeTab !== "health") return;
@@ -203,50 +306,21 @@ export default function PatientDetailPage() {
 				if (!cancelled) setHealthLoading(false);
 			});
 
-		return () => {
-			cancelled = true;
-		};
+		return () => { cancelled = true; };
 	}, [activeTab, patientId]);
 
 	useEffect(() => {
-		// If user navigates to another patient while on the meds tab, cancel the old request.
 		return () => {
 			medsControllerRef.current?.abort();
 			medsControllerRef.current = null;
 		};
 	}, [patientId]);
 
-	const calculateAge = (dateOfBirth?: string) => {
-		if (!dateOfBirth) return null;
-		const today = new Date();
-		const birthDate = new Date(dateOfBirth);
-		let age = today.getFullYear() - birthDate.getFullYear();
-		const monthDiff = today.getMonth() - birthDate.getMonth();
-		if (
-			monthDiff < 0 ||
-			(monthDiff === 0 && today.getDate() < birthDate.getDate())
-		) {
-			age--;
-		}
-		return age;
-	};
+	if (loading) return <PatientDetailSkeleton />;
+	if (!patient) return notFound();
 
-	const calculateBMI = () => {
-		if (!patient?.height_cm || !patient?.weight_kg) return null;
-		const heightM = patient.height_cm / 100;
-		return (patient.weight_kg / (heightM * heightM)).toFixed(1);
-	};
-
-	if (loading) {
-		return <PatientDetailSkeleton />;
-	}
-
-	if (!patient) {
-		return notFound();
-	}
-
-	const age = calculateAge(patient.date_of_birth);
-	const bmi = calculateBMI();
+	const age = calculatePatientAge(patient.date_of_birth);
+	const bmi = calculatePatientBmi(patient.height_cm, patient.weight_kg);
 
 	return (
 		<div className="min-h-screen bg-linear-to-b from-background to-muted/20 p-0">
@@ -303,14 +377,6 @@ export default function PatientDetailPage() {
 							</div>
 						</div>
 						<div className="flex items-center gap-2">
-							<Button variant="outline" size="sm" className="gap-2">
-								<MessageSquare className="w-4 h-4" />
-								Message
-							</Button>
-							<Button variant="outline" size="sm" className="gap-2">
-								<Bell className="w-4 h-4" />
-								Notify
-							</Button>
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
 									<Button variant="outline" size="icon">
@@ -318,21 +384,19 @@ export default function PatientDetailPage() {
 									</Button>
 								</DropdownMenuTrigger>
 								<DropdownMenuContent align="end">
-									<DropdownMenuItem className="gap-2">
+									<DropdownMenuItem
+										className="gap-2"
+										onClick={() => setActiveTab("overview")}
+									>
 										<Edit className="w-4 h-4" />
-										Edit Profile
+										View Profile
 									</DropdownMenuItem>
-									<DropdownMenuItem className="gap-2">
+									<DropdownMenuItem
+										className="gap-2"
+										onClick={() => window.print()}
+									>
 										<Printer className="w-4 h-4" />
 										Print Summary
-									</DropdownMenuItem>
-									<DropdownMenuItem className="gap-2">
-										<Download className="w-4 h-4" />
-										Export Records
-									</DropdownMenuItem>
-									<DropdownMenuItem className="gap-2">
-										<Share2 className="w-4 h-4" />
-										Share Access
 									</DropdownMenuItem>
 								</DropdownMenuContent>
 							</DropdownMenu>
@@ -343,9 +407,8 @@ export default function PatientDetailPage() {
 
 			<div className="px-4 md:px-6 py-8">
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-					{/* Left Column - Patient Info */}
+					{/* Left Column */}
 					<div className="lg:col-span-1 space-y-6">
-						{/* Quick Info Card */}
 						<Card className="border-border/40">
 							<CardContent className="p-6">
 								<h3 className="font-semibold text-lg mb-4">Quick Info</h3>
@@ -353,7 +416,7 @@ export default function PatientDetailPage() {
 									<InfoItem
 										icon={Calendar}
 										label="Age"
-										value={age ? `${age} years` : "N/A"}
+										value={age !== null ? `${age} years` : "N/A"}
 									/>
 									<InfoItem
 										icon={UserCheck}
@@ -364,7 +427,7 @@ export default function PatientDetailPage() {
 										<InfoItem
 											icon={CalendarDays}
 											label="Date of Birth"
-											value={patient.date_of_birth}
+											value={formatPatientDate(patient.date_of_birth)}
 										/>
 									)}
 									<InfoItem
@@ -383,7 +446,6 @@ export default function PatientDetailPage() {
 							</CardContent>
 						</Card>
 
-						{/* Contact Card */}
 						<Card className="border-border/40">
 							<CardContent className="p-6">
 								<h3 className="font-semibold text-lg mb-4">Contact Info</h3>
@@ -401,61 +463,52 @@ export default function PatientDetailPage() {
 							</CardContent>
 						</Card>
 
-						{/* Health Stats Card */}
 						{(patient.blood_type || patient.height_cm || patient.weight_kg) && (
 							<Card className="border-border/40">
 								<CardContent className="p-6">
 									<h3 className="font-semibold text-lg mb-4">Health Stats</h3>
 									<div className="space-y-4">
 										{patient.blood_type && (
-											<div className="flex items-center justify-between">
-												<div className="flex items-center gap-3">
-													<div className="p-2 bg-red-50 rounded-lg">
-														<Heart className="w-4 h-4 text-red-600" />
-													</div>
-													<div>
-														<p className="text-sm text-muted-foreground">Blood Type</p>
-														<p className="font-medium">{patient.blood_type}</p>
-													</div>
+											<div className="flex items-center gap-3">
+												<div className="p-2 bg-red-50 rounded-lg">
+													<Heart className="w-4 h-4 text-red-600" />
+												</div>
+												<div>
+													<p className="text-sm text-muted-foreground">Blood Type</p>
+													<p className="font-medium">{patient.blood_type}</p>
 												</div>
 											</div>
 										)}
 										{patient.height_cm && (
-											<div className="flex items-center justify-between">
-												<div className="flex items-center gap-3">
-													<div className="p-2 bg-blue-50 rounded-lg">
-														<User className="w-4 h-4 text-blue-600" />
-													</div>
-													<div>
-														<p className="text-sm text-muted-foreground">Height</p>
-														<p className="font-medium">{patient.height_cm} cm</p>
-													</div>
+											<div className="flex items-center gap-3">
+												<div className="p-2 bg-blue-50 rounded-lg">
+													<User className="w-4 h-4 text-blue-600" />
+												</div>
+												<div>
+													<p className="text-sm text-muted-foreground">Height</p>
+													<p className="font-medium">{patient.height_cm} cm</p>
 												</div>
 											</div>
 										)}
 										{patient.weight_kg && (
-											<div className="flex items-center justify-between">
-												<div className="flex items-center gap-3">
-													<div className="p-2 bg-green-50 rounded-lg">
-														<Activity className="w-4 h-4 text-green-600" />
-													</div>
-													<div>
-														<p className="text-sm text-muted-foreground">Weight</p>
-														<p className="font-medium">{patient.weight_kg} kg</p>
-													</div>
+											<div className="flex items-center gap-3">
+												<div className="p-2 bg-green-50 rounded-lg">
+													<Activity className="w-4 h-4 text-green-600" />
+												</div>
+												<div>
+													<p className="text-sm text-muted-foreground">Weight</p>
+													<p className="font-medium">{patient.weight_kg} kg</p>
 												</div>
 											</div>
 										)}
 										{bmi && (
-											<div className="flex items-center justify-between">
-												<div className="flex items-center gap-3">
-													<div className="p-2 bg-amber-50 rounded-lg">
-														<Clipboard className="w-4 h-4 text-amber-600" />
-													</div>
-													<div>
-														<p className="text-sm text-muted-foreground">BMI</p>
-														<p className="font-medium">{bmi}</p>
-													</div>
+											<div className="flex items-center gap-3">
+												<div className="p-2 bg-amber-50 rounded-lg">
+													<Clipboard className="w-4 h-4 text-amber-600" />
+												</div>
+												<div>
+													<p className="text-sm text-muted-foreground">BMI</p>
+													<p className="font-medium">{bmi}</p>
 												</div>
 											</div>
 										)}
@@ -465,12 +518,11 @@ export default function PatientDetailPage() {
 						)}
 					</div>
 
-					{/* Right Column - Main Content */}
+					{/* Right Column */}
 					<div className="lg:col-span-2 space-y-6">
-						{/* Tabs Section */}
 						<div className="border-border/40 pt-0">
 							<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-								<div className="border-b">
+								<div className="border-b overflow-x-auto">
 									<TabsList className="w-full justify-start rounded-none border-0 bg-transparent p-0 h-14">
 										<TabsTrigger
 											value="overview"
@@ -494,13 +546,6 @@ export default function PatientDetailPage() {
 											Medication
 										</TabsTrigger>
 										<TabsTrigger
-											value="documents"
-											className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-14 px-6"
-										>
-											<FileText className="w-4 h-4 mr-2" />
-											Documents
-										</TabsTrigger>
-										<TabsTrigger
 											value="health"
 											className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent h-14 px-6"
 										>
@@ -511,18 +556,25 @@ export default function PatientDetailPage() {
 								</div>
 
 								<div className="p-6">
+									{/* Overview */}
 									<TabsContent value="overview" className="space-y-6">
-										{/* Personal Information */}
 										<div>
 											<h3 className="font-semibold text-lg mb-4">Personal Information</h3>
-
 											<h2 className="font-semibold text-md mb-4">Patient ID</h2>
 											<CopyableId value={patient.id} />
 											<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
 												<InfoCard label="Full Name" value={patient.full_name} />
 												<InfoCard label="Email" value={patient.email} />
 												<InfoCard label="Phone" value={patient.phone_number} />
-												<InfoCard label="Date of Birth" value={patient.date_of_birth} />
+												<InfoCard
+													label="Date of Birth"
+													value={formatPatientDate(
+														patient.date_of_birth,
+														{ year: "numeric", month: "long", day: "numeric" },
+														""
+													)}
+												/>
+												<InfoCard label="Age" value={age !== null ? `${age} years` : null} />
 												<InfoCard label="Gender" value={patient.gender} />
 												<InfoCard label="Status" value={patient.status?.toUpperCase()} />
 											</div>
@@ -530,7 +582,6 @@ export default function PatientDetailPage() {
 
 										<Separator />
 
-										{/* Medical Conditions */}
 										{(patient.allergies || patient.chronic_conditions) && (
 											<div>
 												<h3 className="font-semibold text-lg mb-4">Medical Conditions</h3>
@@ -557,7 +608,6 @@ export default function PatientDetailPage() {
 
 										<Separator />
 
-										{/* Recent Activity */}
 										<div>
 											<h3 className="font-semibold text-lg mb-4">Recent Activity</h3>
 											<div className="space-y-4">
@@ -579,23 +629,37 @@ export default function PatientDetailPage() {
 										</div>
 									</TabsContent>
 
+									{/* Medical History */}
 									<TabsContent value="medical">
-										<div className="space-y-6">
-											<h3 className="font-semibold text-lg">Medical History</h3>
-											<div className="text-center py-16">
-												<History className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-40" />
-												<h3 className="text-lg font-medium mb-2">No Medical History</h3>
-												<p className="text-muted-foreground max-w-md mx-auto mb-6">
-													Medical records and history will appear here once documented
-												</p>
-												<Button className="gap-2">
-													<Clipboard className="h-4 w-4" />
-													Add Medical Record
-												</Button>
+										<div className="space-y-5">
+											<div className="flex items-center justify-between gap-4">
+												<h3 className="font-semibold text-lg">Medical History</h3>
+												{canManage && (
+													<AddMedicalRecordSheet
+														patientId={patientId}
+														onSuccess={() => void fetchMedicalRecords()}
+													>
+														<Button size="sm" className="gap-2">
+															<Plus className="h-4 w-4" />
+															Add Record
+														</Button>
+													</AddMedicalRecordSheet>
+												)}
 											</div>
+
+											{medicalLoading ? (
+												<div className="space-y-3">
+													{[1, 2, 3].map((i) => (
+														<Skeleton key={i} className="h-20 w-full rounded-xl" />
+													))}
+												</div>
+											) : medicalRecords ? (
+												<MedicalRecordsTabs records={medicalRecords} />
+											) : null}
 										</div>
 									</TabsContent>
 
+									{/* Medication */}
 									<TabsContent value="medication" className="space-y-6">
 										<div className="flex items-center justify-between">
 											<div>
@@ -604,7 +668,7 @@ export default function PatientDetailPage() {
 													{medications.length} medications recorded
 												</p>
 											</div>
-											{staffId && canManagePrescriptions && (
+											{staffId && canManage && (
 												<AddMedicationSheet
 													profileId={patientId}
 													doctorName={staffName}
@@ -630,7 +694,7 @@ export default function PatientDetailPage() {
 													<MedicationCard
 														key={medication.id}
 														medication={medication}
-														canEdit={canManagePrescriptions}
+														canEdit={canManage}
 														onUpdate={fetchMedications}
 													/>
 												))}
@@ -642,7 +706,7 @@ export default function PatientDetailPage() {
 												<p className="text-muted-foreground max-w-md mx-auto mb-6">
 													No medications have been prescribed to this patient yet
 												</p>
-												{staffId && canManagePrescriptions && (
+												{staffId && canManage && (
 													<AddMedicationSheet
 														profileId={patientId}
 														doctorName={staffName}
@@ -658,19 +722,7 @@ export default function PatientDetailPage() {
 										)}
 									</TabsContent>
 
-									<TabsContent value="documents">
-										<div className="space-y-6">
-											<h3 className="font-semibold text-lg">Documents</h3>
-											<div className="text-center py-16">
-												<FileText className="h-16 w-16 text-muted-foreground mx-auto mb-4 opacity-40" />
-												<h3 className="text-lg font-medium mb-2">No Documents</h3>
-												<p className="text-muted-foreground max-w-md mx-auto">
-													Patient documents and files will appear here once uploaded
-												</p>
-											</div>
-										</div>
-									</TabsContent>
-
+									{/* Health */}
 									<TabsContent value="health" className="space-y-4">
 										<h3 className="font-semibold text-lg">Health Tracking</h3>
 										{healthLoading ? (
@@ -705,7 +757,525 @@ export default function PatientDetailPage() {
 	);
 }
 
-/* ---------------- Components ---------------- */
+// ── Medical Records Tabs ───────────────────────────────────────────────────────
+
+function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
+	const total =
+		records.conditions.length +
+		records.allergies.length +
+		records.procedures.length +
+		records.encounters.length;
+
+	if (total === 0) {
+		return (
+			<div className="rounded-xl border border-dashed p-8 text-center">
+				<History className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
+				<p className="font-medium text-foreground">No records yet</p>
+				<p className="mt-1 text-sm text-muted-foreground">
+					Use &ldquo;Add Record&rdquo; to document conditions, allergies, procedures, or encounters.
+				</p>
+			</div>
+		);
+	}
+
+	return (
+		<Tabs defaultValue="conditions">
+			<TabsList className="h-auto flex-wrap gap-1">
+				<TabsTrigger value="conditions">
+					Conditions
+					{records.conditions.length > 0 && (
+						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+							{records.conditions.length}
+						</span>
+					)}
+				</TabsTrigger>
+				<TabsTrigger value="allergies">
+					Allergies
+					{records.allergies.length > 0 && (
+						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+							{records.allergies.length}
+						</span>
+					)}
+				</TabsTrigger>
+				<TabsTrigger value="procedures">
+					Procedures
+					{records.procedures.length > 0 && (
+						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+							{records.procedures.length}
+						</span>
+					)}
+				</TabsTrigger>
+				<TabsTrigger value="encounters">
+					Encounters
+					{records.encounters.length > 0 && (
+						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+							{records.encounters.length}
+						</span>
+					)}
+				</TabsTrigger>
+			</TabsList>
+
+			<TabsContent value="conditions" className="mt-4 space-y-3">
+				{records.conditions.length === 0 ? (
+					<MedEmptyState label="conditions" />
+				) : (
+					records.conditions.map((c) => (
+						<div key={c.id} className="rounded-xl border border-border bg-card p-4">
+							<div className="flex flex-wrap items-start justify-between gap-3">
+								<div className="flex items-center gap-3">
+									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+										<Stethoscope className="h-4 w-4" />
+									</div>
+									<div>
+										<p className="font-semibold text-foreground">{c.name}</p>
+										{c.onset_date && (
+											<p className="text-xs text-muted-foreground">
+												Since {formatDate(c.onset_date)}
+												{c.resolved_date ? ` · Resolved ${formatDate(c.resolved_date)}` : null}
+											</p>
+										)}
+									</div>
+								</div>
+								<div className="flex flex-wrap gap-2">
+									<Badge variant={c.status === "ACTIVE" ? "destructive" : c.status === "CHRONIC" ? "secondary" : "outline"}>
+										{c.status}
+									</Badge>
+									{c.severity && (
+										<Badge variant="outline" className={severityClass(c.severity)}>
+											{c.severity}
+										</Badge>
+									)}
+								</div>
+							</div>
+							{c.notes && <p className="mt-3 text-sm text-muted-foreground">{c.notes}</p>}
+						</div>
+					))
+				)}
+			</TabsContent>
+
+			<TabsContent value="allergies" className="mt-4 space-y-3">
+				{records.allergies.length === 0 ? (
+					<MedEmptyState label="allergies" />
+				) : (
+					records.allergies.map((a) => (
+						<div key={a.id} className="rounded-xl border border-border bg-card p-4">
+							<div className="flex flex-wrap items-start justify-between gap-3">
+								<div className="flex items-center gap-3">
+									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
+										<AlertTriangle className="h-4 w-4" />
+									</div>
+									<div>
+										<p className="font-semibold text-foreground">{a.allergen}</p>
+										{a.reaction && (
+											<p className="text-xs text-muted-foreground">Reaction: {a.reaction}</p>
+										)}
+									</div>
+								</div>
+								<div className="flex flex-wrap gap-2">
+									<Badge variant={a.status === "ACTIVE" ? "destructive" : "outline"}>
+										{a.status}
+									</Badge>
+									{a.severity && (
+										<Badge variant="outline" className={severityClass(a.severity)}>
+											{a.severity}
+										</Badge>
+									)}
+								</div>
+							</div>
+							{a.notes && <p className="mt-3 text-sm text-muted-foreground">{a.notes}</p>}
+						</div>
+					))
+				)}
+			</TabsContent>
+
+			<TabsContent value="procedures" className="mt-4 space-y-3">
+				{records.procedures.length === 0 ? (
+					<MedEmptyState label="procedures" />
+				) : (
+					records.procedures.map((p) => (
+						<div key={p.id} className="rounded-xl border border-border bg-card p-4">
+							<div className="flex items-center gap-3">
+								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+									<Scissors className="h-4 w-4" />
+								</div>
+								<div>
+									<p className="font-semibold text-foreground">{p.name}</p>
+									<p className="text-xs text-muted-foreground">
+										{p.procedure_date ? formatDate(p.procedure_date) : "Date unknown"}
+										{p.facility_name ? ` · ${p.facility_name}` : null}
+									</p>
+								</div>
+							</div>
+							{p.outcome && (
+								<p className="mt-3 text-sm text-muted-foreground">
+									<span className="font-medium text-foreground">Outcome: </span>
+									{p.outcome}
+								</p>
+							)}
+							{p.notes && <p className="mt-1 text-sm text-muted-foreground">{p.notes}</p>}
+						</div>
+					))
+				)}
+			</TabsContent>
+
+			<TabsContent value="encounters" className="mt-4 space-y-3">
+				{records.encounters.length === 0 ? (
+					<MedEmptyState label="encounters" />
+				) : (
+					records.encounters.map((e) => (
+						<div key={e.id} className="rounded-xl border border-border bg-card p-4">
+							<div className="flex flex-wrap items-start justify-between gap-3">
+								<div className="flex items-center gap-3">
+									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+										<CalendarDays className="h-4 w-4" />
+									</div>
+									<div>
+										<p className="font-semibold text-foreground">{e.reason ?? "Visit"}</p>
+										<p className="text-xs text-muted-foreground">
+											{formatDate(e.encounter_date)}
+											{e.facility_name ? ` · ${e.facility_name}` : null}
+											{e.provider_name ? ` · ${e.provider_name}` : null}
+										</p>
+									</div>
+								</div>
+								<Badge variant="outline">{e.encounter_type}</Badge>
+							</div>
+							{e.diagnosis_summary && (
+								<p className="mt-3 text-sm text-muted-foreground">
+									<span className="font-medium text-foreground">Diagnosis: </span>
+									{e.diagnosis_summary}
+								</p>
+							)}
+							{e.notes && <p className="mt-1 text-sm text-muted-foreground">{e.notes}</p>}
+						</div>
+					))
+				)}
+			</TabsContent>
+		</Tabs>
+	);
+}
+
+function MedEmptyState({ label }: { label: string }) {
+	return (
+		<div className="rounded-xl border border-dashed p-6 text-center">
+			<p className="text-sm font-medium text-muted-foreground">No {label} on record</p>
+		</div>
+	);
+}
+
+// ── Add Medical Record Sheet ──────────────────────────────────────────────────
+
+type RecordType = "condition" | "allergy" | "procedure" | "encounter";
+
+function AddMedicalRecordSheet({
+	patientId,
+	onSuccess,
+	children,
+}: {
+	patientId: string;
+	onSuccess: () => void;
+	children: React.ReactNode;
+}) {
+	const [open, setOpen] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
+	const [recordType, setRecordType] = useState<RecordType>("condition");
+	const [fields, setFields] = useState<Record<string, string>>({});
+
+	function field(name: string, value: string) {
+		setFields((prev) => ({ ...prev, [name]: value }));
+	}
+
+	function reset() {
+		setRecordType("condition");
+		setFields({});
+	}
+
+	async function handleSubmit(e: React.FormEvent) {
+		e.preventDefault();
+		setSubmitting(true);
+		try {
+			const res = await fetch(`/api/patients/${patientId}/records`, {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ record_type: recordType, ...fields }),
+			});
+			if (!res.ok) {
+				const err = await res.json().catch(() => null) as { error?: string } | null;
+				throw new Error(err?.error ?? "Failed to add record");
+			}
+			toast.success("Record added successfully");
+			setOpen(false);
+			reset();
+			onSuccess();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	return (
+		<Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
+			<SheetTrigger asChild>{children}</SheetTrigger>
+			<SheetContent className="w-full sm:max-w-md overflow-y-auto">
+				<SheetHeader>
+					<SheetTitle>Add Medical Record</SheetTitle>
+				</SheetHeader>
+
+				<form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-5">
+					<div className="space-y-2">
+						<Label>Record type</Label>
+						<Select
+							value={recordType}
+							onValueChange={(v) => { setRecordType(v as RecordType); setFields({}); }}
+						>
+							<SelectTrigger>
+								<SelectValue />
+							</SelectTrigger>
+							<SelectContent>
+								<SelectItem value="condition">Condition</SelectItem>
+								<SelectItem value="allergy">Allergy</SelectItem>
+								<SelectItem value="procedure">Procedure</SelectItem>
+								<SelectItem value="encounter">Encounter</SelectItem>
+							</SelectContent>
+						</Select>
+					</div>
+
+					{recordType === "condition" && (
+						<>
+							<div className="space-y-2">
+								<Label>Condition name *</Label>
+								<Input
+									required
+									placeholder="e.g. Type 2 Diabetes"
+									value={fields.name ?? ""}
+									onChange={(e) => field("name", e.target.value)}
+								/>
+							</div>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-2">
+									<Label>Status</Label>
+									<Select value={fields.status ?? "ACTIVE"} onValueChange={(v) => field("status", v)}>
+										<SelectTrigger><SelectValue /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="ACTIVE">Active</SelectItem>
+											<SelectItem value="CHRONIC">Chronic</SelectItem>
+											<SelectItem value="RESOLVED">Resolved</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<Label>Severity</Label>
+									<Select value={fields.severity ?? ""} onValueChange={(v) => field("severity", v)}>
+										<SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="MILD">Mild</SelectItem>
+											<SelectItem value="MODERATE">Moderate</SelectItem>
+											<SelectItem value="SEVERE">Severe</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label>Onset date</Label>
+								<Input
+									type="date"
+									value={fields.onset_date ?? ""}
+									onChange={(e) => field("onset_date", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Notes</Label>
+								<Textarea
+									rows={3}
+									placeholder="Additional notes..."
+									value={fields.notes ?? ""}
+									onChange={(e) => field("notes", e.target.value)}
+								/>
+							</div>
+						</>
+					)}
+
+					{recordType === "allergy" && (
+						<>
+							<div className="space-y-2">
+								<Label>Allergen *</Label>
+								<Input
+									required
+									placeholder="e.g. Penicillin"
+									value={fields.allergen ?? ""}
+									onChange={(e) => field("allergen", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Reaction</Label>
+								<Input
+									placeholder="e.g. Rash, anaphylaxis"
+									value={fields.reaction ?? ""}
+									onChange={(e) => field("reaction", e.target.value)}
+								/>
+							</div>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-2">
+									<Label>Severity</Label>
+									<Select value={fields.severity ?? ""} onValueChange={(v) => field("severity", v)}>
+										<SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="MILD">Mild</SelectItem>
+											<SelectItem value="MODERATE">Moderate</SelectItem>
+											<SelectItem value="SEVERE">Severe</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<Label>Status</Label>
+									<Select value={fields.status ?? "ACTIVE"} onValueChange={(v) => field("status", v)}>
+										<SelectTrigger><SelectValue /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="ACTIVE">Active</SelectItem>
+											<SelectItem value="RESOLVED">Resolved</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label>Notes</Label>
+								<Textarea
+									rows={3}
+									placeholder="Additional notes..."
+									value={fields.notes ?? ""}
+									onChange={(e) => field("notes", e.target.value)}
+								/>
+							</div>
+						</>
+					)}
+
+					{recordType === "procedure" && (
+						<>
+							<div className="space-y-2">
+								<Label>Procedure name *</Label>
+								<Input
+									required
+									placeholder="e.g. Appendectomy"
+									value={fields.name ?? ""}
+									onChange={(e) => field("name", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Date</Label>
+								<Input
+									type="date"
+									value={fields.procedure_date ?? ""}
+									onChange={(e) => field("procedure_date", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Facility</Label>
+								<Input
+									placeholder="e.g. Klinik Al-Fattah"
+									value={fields.facility_name ?? ""}
+									onChange={(e) => field("facility_name", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Outcome</Label>
+								<Input
+									placeholder="e.g. Successful, no complications"
+									value={fields.outcome ?? ""}
+									onChange={(e) => field("outcome", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Notes</Label>
+								<Textarea
+									rows={3}
+									placeholder="Additional notes..."
+									value={fields.notes ?? ""}
+									onChange={(e) => field("notes", e.target.value)}
+								/>
+							</div>
+						</>
+					)}
+
+					{recordType === "encounter" && (
+						<>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-2">
+									<Label>Type *</Label>
+									<Select value={fields.encounter_type ?? "CLINIC"} onValueChange={(v) => field("encounter_type", v)}>
+										<SelectTrigger><SelectValue /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="CLINIC">Clinic</SelectItem>
+											<SelectItem value="ER">ER</SelectItem>
+											<SelectItem value="HOSPITAL">Hospital</SelectItem>
+											<SelectItem value="TELEHEALTH">Telehealth</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<Label>Date</Label>
+									<Input
+										type="date"
+										value={fields.encounter_date ?? ""}
+										onChange={(e) => field("encounter_date", e.target.value)}
+									/>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label>Facility</Label>
+								<Input
+									placeholder="e.g. Klinik Al-Fattah"
+									value={fields.facility_name ?? ""}
+									onChange={(e) => field("facility_name", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Provider</Label>
+								<Input
+									placeholder="e.g. Dr. Ahmad"
+									value={fields.provider_name ?? ""}
+									onChange={(e) => field("provider_name", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Reason</Label>
+								<Input
+									placeholder="Chief complaint or reason for visit"
+									value={fields.reason ?? ""}
+									onChange={(e) => field("reason", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Diagnosis summary</Label>
+								<Textarea
+									rows={3}
+									placeholder="Summary of findings or diagnosis..."
+									value={fields.diagnosis_summary ?? ""}
+									onChange={(e) => field("diagnosis_summary", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Notes</Label>
+								<Textarea
+									rows={2}
+									placeholder="Additional notes..."
+									value={fields.notes ?? ""}
+									onChange={(e) => field("notes", e.target.value)}
+								/>
+							</div>
+						</>
+					)}
+
+					<Button type="submit" className="w-full" disabled={submitting}>
+						{submitting ? "Saving..." : "Save Record"}
+					</Button>
+				</form>
+			</SheetContent>
+		</Sheet>
+	);
+}
+
+// ── Sub-components ────────────────────────────────────────────────────────────
 
 function PatientDetailSkeleton() {
 	return (
@@ -790,7 +1360,7 @@ function CopyableId({ value }: { value: string }) {
 	const [copied, setCopied] = useState(false);
 
 	return (
-		<div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border">
+		<div className="flex items-center justify-between bg-muted/30 p-4 rounded-lg border mb-4">
 			<div className="flex items-center gap-3">
 				<div className="p-2 bg-primary/10 rounded-lg">
 					<Hash className="w-4 h-4 text-primary" />
@@ -811,15 +1381,9 @@ function CopyableId({ value }: { value: string }) {
 				className="gap-2"
 			>
 				{copied ? (
-					<>
-						<Check className="w-3.5 h-3.5" />
-						Copied
-					</>
+					<><Check className="w-3.5 h-3.5" />Copied</>
 				) : (
-					<>
-						<Copy className="w-3.5 h-3.5" />
-						Copy
-					</>
+					<><Copy className="w-3.5 h-3.5" />Copy</>
 				)}
 			</Button>
 		</div>
@@ -828,7 +1392,6 @@ function CopyableId({ value }: { value: string }) {
 
 function InfoCard({ label, value }: { label: string; value?: string | null }) {
 	if (!value) return null;
-
 	return (
 		<div className="p-4 bg-muted/20 rounded-lg">
 			<p className="text-sm text-muted-foreground mb-1">{label}</p>
@@ -888,10 +1451,7 @@ function TimelineItem({
 					<h4 className="font-medium">{title}</h4>
 					<span className="text-xs text-muted-foreground">
 						{date.toLocaleDateString()} at{" "}
-						{date.toLocaleTimeString([], {
-							hour: "2-digit",
-							minute: "2-digit",
-						})}
+						{date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
 					</span>
 				</div>
 				<p className="text-sm text-muted-foreground">{description}</p>

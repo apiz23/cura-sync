@@ -1,13 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
 import { requirePatientSession } from "@/lib/authz";
+import { presentMedications } from "@/lib/medication-presenter";
 
 /* =========================
    GET /api/user/medications
    (patient-only)
    ========================= */
 export async function GET(_req: NextRequest) {
-    const patient = await requirePatientSession();
+    const patient = await requirePatientSession(_req);
     if (patient instanceof NextResponse) return patient;
 
     const { data, error } = await supabase
@@ -20,6 +21,5 @@ export async function GET(_req: NextRequest) {
         return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json(data ?? []);
+    return NextResponse.json(await presentMedications(data ?? []));
 }
-

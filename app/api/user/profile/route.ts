@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
 import supabase from "@/lib/supabase";
+import { requirePatientSession } from "@/lib/authz";
 
 type PatientProfileInput = {
     date_of_birth?: string | null;
@@ -54,18 +54,12 @@ async function fetchProfile(userId: string) {
     };
 }
 
-export async function GET() {
+export async function GET(req: Request) {
     try {
-        const { userId } = await auth();
+        const patient = await requirePatientSession(req);
+        if (patient instanceof NextResponse) return patient;
 
-        if (!userId) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
-
-        const profile = await fetchProfile(userId);
+        const profile = await fetchProfile(patient.profileId);
         return NextResponse.json(profile);
     } catch (error: unknown) {
         console.error("GET profile error:", error);
@@ -83,14 +77,8 @@ export async function GET() {
 
 export async function PATCH(req: Request) {
     try {
-        const { userId } = await auth();
-
-        if (!userId) {
-            return NextResponse.json(
-                { error: "Unauthorized" },
-                { status: 401 }
-            );
-        }
+        const patient = await requirePatientSession(req);
+        if (patient instanceof NextResponse) return patient;
 
         const body = (await req.json()) as ProfilePatchBody;
         const { full_name, phone, phone_number, patient_profile } = body;
@@ -111,7 +99,7 @@ export async function PATCH(req: Request) {
                 phone_number: normalizedPhone,
                 updated_at: new Date().toISOString(),
             })
-            .eq("id", userId);
+            .eq("id", patient.profileId);
 
         if (profileError) {
             return NextResponse.json(
@@ -122,7 +110,7 @@ export async function PATCH(req: Request) {
 
         if (patient_profile) {
             const sanitizedPatientProfile = {
-                profile_id: userId,
+                profile_id: patient.profileId,
                 date_of_birth: patient_profile.date_of_birth || null,
                 gender: patient_profile.gender?.trim() || null,
                 blood_type: patient_profile.blood_type?.trim() || null,
@@ -160,7 +148,7 @@ export async function PATCH(req: Request) {
             }
         }
 
-        const profile = await fetchProfile(userId);
+        const profile = await fetchProfile(patient.profileId);
         return NextResponse.json(profile);
     } catch (error: unknown) {
         console.error("PATCH profile error:", error);

@@ -9,6 +9,7 @@ import {
     Stethoscope,
     Pill,
     Activity,
+    Lock,
 } from "lucide-react";
 
 export const userMenu = [
@@ -74,6 +75,11 @@ export const userMenu = [
                 title: "App Settings",
                 url: "/user/settings",
                 icon: Settings,
+            },
+            {
+                title: "Security",
+                url: "/user/security",
+                icon: Lock,
             },
         ],
     },

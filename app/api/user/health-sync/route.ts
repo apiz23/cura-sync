@@ -314,9 +314,59 @@ export async function POST(req: Request) {
             return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
+        const snapshot = toApiSnapshot(data as HealthSyncSnapshotRow);
+
+        // Threshold alerts — fire-and-forget, do not block response
+        const HR_HIGH = 100;
+        const HR_LOW = 50;
+        const SLEEP_LOW_MINUTES = 240;
+        const alertRows: Array<{
+            profile_id: string;
+            type: string;
+            title: string;
+            body: string;
+            severity: string;
+            metadata: object;
+        }> = [];
+
+        if (summary.average_heart_rate_bpm !== null && summary.average_heart_rate_bpm > HR_HIGH) {
+            alertRows.push({
+                profile_id: patient.profileId,
+                type: "heart_rate_high",
+                title: "Elevated Heart Rate",
+                body: `Average heart rate of ${summary.average_heart_rate_bpm} bpm is above normal range.`,
+                severity: "WARNING",
+                metadata: { value: summary.average_heart_rate_bpm, snapshot_id: snapshot.id },
+            });
+        }
+        if (summary.average_heart_rate_bpm !== null && summary.average_heart_rate_bpm < HR_LOW) {
+            alertRows.push({
+                profile_id: patient.profileId,
+                type: "heart_rate_low",
+                title: "Low Heart Rate",
+                body: `Average heart rate of ${summary.average_heart_rate_bpm} bpm is below normal range.`,
+                severity: "WARNING",
+                metadata: { value: summary.average_heart_rate_bpm, snapshot_id: snapshot.id },
+            });
+        }
+        if (summary.total_sleep_minutes > 0 && summary.total_sleep_minutes < SLEEP_LOW_MINUTES) {
+            alertRows.push({
+                profile_id: patient.profileId,
+                type: "low_sleep",
+                title: "Insufficient Sleep",
+                body: `Only ${(summary.total_sleep_minutes / 60).toFixed(1)} hours of sleep recorded for this period.`,
+                severity: "WARNING",
+                metadata: { value: summary.total_sleep_minutes, snapshot_id: snapshot.id },
+            });
+        }
+
+        if (alertRows.length > 0) {
+            await supabase.from("cura_notifications").insert(alertRows);
+        }
+
         return NextResponse.json({
             success: true,
-            data: toApiSnapshot(data as HealthSyncSnapshotRow),
+            data: snapshot,
         });
     } catch (error) {
         console.error("Health sync upload error:", error);

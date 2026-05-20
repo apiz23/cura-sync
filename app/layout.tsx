@@ -2,14 +2,20 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { Inter, JetBrains_Mono } from "next/font/google";
+import { Libre_Franklin, Figtree, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
-/* 🔥 LOAD FONTS */
-const inter = Inter({
+const libreFranklin = Libre_Franklin({
 	subsets: ["latin"],
-	weight: ["400", "500", "600", "700"],
-	variable: "--font-sans",
+	weight: ["400", "500", "600", "700", "800", "900"],
+	variable: "--font-libre-franklin",
+	display: "swap",
+});
+
+const figtree = Figtree({
+	subsets: ["latin"],
+	weight: ["300", "400", "500", "600", "700"],
+	variable: "--font-figtree",
 	display: "swap",
 });
 
@@ -43,12 +49,10 @@ export default function RootLayout({
 		<ClerkProvider>
 			<html
 				lang="en"
-				className={`${inter.variable} ${mono.variable}`}
+				className={`${libreFranklin.variable} ${figtree.variable} ${mono.variable} scroll-smooth`}
 				suppressHydrationWarning
 			>
-				<body
-					className={`${inter.className} bg-background text-foreground font-sans antialiased`}
-				>
+				<body className="bg-background text-foreground font-sans antialiased">
 					<ThemeProvider
 						attribute="class"
 						defaultTheme="dark"

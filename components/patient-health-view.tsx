@@ -245,13 +245,20 @@ export function PatientHealthView({
 }: PatientHealthViewProps) {
     const aggregates = useMemo(() => computeAggregates(snapshots), [snapshots]);
     const chartData = useMemo(() => buildChartData(snapshots), [snapshots]);
-    const sortedHistory = useMemo(
-        () =>
-            [...snapshots]
-                .sort((a, b) => new Date(b.syncedAt).getTime() - new Date(a.syncedAt).getTime())
-                .slice(0, 7),
-        [snapshots]
-    );
+    // Deduplicate by rangeStart date, keep highest-steps snapshot per day, sort newest first
+    const sortedHistory = useMemo(() => {
+        const byDate = new Map<string, HealthSyncSnapshot>();
+        for (const snap of snapshots) {
+            const date = snap.rangeStart.slice(0, 10);
+            const existing = byDate.get(date);
+            if (!existing || snap.summary.stepsCount > existing.summary.stepsCount) {
+                byDate.set(date, snap);
+            }
+        }
+        return [...byDate.values()]
+            .sort((a, b) => b.rangeStart.localeCompare(a.rangeStart))
+            .slice(0, 7);
+    }, [snapshots]);
 
     if (!snapshots.length) {
         return (
@@ -425,9 +432,9 @@ export function PatientHealthView({
             <Card className="border shadow-sm">
                 <CardHeader className="pb-2">
                     <CardTitle className="text-sm font-semibold">
-                        Sync History
+                        Daily Breakdown
                     </CardTitle>
-                    <CardDescription>Most recent first</CardDescription>
+                    <CardDescription>One row per day · most recent first</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
@@ -458,7 +465,12 @@ export function PatientHealthView({
                                         className="border-b last:border-0 hover:bg-muted/20"
                                     >
                                         <td className="px-4 py-3 text-foreground">
-                                            {formatDateTime(snap.syncedAt)}
+                                            {new Date(snap.rangeStart + "T12:00:00").toLocaleDateString("en-US", {
+                                                weekday: "short",
+                                                month: "short",
+                                                day: "numeric",
+                                                year: "numeric",
+                                            })}
                                         </td>
                                         <td className="px-4 py-3 text-muted-foreground">
                                             {snap.source.vendor}

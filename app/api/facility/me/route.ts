@@ -1,9 +1,9 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
-import { requireStaffSession } from "@/lib/authz";
+import { requireAdminStaffSession } from "@/lib/authz";
 
 export async function GET(req: Request) {
-    const session = await requireStaffSession(req);
+    const session = await requireAdminStaffSession(req);
     if (session instanceof NextResponse) return session;
 
     const { data: facility, error: facilityError } = await supabase
@@ -34,4 +34,3 @@ export async function GET(req: Request) {
 
     return NextResponse.json({ facility, schedules: schedules ?? [] });
 }
-

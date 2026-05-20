@@ -23,46 +23,17 @@ import {
 	SheetTitle,
 } from "@/components/ui/sheet";
 import type { Patient } from "./page";
+import {
+	calculatePatientAge,
+	calculatePatientBmi,
+	formatPatientDate,
+} from "@/lib/patient-profile";
 
 type ViewPatientSheetProps = {
 	patient: Patient | null;
 	open: boolean;
 	onOpenChange: (open: boolean) => void;
 };
-
-function formatDate(dateString?: string) {
-	if (!dateString) return "Not available";
-
-	return new Date(dateString).toLocaleDateString("en-US", {
-		year: "numeric",
-		month: "long",
-		day: "numeric",
-	});
-}
-
-function getAge(dateOfBirth?: string) {
-	if (!dateOfBirth) return null;
-
-	const today = new Date();
-	const birthDate = new Date(dateOfBirth);
-	let age = today.getFullYear() - birthDate.getFullYear();
-	const monthDiff = today.getMonth() - birthDate.getMonth();
-
-	if (
-		monthDiff < 0 ||
-		(monthDiff === 0 && today.getDate() < birthDate.getDate())
-	) {
-		age--;
-	}
-
-	return age;
-}
-
-function calculateBMI(height?: number, weight?: number) {
-	if (!height || !weight) return null;
-	const bmi = weight / (height / 100) ** 2;
-	return bmi.toFixed(1);
-}
 
 function getPatientStatus(patient: Patient) {
 	const lastVisit = patient.last_visit ? new Date(patient.last_visit) : null;
@@ -105,8 +76,8 @@ export default function ViewPatientSheet({
 }: ViewPatientSheetProps) {
 	if (!patient) return null;
 
-	const age = getAge(patient.date_of_birth);
-	const bmi = calculateBMI(patient.height_cm, patient.weight_kg);
+	const age = calculatePatientAge(patient.date_of_birth);
+	const bmi = calculatePatientBmi(patient.height_cm, patient.weight_kg);
 	const status = getPatientStatus(patient);
 
 	return (
@@ -158,7 +129,13 @@ export default function ViewPatientSheet({
 									<Calendar className="h-4 w-4" />
 									Date of Birth
 								</p>
-								<p className="font-medium">{formatDate(patient.date_of_birth)}</p>
+								<p className="font-medium">
+									{formatPatientDate(
+										patient.date_of_birth,
+										{ year: "numeric", month: "long", day: "numeric" },
+										"Not available"
+									)}
+								</p>
 							</div>
 							<div className="space-y-1">
 								<p className="text-sm text-muted-foreground flex items-center gap-2">
@@ -196,7 +173,9 @@ export default function ViewPatientSheet({
 							</div>
 							<div className="space-y-1">
 								<p className="text-sm text-muted-foreground">Last Visit</p>
-								<p className="font-medium">{formatDate(patient.last_visit)}</p>
+								<p className="font-medium">
+									{formatPatientDate(patient.last_visit, undefined, "Not available")}
+								</p>
 							</div>
 						</CardContent>
 					</Card>

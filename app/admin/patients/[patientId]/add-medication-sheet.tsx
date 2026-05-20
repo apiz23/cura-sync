@@ -38,6 +38,13 @@ import {
 } from "lucide-react";
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
+import {
+    getDefaultScheduleForFrequency,
+    getScheduleOptionsForFrequency,
+    MEDICATION_FREQUENCY_OPTIONS,
+    normalizeMedicationFrequency,
+    normalizeMedicationSchedule,
+} from "@/lib/medication-options";
 
 /* ================= TYPES ================= */
 
@@ -56,36 +63,6 @@ type MedicationFormData = {
 type FormErrors = Partial<Record<keyof MedicationFormData | "submit", string>>;
 
 /* ================= CONSTANTS ================= */
-
-const FREQUENCY_OPTIONS = [
-    { value: "Once daily", label: "Once daily" },
-    { value: "Twice daily", label: "Twice daily" },
-    { value: "Three times daily", label: "Three times daily" },
-    { value: "Four times daily", label: "Four times daily" },
-    { value: "Every 4 hours", label: "Every 4 hours" },
-    { value: "Every 6 hours", label: "Every 6 hours" },
-    { value: "Every 8 hours", label: "Every 8 hours" },
-    { value: "Every 12 hours", label: "Every 12 hours" },
-    { value: "Weekly", label: "Weekly" },
-    { value: "As needed", label: "As needed" },
-    { value: "Other", label: "Custom frequency" },
-];
-
-const SCHEDULE_OPTIONS = [
-    { value: "Morning", label: "Morning" },
-    { value: "Afternoon", label: "Afternoon" },
-    { value: "Evening", label: "Evening" },
-    { value: "Night", label: "Night" },
-    { value: "Morning & Night", label: "Morning & Night" },
-    {
-        value: "Morning, Afternoon & Night",
-        label: "Morning, Afternoon & Night",
-    },
-    { value: "Every 4 hours", label: "Every 4 hours" },
-    { value: "Every 6 hours", label: "Every 6 hours" },
-    { value: "Every 8 hours", label: "Every 8 hours" },
-    { value: "As directed", label: "As directed" },
-];
 
 const STATUS_OPTIONS = [
     { value: "ACTIVE", label: "Active" },
@@ -113,7 +90,7 @@ export default function AddMedicationSheet({
         name: "",
         dosage: "",
         frequency: "Once daily",
-        schedule: "Morning & Night",
+        schedule: getDefaultScheduleForFrequency("Once daily"),
         status: "ACTIVE",
         start_date: new Date(),
         end_date: undefined,
@@ -129,7 +106,27 @@ export default function AddMedicationSheet({
         field: K,
         value: MedicationFormData[K]
     ) => {
-        setFormData((prev) => ({ ...prev, [field]: value }));
+        if (field === "frequency") {
+            const nextFrequency = normalizeMedicationFrequency(String(value));
+            setFormData((prev) => ({
+                ...prev,
+                frequency: nextFrequency,
+                schedule: normalizeMedicationSchedule(
+                    nextFrequency,
+                    prev.schedule
+                ),
+            }));
+        } else if (field === "schedule") {
+            setFormData((prev) => ({
+                ...prev,
+                schedule: normalizeMedicationSchedule(
+                    prev.frequency,
+                    String(value)
+                ),
+            }));
+        } else {
+            setFormData((prev) => ({ ...prev, [field]: value }));
+        }
 
         if (errors[field]) {
             setErrors((prev) => ({ ...prev, [field]: undefined }));
@@ -171,8 +168,11 @@ export default function AddMedicationSheet({
                 profile_id: profileId, // Use the profileId prop
                 name: formData.name.trim(),
                 dosage: formData.dosage.trim(),
-                frequency: formData.frequency,
-                schedule: formData.schedule,
+                frequency: normalizeMedicationFrequency(formData.frequency),
+                schedule: normalizeMedicationSchedule(
+                    formData.frequency,
+                    formData.schedule
+                ),
                 status: formData.status,
                 start_date: format(formData.start_date, "yyyy-MM-dd"),
                 end_date: formData.end_date
@@ -200,7 +200,7 @@ export default function AddMedicationSheet({
                 name: "",
                 dosage: "",
                 frequency: "Once daily",
-                schedule: "Morning & Night",
+                schedule: getDefaultScheduleForFrequency("Once daily"),
                 status: "ACTIVE",
                 start_date: new Date(),
                 end_date: undefined,
@@ -231,7 +231,7 @@ export default function AddMedicationSheet({
                 name: "",
                 dosage: "",
                 frequency: "Once daily",
-                schedule: "Morning & Night",
+                schedule: getDefaultScheduleForFrequency("Once daily"),
                 status: "ACTIVE",
                 start_date: new Date(),
                 end_date: undefined,
@@ -264,6 +264,12 @@ export default function AddMedicationSheet({
                         </div>
                     </SheetHeader>
 
+                    {(() => {
+                        const scheduleOptions = getScheduleOptionsForFrequency(
+                            formData.frequency
+                        );
+
+                        return (
                     <div className="space-y-5 py-2">
                         {/* Medication Name */}
                         <div className="space-y-2">
@@ -346,7 +352,7 @@ export default function AddMedicationSheet({
                                         <SelectValue placeholder="Select frequency" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-lg">
-                                        {FREQUENCY_OPTIONS.map((option) => (
+                                        {MEDICATION_FREQUENCY_OPTIONS.map((option) => (
                                             <SelectItem
                                                 key={option.value}
                                                 value={option.value}
@@ -379,7 +385,7 @@ export default function AddMedicationSheet({
                                         <SelectValue placeholder="Select schedule" />
                                     </SelectTrigger>
                                     <SelectContent className="rounded-lg">
-                                        {SCHEDULE_OPTIONS.map((option) => (
+                                        {scheduleOptions.map((option) => (
                                             <SelectItem
                                                 key={option.value}
                                                 value={option.value}
@@ -595,6 +601,8 @@ export default function AddMedicationSheet({
                             </div>
                         )}
                     </div>
+                        );
+                    })()}
 
                     <SheetFooter className="pt-6 border-t">
                         <div className="flex items-center justify-end gap-3 w-full">

@@ -63,7 +63,10 @@ export async function GET(req: Request) {
 
     // 3️⃣ format + calculate age
     const result = profiles.map((profile) => {
-        const medical = profile.cura_patient_profiles?.[0] ?? {};
+        const patientProfile = profile.cura_patient_profiles;
+        const medical = Array.isArray(patientProfile)
+            ? (patientProfile[0] ?? {})
+            : patientProfile ?? {};
 
         let age: number | undefined;
         if (medical.date_of_birth) {
