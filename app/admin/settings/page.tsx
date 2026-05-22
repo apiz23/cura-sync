@@ -154,10 +154,10 @@ export default function AdminSettingsPage() {
                                         <Icon className="h-4 w-4 text-primary" />
                                     </div>
                                     <div className="space-y-1">
-                                        <Label className="text-sm font-medium">
+                                        <Label className="text-base font-medium">
                                             {row.title}
                                         </Label>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             {row.description}
                                         </p>
                                     </div>

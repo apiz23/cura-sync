@@ -39,10 +39,10 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 				<SidebarMenu>
 					<SidebarMenuItem>
 						<SidebarMenuButton size="lg">
-							<BrandLogo className="bg-secondary size-8 rounded-lg" />
-							<div className="grid text-left text-sm leading-tight group-data-[collapsible=icon]:hidden">
+							<BrandLogo className="bg-background size-8 rounded-full" />
+							<div className="grid text-left text-base leading-tight group-data-[collapsible=icon]:hidden">
 								<span className="truncate font-semibold">CuraSync</span>
-								<span className="truncate text-xs text-muted-foreground">
+								<span className="truncate text-base text-muted-foreground">
 									Patient Portal
 								</span>
 							</div>
@@ -55,7 +55,7 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 			<SidebarContent className="overflow-x-hidden">
 				{userMenu.map((group) => (
 					<SidebarGroup key={group.title}>
-						<SidebarGroupLabel className="px-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+						<SidebarGroupLabel className="px-2 text-base font-semibold uppercase tracking-wider text-muted-foreground">
 							{group.title}
 						</SidebarGroupLabel>
 

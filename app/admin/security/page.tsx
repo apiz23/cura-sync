@@ -159,8 +159,8 @@ export default function AdminSecurityPage() {
                             <ScrollText className="h-5 w-5 text-primary" />
                         </div>
                         <div>
-                            <p className="font-medium text-sm">Audit Trail</p>
-                            <p className="text-xs text-muted-foreground">Append-only access log for all system actions · Admin only</p>
+                            <p className="font-medium text-base">Audit Trail</p>
+                            <p className="text-base text-muted-foreground">Append-only access log for all system actions · Admin only</p>
                         </div>
                     </div>
                     <Button variant="outline" size="sm" asChild>
@@ -235,14 +235,14 @@ export default function AdminSecurityPage() {
                     </CardHeader>
                     <CardContent className="space-y-4">
                         <div className="rounded-xl border p-4 space-y-2">
-                            <p className="text-sm font-medium">Last login</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-base font-medium">Last login</p>
+                            <p className="text-base text-muted-foreground">
                                 {formatDateTime(user.account_settings?.last_login_at)}
                             </p>
                         </div>
                         <div className="rounded-xl border p-4 space-y-2">
-                            <p className="text-sm font-medium">Last password change</p>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-base font-medium">Last password change</p>
+                            <p className="text-base text-muted-foreground">
                                 {formatDateTime(user.account_settings?.password_changed_at)}
                             </p>
                         </div>
@@ -250,10 +250,10 @@ export default function AdminSecurityPage() {
                             <div className="flex items-start gap-3">
                                 <ShieldAlert className="mt-0.5 h-5 w-5 text-amber-600" />
                                 <div className="space-y-2">
-                                    <p className="text-sm font-medium">
+                                    <p className="text-base font-medium">
                                         Sign out all sessions
                                     </p>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-base text-muted-foreground">
                                         This increments your session version and forces every existing admin login for this account to re-authenticate.
                                     </p>
                                     <Button

@@ -133,7 +133,7 @@ export default function MedicationCard({
                                             <h3 className="font-semibold text-foreground group-hover:text-primary transition-colors">
                                                 {medication.name}
                                             </h3>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 {medication.dosage}
                                             </p>
                                         </div>
@@ -169,21 +169,21 @@ export default function MedicationCard({
                                         variant="outline"
                                         className={`${getStatusColor(
                                             medication.status
-                                        )} rounded-lg px-2.5 py-1 text-xs font-medium`}
+                                        )} rounded-lg px-2.5 py-1 text-base font-medium`}
                                     >
                                         <div className="flex items-center gap-1.5">
                                             {getStatusIcon(medication.status)}
                                             {getStatusLabel(medication.status)}
                                         </div>
                                     </Badge>
-                                    <div className="text-sm text-muted-foreground flex items-center gap-1">
+                                    <div className="text-base text-muted-foreground flex items-center gap-1">
                                         <Clock3 className="h-3.5 w-3.5" />
                                         {frequencyLabel}
                                     </div>
                                 </div>
 
                                 {/* Dates and Time Remaining */}
-                                <div className="flex items-center justify-between text-sm">
+                                <div className="flex items-center justify-between text-base">
                                     <div className="flex items-center gap-2 text-muted-foreground">
                                         <CalendarDays className="h-3.5 w-3.5" />
                                         <span className="font-medium">
@@ -193,7 +193,7 @@ export default function MedicationCard({
                                     {timeRemaining && (
                                         <div className="flex items-center gap-2">
                                             <div
-                                                className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                                className={`text-base font-medium px-2 py-1 rounded-full ${
                                                     timeRemaining === "Expired"
                                                         ? "bg-amber-500/10 text-amber-700"
                                                         : "bg-green-500/10 text-green-700"
@@ -208,7 +208,7 @@ export default function MedicationCard({
                                 {/* Prescribed By (if available) */}
                                 {medication.prescribed_by && (
                                     <div className="pt-2 border-t border-border/30">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2 text-base text-muted-foreground">
                                             <Stethoscope className="h-3.5 w-3.5" />
                                             <span className="truncate font-medium">
                                                 {medication.prescribed_by}
@@ -235,7 +235,7 @@ export default function MedicationCard({
                                         <SheetTitle className="text-lg font-semibold text-foreground">
                                             {medication.name}
                                         </SheetTitle>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             {medication.dosage}
                                         </p>
                                     </div>
@@ -259,7 +259,7 @@ export default function MedicationCard({
                             {/* Details Grid */}
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-1.5">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-2 text-base text-muted-foreground">
                                         <Clock3 className="h-4 w-4" />
                                         <span>Frequency</span>
                                     </div>
@@ -270,7 +270,7 @@ export default function MedicationCard({
 
                                 {scheduleLabel && (
                                     <div className="space-y-1.5">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2 text-base text-muted-foreground">
                                             <Clock className="h-4 w-4" />
                                             <span>Schedule</span>
                                         </div>
@@ -289,10 +289,10 @@ export default function MedicationCard({
                                             <CalendarDays className="h-4 w-4 text-blue-600" />
                                         </div>
                                         <div>
-                                            <p className="text-sm font-medium text-muted-foreground">
+                                            <p className="text-base font-medium text-muted-foreground">
                                                 Start Date
                                             </p>
-                                            <p className="text-sm font-semibold">
+                                            <p className="text-base font-semibold">
                                                 {formatDate(
                                                     medication.start_date
                                                 )}
@@ -320,11 +320,11 @@ export default function MedicationCard({
                                                 />
                                             </div>
                                             <div>
-                                                <p className="text-sm font-medium text-muted-foreground">
+                                                <p className="text-base font-medium text-muted-foreground">
                                                     End Date
                                                 </p>
                                                 <p
-                                                    className={`text-sm font-semibold ${
+                                                    className={`text-base font-semibold ${
                                                         isExpired
                                                             ? "text-amber-600"
                                                             : ""
@@ -338,7 +338,7 @@ export default function MedicationCard({
                                         </div>
                                         {timeRemaining && (
                                             <div
-                                                className={`text-xs font-medium px-2 py-1 rounded-full ${
+                                                className={`text-base font-medium px-2 py-1 rounded-full ${
                                                     isExpired
                                                         ? "bg-amber-500/10 text-amber-700"
                                                         : "bg-green-500/10 text-green-700"
@@ -356,10 +356,10 @@ export default function MedicationCard({
                                                     <CheckCircle className="h-4 w-4 text-green-600" />
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-medium text-muted-foreground">
+                                                    <p className="text-base font-medium text-muted-foreground">
                                                         Duration
                                                     </p>
-                                                    <p className="text-sm font-semibold text-green-600">
+                                                    <p className="text-base font-semibold text-green-600">
                                                         Ongoing
                                                     </p>
                                                 </div>
@@ -374,7 +374,7 @@ export default function MedicationCard({
                                 <div className="flex items-center gap-3 p-3 bg-linear-to-br from-primary/5 to-primary/2 rounded-xl border border-primary/10">
                                     <Stethoscope className="h-4 w-4 text-primary" />
                                     <div>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             Prescribed by
                                         </p>
                                         <p className="font-medium">
@@ -387,12 +387,12 @@ export default function MedicationCard({
                             {/* Notes */}
                             {medication.notes && (
                                 <div className="space-y-3">
-                                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                    <div className="flex items-center gap-2 text-base text-muted-foreground">
                                         <FileText className="h-4 w-4" />
                                         <span>Notes & Instructions</span>
                                     </div>
                                     <div className="p-3 bg-linear-to-br from-muted/10 to-muted/5 rounded-lg border border-border/30">
-                                        <p className="text-sm text-foreground whitespace-pre-wrap">
+                                        <p className="text-base text-foreground whitespace-pre-wrap">
                                             {medication.notes}
                                         </p>
                                     </div>
@@ -404,10 +404,10 @@ export default function MedicationCard({
                                 <div className="flex items-center gap-3 p-3 bg-amber-500/10 rounded-xl border border-amber-200/50">
                                     <AlertCircle className="h-4 w-4 text-amber-600" />
                                     <div>
-                                        <p className="text-sm font-medium text-amber-600">
+                                        <p className="text-base font-medium text-amber-600">
                                             Expired
                                         </p>
-                                        <p className="text-xs text-amber-600/80">
+                                        <p className="text-base text-amber-600/80">
                                             This medication needs review
                                         </p>
                                     </div>

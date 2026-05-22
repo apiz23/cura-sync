@@ -38,7 +38,7 @@ export default function Navbar() {
             <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-6">
                 {/* Brand */}
                 <Link href="/" className="group flex shrink-0 items-center gap-2.5">
-                    <BrandLogo className="h-8 w-8 bg-secondary shadow-sm transition-transform duration-200 group-hover:scale-105" />
+                    <BrandLogo className="h-8 w-8 bg-background shadow-sm transition-transform duration-200 group-hover:scale-105" />
                     <span className="text-[15px] font-bold text-foreground">
                         CuraSync
                     </span>

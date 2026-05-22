@@ -171,11 +171,11 @@ export default function AddStaffSheet({
                         {/* Full Name */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium flex items-center gap-2">
+                                <Label className="text-base font-medium flex items-center gap-2">
                                     <User className="w-4 h-4" />
                                     Full Name
                                 </Label>
-                                <span className="text-xs text-destructive">
+                                <span className="text-base text-destructive">
                                     Required
                                 </span>
                             </div>
@@ -195,7 +195,7 @@ export default function AddStaffSheet({
                                 )}
                             />
                             {errors.fullName && (
-                                <p className="text-xs text-destructive flex items-center gap-1">
+                                <p className="text-base text-destructive flex items-center gap-1">
                                     {errors.fullName}
                                 </p>
                             )}
@@ -204,11 +204,11 @@ export default function AddStaffSheet({
                         {/* Email */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium flex items-center gap-2">
+                                <Label className="text-base font-medium flex items-center gap-2">
                                     <Mail className="w-4 h-4" />
                                     Email Address
                                 </Label>
-                                <span className="text-xs text-destructive">
+                                <span className="text-base text-destructive">
                                     Required
                                 </span>
                             </div>
@@ -226,7 +226,7 @@ export default function AddStaffSheet({
                                 )}
                             />
                             {errors.email && (
-                                <p className="text-xs text-destructive flex items-center gap-1">
+                                <p className="text-base text-destructive flex items-center gap-1">
                                     {errors.email}
                                 </p>
                             )}
@@ -235,11 +235,11 @@ export default function AddStaffSheet({
                         {/* Role */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium flex items-center gap-2">
+                                <Label className="text-base font-medium flex items-center gap-2">
                                     <Shield className="w-4 h-4" />
                                     Role
                                 </Label>
-                                <span className="text-xs text-destructive">
+                                <span className="text-base text-destructive">
                                     Required
                                 </span>
                             </div>
@@ -275,7 +275,7 @@ export default function AddStaffSheet({
                                                 <p className="font-medium">
                                                     Doctor
                                                 </p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-base text-muted-foreground">
                                                     Medical practitioner
                                                 </p>
                                             </div>
@@ -290,7 +290,7 @@ export default function AddStaffSheet({
                                                 <p className="font-medium">
                                                     Staff
                                                 </p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-base text-muted-foreground">
                                                     Facility staff member
                                                 </p>
                                             </div>
@@ -305,7 +305,7 @@ export default function AddStaffSheet({
                                                 <p className="font-medium">
                                                     Administrator
                                                 </p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-base text-muted-foreground">
                                                     System administrator
                                                 </p>
                                             </div>
@@ -314,7 +314,7 @@ export default function AddStaffSheet({
                                 </SelectContent>
                             </Select>
                             {errors.role && (
-                                <p className="text-xs text-destructive flex items-center gap-1">
+                                <p className="text-base text-destructive flex items-center gap-1">
                                     {errors.role}
                                 </p>
                             )}
@@ -323,7 +323,7 @@ export default function AddStaffSheet({
                         {/* Specialization (only for doctors) */}
                         {form.role === "doctor" && (
                             <div className="space-y-2 animate-in slide-in-from-top-2 duration-200">
-                                <Label className="text-sm font-medium flex items-center gap-2">
+                                <Label className="text-base font-medium flex items-center gap-2">
                                     <BriefcaseMedical className="w-4 h-4" />
                                     Specialization
                                 </Label>
@@ -338,7 +338,7 @@ export default function AddStaffSheet({
                                     }
                                     className="focus:ring-2 focus:ring-primary/20 transition-colors"
                                 />
-                                <p className="text-xs text-muted-foreground">
+                                <p className="text-base text-muted-foreground">
                                     Optional field for medical specialization
                                 </p>
                             </div>
@@ -347,11 +347,11 @@ export default function AddStaffSheet({
                         {/* Password */}
                         <div className="space-y-2">
                             <div className="flex items-center justify-between">
-                                <Label className="text-sm font-medium flex items-center gap-2">
+                                <Label className="text-base font-medium flex items-center gap-2">
                                     <Key className="w-4 h-4" />
                                     Password
                                 </Label>
-                                <span className="text-xs text-destructive">
+                                <span className="text-base text-destructive">
                                     Required
                                 </span>
                             </div>
@@ -401,12 +401,12 @@ export default function AddStaffSheet({
                                 </Button>
                             </div>
                             {errors.password && (
-                                <p className="text-xs text-destructive flex items-center gap-1">
+                                <p className="text-base text-destructive flex items-center gap-1">
                                     {errors.password}
                                 </p>
                             )}
                             <div className="space-y-1">
-                                <div className="flex items-center justify-between text-xs">
+                                <div className="flex items-center justify-between text-base">
                                     <span className="text-muted-foreground">
                                         Password strength:
                                     </span>
@@ -437,7 +437,7 @@ export default function AddStaffSheet({
                                         />
                                     </div>
                                 )}
-                                <p className="text-xs text-muted-foreground pt-1">
+                                <p className="text-base text-muted-foreground pt-1">
                                     Staff will change password on first login.
                                     Minimum 8 characters required.
                                 </p>

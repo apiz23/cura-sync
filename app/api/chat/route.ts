@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAnySession } from "@/lib/authz";
+import { curaSyncAiUrl, readAiError } from "@/lib/cura-sync-ai";
 
 export async function POST(req: Request) {
 	try {
@@ -23,7 +24,7 @@ export async function POST(req: Request) {
 		}
 
 		const res = await fetch(
-			`${process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"}/chat`,
+			curaSyncAiUrl("/chat"),
 			{
 				method: "POST",
 				headers: {
@@ -33,12 +34,13 @@ export async function POST(req: Request) {
 					session_id: session_id.trim(),
 					message: message.trim(),
 				}),
+				cache: "no-store",
 				signal: AbortSignal.timeout(8000),
 			},
 		);
 
 		if (!res.ok) {
-			const errorText = await res.text();
+			const errorText = await readAiError(res, "Failed to chat with AI service");
 			throw new Error(`FastAPI returned ${res.status}: ${errorText}`);
 		}
 

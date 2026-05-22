@@ -182,7 +182,7 @@ export default function ViewStaffSheet({
 						<CardContent className="p-6">
 							<div className="grid grid-cols-2 md:grid-cols-4 gap-4">
 								<div className="space-y-2">
-									<div className="flex items-center gap-2 text-sm text-muted-foreground">
+									<div className="flex items-center gap-2 text-base text-muted-foreground">
 										<User className="h-3.5 w-3.5" />
 										<span>Role</span>
 									</div>
@@ -192,7 +192,7 @@ export default function ViewStaffSheet({
 								</div>
 
 								<div className="space-y-2">
-									<div className="flex items-center gap-2 text-sm text-muted-foreground">
+									<div className="flex items-center gap-2 text-base text-muted-foreground">
 										<Award className="h-3.5 w-3.5" />
 										<span>Experience</span>
 									</div>
@@ -200,7 +200,7 @@ export default function ViewStaffSheet({
 								</div>
 
 								<div className="space-y-2">
-									<div className="flex items-center gap-2 text-sm text-muted-foreground">
+									<div className="flex items-center gap-2 text-base text-muted-foreground">
 										<Calendar className="h-3.5 w-3.5" />
 										<span>Joined</span>
 									</div>
@@ -208,7 +208,7 @@ export default function ViewStaffSheet({
 								</div>
 
 								<div className="space-y-2">
-									<div className="flex items-center gap-2 text-sm text-muted-foreground">
+									<div className="flex items-center gap-2 text-base text-muted-foreground">
 										<CheckCircle className="h-3.5 w-3.5" />
 										<span>Status</span>
 									</div>
@@ -254,7 +254,7 @@ export default function ViewStaffSheet({
 												</div>
 											</TableCell>
 											<TableCell className="py-4 pr-6 font-medium">
-												<Badge variant="outline" className="font-mono text-sm">
+												<Badge variant="outline" className="font-mono text-base">
 													{staff.license_number}
 												</Badge>
 											</TableCell>
@@ -269,7 +269,7 @@ export default function ViewStaffSheet({
 													Facility ID
 												</div>
 											</TableCell>
-											<TableCell className="py-4 pr-6 font-medium font-mono text-sm">
+											<TableCell className="py-4 pr-6 font-medium font-mono text-base">
 												{staff.facility_id}
 											</TableCell>
 										</TableRow>
@@ -282,7 +282,7 @@ export default function ViewStaffSheet({
 												Staff ID
 											</div>
 										</TableCell>
-										<TableCell className="py-4 pr-6 font-medium font-mono text-sm">
+										<TableCell className="py-4 pr-6 font-medium font-mono text-base">
 											{staff.id}
 										</TableCell>
 									</TableRow>
@@ -300,7 +300,7 @@ export default function ViewStaffSheet({
 										<Clock className="h-5 w-5 text-primary" />
 										Weekly Schedule
 									</h3>
-									<p className="text-sm text-muted-foreground mt-1">
+									<p className="text-base text-muted-foreground mt-1">
 										Working hours for each day of the week
 									</p>
 								</div>
@@ -364,7 +364,7 @@ export default function ViewStaffSheet({
 									<div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 										{staff.specialization && (
 											<div className="space-y-3">
-												<div className="flex items-center gap-2 text-sm text-muted-foreground">
+												<div className="flex items-center gap-2 text-base text-muted-foreground">
 													<BriefcaseMedical className="h-4 w-4" />
 													<span>Specialization</span>
 												</div>
@@ -380,7 +380,7 @@ export default function ViewStaffSheet({
 
 										{staff.years_of_experience && (
 											<div className="space-y-3">
-												<div className="flex items-center gap-2 text-sm text-muted-foreground">
+												<div className="flex items-center gap-2 text-base text-muted-foreground">
 													<Award className="h-4 w-4" />
 													<span>Years of Experience</span>
 												</div>
@@ -388,7 +388,7 @@ export default function ViewStaffSheet({
 													<div className="text-3xl font-bold text-primary">
 														{staff.years_of_experience}
 													</div>
-													<div className="text-sm text-muted-foreground">
+													<div className="text-base text-muted-foreground">
 														years of professional experience
 													</div>
 												</div>

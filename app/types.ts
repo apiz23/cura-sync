@@ -175,6 +175,7 @@ export interface AnalysisResult {
 	urgency: "emergency" | "high" | "medium" | "low" | "unknown";
 	suggested_action: string;
 	normalized_symptoms?: string[];
+	iot_flags?: string[];
 	disclaimer?: string;
 	timestamp?: string;
 	source?: string;

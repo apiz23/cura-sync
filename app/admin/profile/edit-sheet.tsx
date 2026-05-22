@@ -115,7 +115,7 @@ export default function EditStaffProfileModal({
 							<span className="sr-only">Close</span>
 						</button>
 					</div>
-					<p className="text-sm text-muted-foreground">
+					<p className="text-base text-muted-foreground">
 						Update your personal information and professional details here.
 					</p>
 				</SheetHeader>
@@ -127,7 +127,7 @@ export default function EditStaffProfileModal({
 					<div className="flex-1 overflow-y-auto p-6 space-y-5">
 						{/* Full Name */}
 						<div className="space-y-2">
-							<Label htmlFor="full_name" className="text-sm font-medium">
+							<Label htmlFor="full_name" className="text-base font-medium">
 								Full name
 							</Label>
 							<div className="relative">
@@ -146,7 +146,7 @@ export default function EditStaffProfileModal({
 
 						{/* Email */}
 						<div className="space-y-2">
-							<Label htmlFor="email" className="text-sm font-medium">
+							<Label htmlFor="email" className="text-base font-medium">
 								Email address
 							</Label>
 							<div className="relative">
@@ -166,7 +166,7 @@ export default function EditStaffProfileModal({
 
 						{/* Specialization */}
 						<div className="space-y-2">
-							<Label htmlFor="specialization" className="text-sm font-medium">
+							<Label htmlFor="specialization" className="text-base font-medium">
 								Specialization
 							</Label>
 							<div className="relative">
@@ -184,7 +184,7 @@ export default function EditStaffProfileModal({
 
 						{/* License Number */}
 						<div className="space-y-2">
-							<Label htmlFor="license_number" className="text-sm font-medium">
+							<Label htmlFor="license_number" className="text-base font-medium">
 								License number
 							</Label>
 							<div className="relative">
@@ -202,7 +202,7 @@ export default function EditStaffProfileModal({
 
 						{/* Years of Experience */}
 						<div className="space-y-2">
-							<Label htmlFor="years_of_experience" className="text-sm font-medium">
+							<Label htmlFor="years_of_experience" className="text-base font-medium">
 								Years of experience
 							</Label>
 							<div className="relative">

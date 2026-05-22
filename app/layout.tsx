@@ -2,20 +2,20 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { Libre_Franklin, Figtree, JetBrains_Mono } from "next/font/google";
+import { JetBrains_Mono, Merriweather, Outfit } from "next/font/google";
 import "./globals.css";
 
-const libreFranklin = Libre_Franklin({
+const sans = Outfit({
 	subsets: ["latin"],
 	weight: ["400", "500", "600", "700", "800", "900"],
-	variable: "--font-libre-franklin",
+	variable: "--font-sans",
 	display: "swap",
 });
 
-const figtree = Figtree({
+const serif = Merriweather({
 	subsets: ["latin"],
-	weight: ["300", "400", "500", "600", "700"],
-	variable: "--font-figtree",
+	weight: ["400", "700", "900"],
+	variable: "--font-serif",
 	display: "swap",
 });
 
@@ -49,7 +49,7 @@ export default function RootLayout({
 		<ClerkProvider>
 			<html
 				lang="en"
-				className={`${libreFranklin.variable} ${figtree.variable} ${mono.variable} scroll-smooth`}
+				className={`${sans.variable} ${serif.variable} ${mono.variable} scroll-smooth`}
 				suppressHydrationWarning
 			>
 				<body className="bg-background text-foreground font-sans antialiased">

@@ -98,7 +98,7 @@ export default function ConsultationsPage() {
 
     if (!user?.facility_id) {
         return (
-            <div className="p-6 text-sm text-muted-foreground">
+            <div className="p-6 text-base text-muted-foreground">
                 No facility assigned to your account. Contact an administrator.
             </div>
         );
@@ -112,7 +112,7 @@ export default function ConsultationsPage() {
                         <Stethoscope className="size-6" />
                         Today&apos;s Consultations
                     </h1>
-                    <p className="text-muted-foreground text-sm mt-1">
+                    <p className="text-muted-foreground text-base mt-1">
                         {new Date().toLocaleDateString("en-US", {
                             weekday: "long", month: "long", day: "numeric",
                         })}
@@ -126,7 +126,7 @@ export default function ConsultationsPage() {
 
             {error && (
                 <Card className="border-destructive">
-                    <CardContent className="pt-6 text-destructive text-sm">{error}</CardContent>
+                    <CardContent className="pt-6 text-destructive text-base">{error}</CardContent>
                 </Card>
             )}
 
@@ -139,7 +139,7 @@ export default function ConsultationsPage() {
                     <CardContent className="pt-10 pb-10 text-center text-muted-foreground">
                         <CheckCircle className="size-10 mx-auto mb-3 text-green-500" />
                         <p className="font-medium">No patients in queue</p>
-                        <p className="text-sm">All done for today, or no check-ins yet.</p>
+                        <p className="text-base">All done for today, or no check-ins yet.</p>
                     </CardContent>
                 </Card>
             ) : (
@@ -154,12 +154,12 @@ export default function ConsultationsPage() {
                             </Avatar>
                             <div className="flex-1 min-w-0">
                                 <p className="font-medium truncate">{appt.patient_name}</p>
-                                <p className="text-sm text-muted-foreground flex items-center gap-1">
+                                <p className="text-base text-muted-foreground flex items-center gap-1">
                                     <Clock className="size-3" />
                                     {formatTime(appt.start_time)} – {formatTime(appt.end_time)}
                                 </p>
                                 {appt.reason_for_visit && (
-                                    <p className="text-xs text-muted-foreground mt-0.5 truncate">
+                                    <p className="text-base text-muted-foreground mt-0.5 truncate">
                                         {appt.reason_for_visit}
                                     </p>
                                 )}
@@ -196,7 +196,7 @@ export default function ConsultationsPage() {
             )}
 
             {appointments.length > 0 && (
-                <p className="text-xs text-muted-foreground text-right">
+                <p className="text-base text-muted-foreground text-right">
                     {appointments.filter((a) => a.status === "CHECKED_IN").length} checked in ·{" "}
                     {appointments.filter((a) => a.status === "CONFIRMED").length} confirmed
                 </p>

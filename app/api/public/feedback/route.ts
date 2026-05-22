@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { curaSyncAiUrl } from "@/lib/cura-sync-ai";
 
 export async function POST(req: NextRequest) {
 	try {
@@ -10,11 +11,12 @@ export async function POST(req: NextRequest) {
 		}
 
 		const aiRes = await fetch(
-			`${process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"}/feedback`,
+			curaSyncAiUrl("/feedback"),
 			{
 				method: "POST",
 				headers: { "Content-Type": "application/json" },
 				body: JSON.stringify({ symptoms, was_accurate, possible_disease, correct_condition }),
+				cache: "no-store",
 				signal: AbortSignal.timeout(8000),
 			},
 		);

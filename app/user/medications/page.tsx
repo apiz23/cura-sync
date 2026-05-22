@@ -194,8 +194,8 @@ export default function MedicationPage() {
 							/>
 						</div>
 						<div>
-							<div className="font-semibold text-sm">{row.original.name}</div>
-							<div className="flex items-center gap-1 text-muted-foreground text-xs">
+							<div className="font-semibold text-base">{row.original.name}</div>
+							<div className="flex items-center gap-1 text-muted-foreground text-base">
 								<span>{row.original.dosage}</span>
 								<ChevronRightIcon size={12} />
 								<span>{row.original.frequency}</span>
@@ -212,9 +212,9 @@ export default function MedicationPage() {
 			),
 			cell: ({ row }) => (
 				<div className="space-y-1">
-					<div className="font-medium text-sm">{row.original.frequency}</div>
+					<div className="font-medium text-base">{row.original.frequency}</div>
 					{row.original.schedule && (
-						<div className="text-xs text-muted-foreground">
+						<div className="text-base text-muted-foreground">
 							{row.original.schedule}
 						</div>
 					)}
@@ -229,13 +229,13 @@ export default function MedicationPage() {
 
 				return (
 					<div className="space-y-1">
-						<div className="text-sm">
+						<div className="text-base">
 							<span className="text-muted-foreground">Start: </span>
 							{formatShortDate(row.original.start_date)}
 						</div>
 						{row.original.end_date && (
 							<div
-								className={`text-xs ${
+								className={`text-base ${
 									isExpired ? "text-amber-600 font-medium" : "text-muted-foreground"
 								}`}
 							>
@@ -258,7 +258,7 @@ export default function MedicationPage() {
 				return (
 					<div className="flex items-center gap-2">
 						<Badge
-							className={`flex items-center gap-1.5 px-2.5 py-1 border ${statusConfig.color} text-xs font-normal`}
+							className={`flex items-center gap-1.5 px-2.5 py-1 border ${statusConfig.color} text-base font-normal`}
 							variant="outline"
 						>
 							<div className={`h-2 w-2 rounded-full ${statusConfig.dotColor}`} />
@@ -272,7 +272,7 @@ export default function MedicationPage() {
 								onClick={() => markAsTaken(row.original.id)}
 							>
 								<CheckCircle className="h-3.5 w-3.5" />
-								<span className="text-xs">Take</span>
+								<span className="text-base">Take</span>
 							</Button>
 						)}
 					</div>
@@ -349,7 +349,7 @@ export default function MedicationPage() {
 							<p className="font-medium text-foreground">
 								Prescriptions are clinician-managed
 							</p>
-							<p className="text-sm text-muted-foreground">
+							<p className="text-base text-muted-foreground">
 								You can review prescriptions and mark doses as taken. Medication
 								creation, edits, and stop actions are restricted to doctors or admins.
 							</p>
@@ -363,7 +363,7 @@ export default function MedicationPage() {
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
-									<p className="text-sm font-medium text-muted-foreground">
+									<p className="text-base font-medium text-muted-foreground">
 										Total Medications
 									</p>
 									<h3 className="text-3xl font-bold mt-2">{meds.length}</h3>
@@ -379,14 +379,14 @@ export default function MedicationPage() {
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
-									<p className="text-sm font-medium text-muted-foreground">Active</p>
+									<p className="text-base font-medium text-muted-foreground">Active</p>
 									<h3 className="text-3xl font-bold mt-2">{activeMeds.length}</h3>
 								</div>
 								<div className="p-3 rounded-full bg-info/10">
 									<Clock className="h-6 w-6 text-info" />
 								</div>
 							</div>
-							<div className="mt-3 text-xs text-muted-foreground">
+							<div className="mt-3 text-base text-muted-foreground">
 								{todayMeds.length} due today
 							</div>
 						</CardContent>
@@ -396,7 +396,7 @@ export default function MedicationPage() {
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
-									<p className="text-sm font-medium text-muted-foreground">Completed</p>
+									<p className="text-base font-medium text-muted-foreground">Completed</p>
 									<h3 className="text-3xl font-bold mt-2">
 										{meds.filter((m) => m.status === "COMPLETED").length}
 									</h3>
@@ -412,7 +412,7 @@ export default function MedicationPage() {
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
-									<p className="text-sm font-medium text-muted-foreground">
+									<p className="text-base font-medium text-muted-foreground">
 										Needs Review
 									</p>
 									<h3 className="text-3xl font-bold mt-2">{expiredMeds.length}</h3>
@@ -422,7 +422,7 @@ export default function MedicationPage() {
 								</div>
 							</div>
 							{expiredMeds.length > 0 && (
-								<div className="mt-3 text-xs font-medium text-warning-foreground">
+								<div className="mt-3 text-base font-medium text-warning-foreground">
 									{expiredMeds.length} expired
 								</div>
 							)}
@@ -435,7 +435,7 @@ export default function MedicationPage() {
 					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 						<div>
 							<h2 className="text-2xl font-semibold">Your Medications</h2>
-							<p className="text-sm text-muted-foreground mt-1">
+							<p className="text-base text-muted-foreground mt-1">
 								{filteredMeds.length} of {meds.length} medications shown
 							</p>
 						</div>
@@ -443,7 +443,7 @@ export default function MedicationPage() {
 						<div className="flex items-center gap-3">
 							<div className="flex items-center gap-2">
 								<Select value={filterStatus} onValueChange={setFilterStatus}>
-									<SelectTrigger className="w-[180px] bg-transparent text-sm">
+									<SelectTrigger className="w-[180px] bg-transparent text-base">
 										<SelectValue placeholder="All Medications" />
 									</SelectTrigger>
 
@@ -521,20 +521,20 @@ export default function MedicationPage() {
 								<div className="flex items-start gap-3">
 									<Clock className="h-5 w-5 text-primary mt-0.5" />
 									<div>
-										<p className="font-semibold text-sm mb-2">Today{"'"}s Schedule</p>
-										<p className="text-sm text-muted-foreground">
+										<p className="font-semibold text-base mb-2">Today{"'"}s Schedule</p>
+										<p className="text-base text-muted-foreground">
 											You have {todayMeds.length} medication
 											{todayMeds.length > 1 ? "s" : ""} scheduled for today. Don{"'"}t
 											forget to take them as prescribed.
 										</p>
 										<div className="flex flex-wrap gap-1.5 mt-3">
 											{todayMeds.slice(0, 3).map((med, index) => (
-												<Badge key={index} variant="secondary" className="text-xs">
+												<Badge key={index} variant="secondary" className="text-base">
 													{med.name}
 												</Badge>
 											))}
 											{todayMeds.length > 3 && (
-												<Badge variant="outline" className="text-xs">
+												<Badge variant="outline" className="text-base">
 													+{todayMeds.length - 3} more
 												</Badge>
 											)}
@@ -549,10 +549,10 @@ export default function MedicationPage() {
 								<div className="flex items-start gap-3">
 									<AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
 									<div>
-										<p className="font-semibold text-sm mb-2 text-amber-700">
+										<p className="font-semibold text-base mb-2 text-amber-700">
 											Review Needed
 										</p>
-										<p className="text-sm text-amber-600/80">
+										<p className="text-base text-amber-600/80">
 											{expiredMeds.length} medication
 											{expiredMeds.length > 1 ? "s have" : " has"} expired. Please review
 											and update their status.

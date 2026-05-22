@@ -1,18 +1,22 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
-import { requireStaffSession } from "@/lib/authz";
+import { requireStaffSession, type StaffSession } from "@/lib/authz";
 import { logAudit } from "@/lib/audit";
+import { anchorRecord } from "@/lib/record-anchor";
 
-async function ensurePatientInStaffFacility(
-    staffFacilityId: string,
+// Admin and doctor can access any patient's records.
+// Regular staff (receptionist/nurse) must have the patient registered at their facility.
+async function ensurePatientAccess(
+    session: StaffSession,
     patientId: string
 ): Promise<NextResponse | void> {
+    if (session.isAdmin || session.role === "doctor") return;
+
     const { data, error } = await supabase
         .from("cura_patient_facilities")
         .select("id")
-        .eq("facility_id", staffFacilityId)
+        .eq("facility_id", session.facilityId)
         .eq("profile_id", patientId)
-        .eq("status", "active")
         .maybeSingle();
 
     if (error) return NextResponse.json({ error: "Access check failed" }, { status: 500 });
@@ -27,7 +31,7 @@ export async function GET(
     if (session instanceof NextResponse) return session;
 
     const { id } = await params;
-    const facilityCheck = await ensurePatientInStaffFacility(session.facilityId, id);
+    const facilityCheck = await ensurePatientAccess(session, id);
     if (facilityCheck instanceof NextResponse) return facilityCheck;
 
     const [conditions, allergies, procedures, encounters] = await Promise.all([
@@ -77,7 +81,7 @@ export async function POST(
     if (session instanceof NextResponse) return session;
 
     const { id } = await params;
-    const facilityCheck = await ensurePatientInStaffFacility(session.facilityId, id);
+    const facilityCheck = await ensurePatientAccess(session, id);
     if (facilityCheck instanceof NextResponse) return facilityCheck;
 
     const body = (await req.json()) as Record<string, unknown>;
@@ -152,13 +156,30 @@ export async function POST(
         return NextResponse.json({ error: error.message }, { status: 400 });
     }
 
-    void logAudit({
-        actor_id: session.staffId,
-        actor_type: "staff",
-        action: "CREATE",
-        resource_type: String(record_type),
-        resource_id: (created as { id: string }).id,
+    const createdRow = created as Record<string, unknown> & { id: string };
+
+    const anchor = await anchorRecord({
+        table,
+        recordId: createdRow.id,
+        row,
+        resourceType: String(record_type),
+        actor: { actor_id: session.staffId, actor_type: "staff" },
     });
 
-    return NextResponse.json(created, { status: 201 });
+    return NextResponse.json(
+        {
+            ...createdRow,
+            blockchain: {
+                content_hash: anchor.contentHash,
+                tx_hash: anchor.txHash,
+                block_number: anchor.blockNumber,
+                explorer_url: anchor.txHash
+                    ? `https://amoy.polygonscan.com/tx/${anchor.txHash}`
+                    : null,
+                skipped: anchor.skipped,
+                error: anchor.error ?? null,
+            },
+        },
+        { status: 201 },
+    );
 }

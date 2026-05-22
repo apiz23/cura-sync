@@ -1,8 +1,61 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnySession } from "@/lib/authz";
+import { curaSyncAiUrl, readAiError } from "@/lib/cura-sync-ai";
 
 const MAX_SYMPTOM_LENGTH = 1000;
 const AUTH_ANALYZE_TIMEOUT_MS = 45000;
+
+function finiteNumber(value: unknown) {
+	if (typeof value === "number" && Number.isFinite(value)) return value;
+	if (typeof value === "string" && value.trim()) {
+		const parsed = Number(value);
+		if (Number.isFinite(parsed)) return parsed;
+	}
+	return undefined;
+}
+
+function finiteInteger(value: unknown) {
+	const parsed = finiteNumber(value);
+	if (parsed === undefined) return undefined;
+	return Math.trunc(parsed);
+}
+
+function cleanText(value: unknown) {
+	return typeof value === "string" && value.trim() ? value.trim() : undefined;
+}
+
+function cleanPatientContext(value: unknown) {
+	if (!value || typeof value !== "object") return undefined;
+	const context = value as Record<string, unknown>;
+	const cleaned = {
+		age: finiteInteger(context.age),
+		date_of_birth: cleanText(context.date_of_birth),
+		gender: cleanText(context.gender),
+		blood_type: cleanText(context.blood_type),
+		height_cm: finiteNumber(context.height_cm),
+		weight_kg: finiteNumber(context.weight_kg),
+		allergies: cleanText(context.allergies),
+		chronic_conditions: cleanText(context.chronic_conditions),
+	};
+	return Object.fromEntries(
+		Object.entries(cleaned).filter(([, entry]) => entry !== undefined),
+	);
+}
+
+function cleanIotData(value: unknown) {
+	if (!value || typeof value !== "object") return undefined;
+	const readings = value as Record<string, unknown>;
+	const cleaned = {
+		heart_rate_bpm: finiteNumber(readings.heart_rate_bpm),
+		spo2_percent: finiteNumber(readings.spo2_percent),
+		sleep_hours: finiteNumber(readings.sleep_hours),
+		steps_today: finiteInteger(readings.steps_today),
+	};
+	const entries = Object.entries(cleaned).filter(
+		([, entry]) => entry !== undefined,
+	);
+	return entries.length ? Object.fromEntries(entries) : undefined;
+}
 
 function isTimeoutError(err: unknown) {
 	return (
@@ -18,7 +71,9 @@ export async function POST(req: NextRequest) {
 		const session = await requireAnySession(req);
 		if (session instanceof NextResponse) return session;
 
-		const { symptoms, patient_context } = await req.json();
+		const { symptoms, patient_context, iot_data } = await req.json();
+		const cleanContext = cleanPatientContext(patient_context);
+		const cleanIot = cleanIotData(iot_data);
 
 		if (!symptoms || !symptoms.trim()) {
 			return NextResponse.json(
@@ -35,21 +90,28 @@ export async function POST(req: NextRequest) {
 		}
 
 		const aiRes = await fetch(
-			`${process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"}/analyze`,
+			curaSyncAiUrl("/analyze"),
 			{
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ symptoms, patient_context }),
+				body: JSON.stringify({
+					symptoms,
+					...(cleanContext && Object.keys(cleanContext).length
+						? { patient_context: cleanContext }
+						: {}),
+					...(cleanIot ? { iot_data: cleanIot } : {}),
+				}),
+				cache: "no-store",
 				signal: AbortSignal.timeout(AUTH_ANALYZE_TIMEOUT_MS),
 			},
 		);
 
 		if (!aiRes.ok) {
-			const errData = await aiRes.json().catch(() => null);
+			const error = await readAiError(aiRes, "Failed to analyze symptoms");
 			return NextResponse.json(
-				{ error: errData?.detail || errData?.error || "Failed to analyze symptoms" },
+				{ error },
 				{ status: aiRes.status || 500 },
 			);
 		}
@@ -75,6 +137,7 @@ export async function POST(req: NextRequest) {
 			normalized_symptoms: Array.isArray(data.normalized_symptoms)
 				? data.normalized_symptoms
 				: [],
+			iot_flags: Array.isArray(data.iot_flags) ? data.iot_flags : [],
 		});
 	} catch (err: unknown) {
 		if (isTimeoutError(err)) {

@@ -1,6 +1,20 @@
 export default function PrivacyPage() {
     return (
-        <main className="max-w-3xl mx-auto px-6 py-16 space-y-8">
+        <div className="relative min-h-[100dvh] overflow-hidden bg-background">
+            {/* Dot grid */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                    backgroundImage:
+                        "radial-gradient(color-mix(in oklch, var(--primary) 10%, transparent) 1px, transparent 1px)",
+                    backgroundSize: "32px 32px",
+                }}
+            />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-[15vw] bg-gradient-to-r from-background to-transparent" />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-[15vw] bg-gradient-to-l from-background to-transparent" />
+            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
+        <main className="relative max-w-3xl mx-auto px-6 py-16 space-y-8">
             <h1 className="text-3xl font-bold">Privacy Policy</h1>
             <p className="text-muted-foreground text-sm">Last updated: May 2026</p>
 
@@ -40,5 +54,6 @@ export default function PrivacyPage() {
                 </p>
             </section>
         </main>
+        </div>
     );
 }

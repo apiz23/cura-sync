@@ -162,10 +162,10 @@ export default function ProfessionalProfilePage() {
                                     <Separator className="my-2" />
 
                                     <div className="space-y-4 w-full">
-                                        <div className="flex items-center gap-3 text-sm p-3 bg-muted/30 rounded-lg">
+                                        <div className="flex items-center gap-3 text-base p-3 bg-muted/30 rounded-lg">
                                             <Mail className="w-4 h-4 text-muted-foreground" />
                                             <div className="text-left">
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-base text-muted-foreground">
                                                     Email
                                                 </p>
                                                 <p className="text-foreground truncate">
@@ -180,7 +180,7 @@ export default function ProfessionalProfilePage() {
                                             <p className="text-2xl font-bold text-foreground">
                                                 {user.years_of_experience || "0"}
                                             </p>
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 Years
                                             </p>
                                         </div>
@@ -188,7 +188,7 @@ export default function ProfessionalProfilePage() {
                                             <p className="text-2xl font-bold text-foreground">
                                                 {user.license_number ? "Yes" : "No"}
                                             </p>
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 License
                                             </p>
                                         </div>
@@ -196,7 +196,7 @@ export default function ProfessionalProfilePage() {
                                             <p className="text-2xl font-bold text-foreground">
                                                 {user.facility_name || user.facility_id ? "Yes" : "No"}
                                             </p>
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 Facility
                                             </p>
                                         </div>
@@ -275,7 +275,7 @@ export default function ProfessionalProfilePage() {
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 Role
                                             </p>
                                             <p className="font-medium text-foreground">
@@ -283,7 +283,7 @@ export default function ProfessionalProfilePage() {
                                             </p>
                                         </div>
                                         <div className="space-y-2">
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 Facility
                                             </p>
                                             <p className="font-medium text-foreground">
@@ -291,7 +291,7 @@ export default function ProfessionalProfilePage() {
                                             </p>
                                         </div>
                                         <div className="space-y-2">
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 Member Since
                                             </p>
                                             <p className="font-medium text-foreground">
@@ -299,10 +299,10 @@ export default function ProfessionalProfilePage() {
                                             </p>
                                         </div>
                                         <div className="space-y-2">
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 Profile ID
                                             </p>
-                                            <code className="text-xs font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded">
+                                            <code className="text-base font-mono text-muted-foreground bg-muted/50 px-2 py-1 rounded">
                                                 {user.id}
                                             </code>
                                         </div>
@@ -310,7 +310,7 @@ export default function ProfessionalProfilePage() {
 
                                     <div className="space-y-4">
                                         <div className="space-y-2">
-                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                            <p className="text-base text-muted-foreground flex items-center gap-2">
                                                 <Clock3 className="w-4 h-4" />
                                                 Last Login
                                             </p>
@@ -319,7 +319,7 @@ export default function ProfessionalProfilePage() {
                                             </p>
                                         </div>
                                         <div className="space-y-2">
-                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                            <p className="text-base text-muted-foreground flex items-center gap-2">
                                                 <Activity className="w-4 h-4" />
                                                 Last Seen
                                             </p>
@@ -328,7 +328,7 @@ export default function ProfessionalProfilePage() {
                                             </p>
                                         </div>
                                         <div className="space-y-2">
-                                            <p className="text-sm text-muted-foreground flex items-center gap-2">
+                                            <p className="text-base text-muted-foreground flex items-center gap-2">
                                                 <KeyRound className="w-4 h-4" />
                                                 Password Updated
                                             </p>
@@ -337,7 +337,7 @@ export default function ProfessionalProfilePage() {
                                             </p>
                                         </div>
                                         <div className="space-y-2">
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 Account Settings Updated
                                             </p>
                                             <p className="font-medium text-foreground">
@@ -378,7 +378,7 @@ export default function ProfessionalProfilePage() {
                                         <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
                                             <Link href="/admin/security">
                                                 <Shield className="w-5 h-5" />
-                                                <span className="text-sm">Security</span>
+                                                <span className="text-base">Security</span>
                                             </Link>
                                         </Button>
                                     )}
@@ -386,7 +386,7 @@ export default function ProfessionalProfilePage() {
                                         <Button asChild variant="outline" className="rounded-xl h-14 border-border hover:bg-muted/50 gap-2 px-4">
                                             <Link href="/admin/settings">
                                                 <Bell className="w-5 h-5" />
-                                                <span className="text-sm">Preferences</span>
+                                                <span className="text-base">Preferences</span>
                                             </Link>
                                         </Button>
                                     )}

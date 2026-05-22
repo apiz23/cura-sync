@@ -183,7 +183,40 @@ export default function PricingPage() {
     const [openFaq, setOpenFaq] = useState<number | null>(null);
 
     return (
-        <div className="min-h-[100dvh] bg-background px-4 pb-16 pt-20">
+        <div className="relative min-h-[100dvh] overflow-hidden bg-background px-4 pb-16 pt-20">
+            {/* Square grid */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                    backgroundImage:
+                        "linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px)",
+                    backgroundSize: "72px 72px",
+                }}
+            />
+            {/* Diagonal stripes */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                    backgroundImage:
+                        "repeating-linear-gradient(-45deg, transparent, transparent 40px, color-mix(in oklch, var(--primary) 3%, transparent) 40px, color-mix(in oklch, var(--primary) 3%, transparent) 41px)",
+                }}
+            />
+            {/* Top-left radial glow */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute -left-20 -top-20 h-[500px] w-[500px] rounded-full opacity-25"
+                style={{
+                    background: "radial-gradient(circle, color-mix(in oklch, var(--primary) 12%, transparent) 0%, transparent 70%)",
+                }}
+            />
+            {/* Top fade */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
+            {/* Watermark */}
+            <div aria-hidden="true" className="pointer-events-none absolute right-4 top-10 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-primary/[0.04] xl:block">
+                PLANS
+            </div>
             <PageTitle title="Pricing" />
             <div className="mx-auto max-w-5xl space-y-20 pt-10">
 

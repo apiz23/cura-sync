@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { curaSyncAiUrl, readAiError } from "@/lib/cura-sync-ai";
 import {
 	checkPublicDemoLimit,
 	getClientIp,
@@ -38,7 +39,7 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		const { symptoms, patient_context } = await req.json();
+		const { symptoms, patient_context, iot_data } = await req.json();
 
 		if (!symptoms || !symptoms.trim()) {
 			return NextResponse.json(
@@ -57,22 +58,31 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
+		const aiPayload: Record<string, unknown> = {
+			symptoms: trimmedSymptoms,
+			patient_context,
+		};
+		if (iot_data && typeof iot_data === "object" && !Array.isArray(iot_data)) {
+			aiPayload.iot_data = iot_data;
+		}
+
 		const aiRes = await fetch(
-			`${process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"}/analyze`,
+			curaSyncAiUrl("/analyze"),
 			{
 				method: "POST",
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ symptoms: trimmedSymptoms, patient_context }),
+				body: JSON.stringify(aiPayload),
+				cache: "no-store",
 				signal: AbortSignal.timeout(PUBLIC_ANALYZE_TIMEOUT_MS),
 			},
 		);
 
 		if (!aiRes.ok) {
-			const errData = await aiRes.json().catch(() => null);
+			const error = await readAiError(aiRes, "Failed to analyze symptoms");
 			return NextResponse.json(
-				{ error: errData?.detail || errData?.error || "Failed to analyze symptoms" },
+				{ error },
 				{ status: aiRes.status || 500 },
 			);
 		}
@@ -97,6 +107,11 @@ export async function POST(req: NextRequest) {
 				disclaimer:
 					data.disclaimer ||
 					"This demo is for informational purposes only and does not replace professional medical advice.",
+				normalized_symptoms: Array.isArray(data.normalized_symptoms)
+					? data.normalized_symptoms
+					: [],
+				timestamp: data.timestamp ?? null,
+				iot_flags: Array.isArray(data.iot_flags) ? data.iot_flags : [],
 			},
 			{
 				headers: {

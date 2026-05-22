@@ -200,7 +200,7 @@ export default function AppointmentModal({
                                 {facility?.slots?.length || 0} slots
                             </Badge>
                         </div>
-                        <SheetDescription className="text-sm text-muted-foreground">
+                        <SheetDescription className="text-base text-muted-foreground">
                             Schedule your visit at {facility?.name}
                         </SheetDescription>
                     </SheetHeader>
@@ -220,12 +220,12 @@ export default function AppointmentModal({
                                         <h3 className="font-semibold text-foreground">
                                             {facility?.name}
                                         </h3>
-                                        <p className="text-xs text-muted-foreground mt-1">
+                                        <p className="text-base text-muted-foreground mt-1">
                                             {facility?.address}
                                         </p>
                                     </div>
                                     {facility?.phone && (
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2 text-base text-muted-foreground">
                                             <Phone className="w-3 h-3" />
                                             <span>{facility.phone}</span>
                                         </div>
@@ -239,7 +239,7 @@ export default function AppointmentModal({
                     <div className="space-y-3">
                         <div className="flex items-center gap-2">
                             <CalendarDays className="w-4 h-4 text-primary" />
-                            <Label className="text-sm font-medium text-foreground">
+                            <Label className="text-base font-medium text-foreground">
                                 Select Date
                             </Label>
                         </div>
@@ -301,12 +301,12 @@ export default function AppointmentModal({
                         <div className="flex items-center justify-between">
                             <div className="flex items-center gap-2">
                                 <Clock className="w-4 h-4 text-primary" />
-                                <Label className="text-sm font-medium text-foreground">
+                                <Label className="text-base font-medium text-foreground">
                                     Time Slots
                                 </Label>
                             </div>
                             {selectedDate && (
-                                <Badge variant="secondary" className="text-xs">
+                                <Badge variant="secondary" className="text-base">
                                     {getFormattedSelectedDate()}
                                 </Badge>
                             )}
@@ -315,14 +315,14 @@ export default function AppointmentModal({
                         {!selectedDate ? (
                             <div className="text-center py-8 border border-dashed rounded-lg">
                                 <CalendarIcon className="w-8 h-8 text-muted-foreground mx-auto mb-2" />
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-base text-muted-foreground">
                                     Select a date to see available slots
                                 </p>
                             </div>
                         ) : isLoadingSlots ? (
                             <div className="text-center py-8">
                                 <Loader2 className="w-6 h-6 text-primary animate-spin mx-auto mb-2" />
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-base text-muted-foreground">
                                     Loading slots...
                                 </p>
                             </div>
@@ -340,7 +340,7 @@ export default function AppointmentModal({
                                             }
                                             disabled={isBooked}
                                             className={cn(
-                                                "p-3 rounded-lg border text-sm transition-colors",
+                                                "p-3 rounded-lg border text-base transition-colors",
                                                 isBooked
                                                     ? "border-muted bg-muted/20 text-muted-foreground cursor-not-allowed"
                                                     : isSelected
@@ -365,7 +365,7 @@ export default function AppointmentModal({
                                                             : "bg-green-500"
                                                     )}
                                                 />
-                                                <span className="text-xs text-muted-foreground">
+                                                <span className="text-base text-muted-foreground">
                                                     {isBooked
                                                         ? "Booked"
                                                         : isSelected
@@ -385,7 +385,7 @@ export default function AppointmentModal({
                         <div className="space-y-3 animate-in fade-in">
                             <div className="flex items-center gap-2">
                                 <FileText className="w-4 h-4 text-primary" />
-                                <Label className="text-sm font-medium text-foreground">
+                                <Label className="text-base font-medium text-foreground">
                                     Reason for Visit
                                 </Label>
                             </div>
@@ -403,10 +403,10 @@ export default function AppointmentModal({
                         <Card className="bg-muted/30">
                             <CardContent className="p-4">
                                 <div className="space-y-2">
-                                    <h4 className="text-sm font-medium text-foreground">
+                                    <h4 className="text-base font-medium text-foreground">
                                         Appointment Summary
                                     </h4>
-                                    <div className="grid grid-cols-2 gap-2 text-sm">
+                                    <div className="grid grid-cols-2 gap-2 text-base">
                                         <div>
                                             <p className="text-muted-foreground">
                                                 Date

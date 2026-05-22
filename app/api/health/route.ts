@@ -1,12 +1,13 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
+import { curaSyncAiBaseUrl, curaSyncAiUrl } from "@/lib/cura-sync-ai";
 
 export async function GET() {
     const [dbResult, aiResult] = await Promise.allSettled([
         supabase.from("cura_facilities").select("id").limit(1),
         fetch(
-            `${process.env.NEXT_PUBLIC_CURA_SYNC_AI || "http://127.0.0.1:8000"}/health`,
-            { signal: AbortSignal.timeout(5000) },
+            curaSyncAiUrl("/health"),
+            { cache: "no-store", signal: AbortSignal.timeout(5000) },
         ),
     ]);
 
@@ -22,6 +23,7 @@ export async function GET() {
                 supabase: supabaseOk ? "ok" : "error",
                 ai_service: aiOk ? "ok" : "error",
             },
+            ai_service_url: curaSyncAiBaseUrl,
             timestamp: new Date().toISOString(),
         },
         { status: overallStatus === "ok" ? 200 : 503 },

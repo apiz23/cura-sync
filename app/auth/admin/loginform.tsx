@@ -1,254 +1,203 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, Lock, Eye, EyeOff, Loader2, Key } from "lucide-react";
+import { Shield, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import { Field, FieldGroup, FieldLabel } from "@/components/ui/field";
+import {
+	Field,
+	FieldDescription,
+	FieldGroup,
+	FieldLabel,
+	FieldSeparator,
+} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
 import {
-    Card,
-    CardContent,
-    CardDescription,
-    CardHeader,
-    CardTitle,
+	Card,
+	CardContent,
+	CardDescription,
+	CardHeader,
+	CardTitle,
 } from "@/components/ui/card";
 import { toast } from "sonner";
+import { BrandLogo } from "@/components/brand-logo";
+import Link from "next/link";
 
 export function AdminLoginForm({
-    className,
-    ...props
+	className,
+	...props
 }: React.ComponentProps<"div">) {
-    const router = useRouter();
-    const [email, setEmail] = useState("");
-    const [password, setPassword] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [loading, setLoading] = useState(false);
+	const router = useRouter();
+	const [email, setEmail] = useState("");
+	const [password, setPassword] = useState("");
+	const [showPassword, setShowPassword] = useState(false);
+	const [loading, setLoading] = useState(false);
+	const [error, setError] = useState("");
 
-    useEffect(() => {
-        router.prefetch("/admin/dashboard");
-    }, [router]);
+	useEffect(() => {
+		router.prefetch("/admin/dashboard");
+	}, [router]);
 
-    async function waitForAdminSession() {
-        for (let attempt = 0; attempt < 5; attempt += 1) {
-            const res = await fetch("/api/staff/me", {
-                method: "GET",
-                headers: { "Content-Type": "application/json" },
-                cache: "no-store",
-            });
+	async function waitForAdminSession() {
+		for (let attempt = 0; attempt < 5; attempt += 1) {
+			const res = await fetch("/api/staff/me", {
+				method: "GET",
+				headers: { "Content-Type": "application/json" },
+				cache: "no-store",
+			});
+			if (res.ok) return true;
+			await new Promise((resolve) =>
+				setTimeout(resolve, 150 * (attempt + 1)),
+			);
+		}
+		return false;
+	}
 
-            if (res.ok) {
-                return true;
-            }
+	async function handleLogin(e: React.FormEvent) {
+		e.preventDefault();
+		if (!email || !password) {
+			toast.error("Please enter both email and password");
+			return;
+		}
+		if (loading) return;
 
-            await new Promise((resolve) => setTimeout(resolve, 150 * (attempt + 1)));
-        }
+		setLoading(true);
+		setError("");
+		const loadingToast = toast.loading("Authenticating...");
 
-        return false;
-    }
+		try {
+			const res = await fetch("/api/auth/admin-login", {
+				method: "POST",
+				headers: { "Content-Type": "application/json" },
+				body: JSON.stringify({ email, password }),
+			});
+			const data = await res.json();
+			if (!res.ok) throw new Error(data.error || "Invalid credentials");
 
-    async function handleLogin(e: React.FormEvent) {
-        e.preventDefault();
+			const hasSession = await waitForAdminSession();
+			if (!hasSession)
+				throw new Error("Login succeeded but session was not ready");
 
-        if (!email || !password) {
-            toast.error("Please enter both email and password");
-            return;
-        }
+			toast.success("Signed in successfully", { id: loadingToast });
+			window.location.assign("/admin/dashboard");
+		} catch (err) {
+			const message =
+				err instanceof Error ? err.message : "Login failed";
+			setError(message);
+			toast.error(message, { id: loadingToast });
+		} finally {
+			setLoading(false);
+		}
+	}
 
-        if (loading) return;
-        setLoading(true);
-        const loadingToast = toast.loading("Authenticating admin...");
+	return (
+		<div className={cn("flex flex-col gap-6", className)} {...props}>
+			<Card className="overflow-hidden border shadow-sm">
+				<CardHeader className="flex flex-col items-center gap-4 p-8 pb-6 text-center">
+					<Link href="/" className="transition-opacity hover:opacity-80">
+						<BrandLogo className="size-14 rounded-2xl shadow-md" />
+					</Link>
+					<div className="space-y-1.5">
+						<CardTitle className="text-2xl font-bold tracking-tight">
+							Admin Portal
+						</CardTitle>
+						<CardDescription>
+							Secure access to system administration
+						</CardDescription>
+					</div>
+				</CardHeader>
 
-        try {
-            const res = await fetch("/api/auth/admin-login", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email, password }),
-            });
+				<CardContent className="px-8 pb-8">
+					<form onSubmit={(e) => void handleLogin(e)}>
+						<FieldGroup>
+							{error && (
+								<div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/8 px-4 py-3 text-sm text-destructive">
+									<AlertCircle className="h-4 w-4 shrink-0" />
+									{error}
+								</div>
+							)}
 
-            const data = await res.json();
+							<Field>
+								<FieldLabel htmlFor="email">Email</FieldLabel>
+								<Input
+									id="email"
+									type="email"
+									required
+									placeholder="admin@curasync.com"
+									value={email}
+									onChange={(e) => setEmail(e.target.value)}
+									className="h-11 rounded-xl"
+									disabled={loading}
+									autoComplete="email"
+								/>
+							</Field>
 
-            if (!res.ok) {
-                throw new Error(data.error || "Invalid credentials");
-            }
+							<Field>
+								<FieldLabel htmlFor="password">Password</FieldLabel>
+								<div className="relative">
+									<Input
+										id="password"
+										type={showPassword ? "text" : "password"}
+										required
+										placeholder="Enter your password"
+										value={password}
+										onChange={(e) => setPassword(e.target.value)}
+										className="h-11 rounded-xl pr-11"
+										disabled={loading}
+										autoComplete="current-password"
+									/>
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+										onClick={() => setShowPassword(!showPassword)}
+										disabled={loading}
+									>
+										{showPassword ? (
+											<EyeOff className="h-4 w-4" />
+										) : (
+											<Eye className="h-4 w-4" />
+										)}
+									</Button>
+								</div>
+							</Field>
 
-            const hasSession = await waitForAdminSession();
+							<Button
+								type="submit"
+								disabled={loading}
+								className="h-11 w-full rounded-xl font-semibold"
+								size="lg"
+							>
+								{loading ? (
+									<>
+										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+										Authenticating...
+									</>
+								) : (
+									<>
+										<Lock className="mr-2 h-4 w-4" />
+										Sign In
+									</>
+								)}
+							</Button>
 
-            if (!hasSession) {
-                throw new Error("Login succeeded but admin session was not ready");
-            }
+							<FieldSeparator />
 
-            toast.success("Admin login successful!", { id: loadingToast });
-            window.location.assign("/admin/dashboard");
-        } catch (error) {
-            toast.error(
-                error instanceof Error ? error.message : "Login failed",
-                { id: loadingToast }
-            );
-        } finally {
-            setLoading(false);
-        }
-    }
-
-    return (
-        <div className={cn("w-full max-w-md mx-auto", className)} {...props}>
-            <Card className="border shadow-lg bg-card">
-                <CardHeader className="text-center space-y-6 pb-8">
-                    <div className="flex justify-center">
-                        <div className="size-20 rounded-2xl bg-linear-to-br from-primary to-primary/80 flex items-center justify-center shadow-lg">
-                            <Shield className="size-10 text-primary-foreground" />
-                        </div>
-                    </div>
-
-                    <div className="space-y-3">
-                        <CardTitle className="text-3xl font-bold tracking-tight text-foreground">
-                            Admin Portal
-                        </CardTitle>
-                        <CardDescription className="text-muted-foreground text-base">
-                            Secure access to system administration
-                        </CardDescription>
-                    </div>
-                </CardHeader>
-
-                <CardContent className="space-y-8">
-                    <form onSubmit={handleLogin}>
-                        <FieldGroup className="space-y-6">
-                            {/* Email Field */}
-                            <Field>
-                                <FieldLabel
-                                    htmlFor="email"
-                                    className="text-foreground/90 font-medium"
-                                >
-                                    Email Address
-                                </FieldLabel>
-                                <div className="relative group">
-                                    <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 overflow-hidden" />
-                                    <div className="relative">
-                                        <Input
-                                            id="email"
-                                            type="email"
-                                            required
-                                            placeholder="admin@example.com"
-                                            value={email}
-                                            onChange={(e) =>
-                                                setEmail(e.target.value)
-                                            }
-                                            className="h-12 pl-11 rounded-xl border-input bg-background text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                            disabled={loading}
-                                        />
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                                            <svg
-                                                className="w-5 h-5"
-                                                fill="none"
-                                                stroke="currentColor"
-                                                viewBox="0 0 24 24"
-                                            >
-                                                <path
-                                                    strokeLinecap="round"
-                                                    strokeLinejoin="round"
-                                                    strokeWidth={2}
-                                                    d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"
-                                                />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </div>
-                            </Field>
-
-                            {/* Password Field */}
-                            <Field>
-                                <FieldLabel
-                                    htmlFor="password"
-                                    className="text-foreground/90 font-medium"
-                                >
-                                    Password
-                                </FieldLabel>
-                                <div className="relative group">
-                                    <div className="absolute inset-0 bg-linear-to-r from-primary/5 to-transparent rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-300 overflow-hidden" />
-                                    <div className="relative">
-                                        <Input
-                                            id="password"
-                                            type={
-                                                showPassword
-                                                    ? "text"
-                                                    : "password"
-                                            }
-                                            required
-                                            placeholder="Enter your password"
-                                            value={password}
-                                            onChange={(e) =>
-                                                setPassword(e.target.value)
-                                            }
-                                            className="h-12 pl-11 pr-11 rounded-xl border-input bg-background text-foreground placeholder:text-muted-foreground/60 focus:border-primary focus:ring-2 focus:ring-primary/20"
-                                            disabled={loading}
-                                        />
-                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground pointer-events-none">
-                                            <Lock className="w-5 h-5" />
-                                        </div>
-                                        <Button
-                                            type="button"
-                                            variant="ghost"
-                                            size="icon"
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-accent rounded-lg"
-                                            onClick={() =>
-                                                setShowPassword(!showPassword)
-                                            }
-                                            disabled={loading}
-                                        >
-                                            {showPassword ? (
-                                                <EyeOff className="w-4 h-4" />
-                                            ) : (
-                                                <Eye className="w-4 h-4" />
-                                            )}
-                                        </Button>
-                                    </div>
-                                </div>
-                            </Field>
-
-                            {/* Login Button */}
-                            <Button
-                                type="submit"
-                                disabled={loading}
-                                className="w-full h-12 rounded-xl bg-linear-to-r from-primary to-primary/90 hover:from-primary/90 hover:to-primary text-primary-foreground font-semibold text-base shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-[1.02] active:scale-[0.98]"
-                                size="lg"
-                            >
-                                {loading ? (
-                                    <>
-                                        <Loader2 className="w-5 h-5 mr-2 animate-spin" />
-                                        Authenticating...
-                                    </>
-                                ) : (
-                                    <>
-                                        <Key className="w-5 h-5 mr-2" />
-                                        Sign In
-                                    </>
-                                )}
-                            </Button>
-                        </FieldGroup>
-                    </form>
-
-                    {/* Security Note */}
-                    <div className="p-5 rounded-xl bg-accent/50 border border-border">
-                        <div className="flex items-start gap-4">
-                            <div className="size-10 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-                                <Shield className="w-5 h-5 text-primary" />
-                            </div>
-                            <div className="space-y-1.5">
-                                <p className="text-sm font-medium text-foreground">
-                                    Secure Access
-                                </p>
-                                <p className="text-sm text-muted-foreground leading-relaxed">
-                                    This portal is restricted to authorized
-                                    administrators only. All activities are
-                                    logged and monitored for security
-                                    compliance.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
-                </CardContent>
-            </Card>
-        </div>
-    );
+							<div className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-4">
+								<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+									<Shield className="h-4 w-4 text-primary" />
+								</div>
+								<FieldDescription className="text-xs leading-relaxed">
+									Restricted to authorized administrators. All activities are
+									logged and monitored for compliance.
+								</FieldDescription>
+							</div>
+						</FieldGroup>
+					</form>
+				</CardContent>
+			</Card>
+		</div>
+	);
 }

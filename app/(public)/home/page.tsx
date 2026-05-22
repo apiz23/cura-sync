@@ -420,8 +420,39 @@ export default function HomePage() {
 			{/* ── HERO ─────────────────────────────────────────────────────── */}
 			<section
 				ref={heroRef}
-				className="px-6 pb-24 pt-16 lg:px-10 lg:pb-32 lg:pt-24"
+				className="relative overflow-hidden px-6 pb-24 pt-16 lg:px-10 lg:pb-32 lg:pt-24"
 			>
+				{/* Hero grid background */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0"
+					style={{
+						backgroundImage:
+							"linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px)",
+						backgroundSize: "72px 72px",
+					}}
+				/>
+				{/* Diagonal stripe overlay */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0"
+					style={{
+						backgroundImage:
+							"repeating-linear-gradient(-45deg, transparent, transparent 40px, color-mix(in oklch, var(--primary) 3%, transparent) 40px, color-mix(in oklch, var(--primary) 3%, transparent) 41px)",
+					}}
+				/>
+				{/* Right-side gradient fade */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-y-0 right-0 hidden w-[40vw] bg-gradient-to-l from-primary/[0.06] to-transparent lg:block"
+				/>
+				{/* Watermark */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute right-4 top-8 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-primary/[0.04] xl:block"
+				>
+					CARE
+				</div>
 				<div className="mx-auto max-w-7xl">
 					<div className="grid grid-cols-1 gap-16 lg:grid-cols-[55fr_45fr] lg:items-center lg:gap-12">
 						{/* Left — content */}
@@ -662,7 +693,36 @@ export default function HomePage() {
 			</div>
 
 			{/* ── TECH PILLARS ─────────────────────────────────────────────── */}
-			<section className="px-6 py-24 lg:px-10 lg:py-32">
+			<section className="relative overflow-hidden px-6 py-24 lg:px-10 lg:py-32">
+				{/* Dot grid */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0"
+					style={{
+						backgroundImage:
+							"radial-gradient(color-mix(in oklch, var(--primary) 14%, transparent) 1px, transparent 1px)",
+						backgroundSize: "36px 36px",
+					}}
+				/>
+				{/* Left gradient fade */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-y-0 left-0 w-[30vw] bg-gradient-to-r from-background to-transparent"
+				/>
+				{/* Right gradient fade */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-y-0 right-0 w-[30vw] bg-gradient-to-l from-background to-transparent"
+				/>
+				{/* Top + bottom fade */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background to-transparent"
+				/>
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-background to-transparent"
+				/>
 				<div className="mx-auto max-w-7xl">
 					<BlurIn className="mb-16">
 						<span className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">
@@ -716,7 +776,35 @@ export default function HomePage() {
 			</section>
 
 			{/* ── BENTO MODULES ────────────────────────────────────────────── */}
-			<section className="border-t border-border bg-muted/20 px-6 py-24 dark:bg-muted/10 lg:px-10 lg:py-32">
+			<section className="relative overflow-hidden border-t border-border bg-muted/20 px-6 py-24 dark:bg-muted/10 lg:px-10 lg:py-32">
+				{/* Small square grid */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0"
+					style={{
+						backgroundImage:
+							"linear-gradient(color-mix(in oklch, var(--primary) 4%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--primary) 4%, transparent) 1px, transparent 1px)",
+						backgroundSize: "48px 48px",
+					}}
+				/>
+				{/* Top-right radial glow */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute -right-40 -top-40 h-[600px] w-[600px] rounded-full opacity-30"
+					style={{
+						background:
+							"radial-gradient(circle, color-mix(in oklch, var(--primary) 12%, transparent) 0%, transparent 70%)",
+					}}
+				/>
+				{/* Bottom-left radial glow */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute -bottom-20 -left-20 h-[400px] w-[400px] rounded-full opacity-20"
+					style={{
+						background:
+							"radial-gradient(circle, color-mix(in oklch, var(--primary) 10%, transparent) 0%, transparent 70%)",
+					}}
+				/>
 				<div className="mx-auto max-w-7xl">
 					<BlurIn className="mb-16">
 						<span className="font-mono text-xs font-medium uppercase tracking-[0.2em] text-primary">
@@ -779,7 +867,33 @@ export default function HomePage() {
 			</section>
 
 			{/* ── HOW IT WORKS ─────────────────────────────────────────────── */}
-			<section className="border-t border-border px-6 py-24 lg:px-10 lg:py-32">
+			<section className="relative overflow-hidden border-t border-border px-6 py-24 lg:px-10 lg:py-32">
+				{/* Horizontal lines */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0"
+					style={{
+						backgroundImage:
+							"linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px)",
+						backgroundSize: "100% 64px",
+					}}
+				/>
+				{/* Center radial spotlight */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0"
+					style={{
+						background:
+							"radial-gradient(ellipse 80% 60% at 50% 50%, color-mix(in oklch, var(--primary) 4%, transparent) 0%, transparent 70%)",
+					}}
+				/>
+				{/* Watermark */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute bottom-4 right-4 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-primary/[0.04] xl:block"
+				>
+					SYNC
+				</div>
 				<div className="mx-auto max-w-7xl">
 					<BlurIn className="mb-16 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
 						<div>
@@ -838,7 +952,38 @@ export default function HomePage() {
 			</section>
 
 			{/* ── CTA ──────────────────────────────────────────────────────── */}
-			<section className="border-t border-border bg-foreground px-6 py-24 lg:px-10 lg:py-32">
+			<section className="relative overflow-hidden border-t border-border bg-foreground px-6 py-24 lg:px-10 lg:py-32">
+				{/* Light grid on dark bg */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0"
+					style={{
+						backgroundImage:
+							"linear-gradient(color-mix(in oklch, var(--background) 7%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--background) 7%, transparent) 1px, transparent 1px)",
+						backgroundSize: "72px 72px",
+					}}
+				/>
+				{/* Diagonal stripes */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-0"
+					style={{
+						backgroundImage:
+							"repeating-linear-gradient(-45deg, transparent, transparent 40px, color-mix(in oklch, var(--background) 4%, transparent) 40px, color-mix(in oklch, var(--background) 4%, transparent) 41px)",
+					}}
+				/>
+				{/* Left gradient glow */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute inset-y-0 left-0 hidden w-[45vw] bg-gradient-to-r from-background/[0.06] to-transparent lg:block"
+				/>
+				{/* Watermark */}
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute right-4 top-6 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-background/[0.04] xl:block"
+				>
+					HEALTH
+				</div>
 				<div className="mx-auto max-w-7xl">
 					<div className="grid grid-cols-1 gap-12 lg:grid-cols-[1fr_auto] lg:items-center">
 						<BlurIn>

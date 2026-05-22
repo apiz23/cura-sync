@@ -361,7 +361,32 @@ export async function POST(req: Request) {
         }
 
         if (alertRows.length > 0) {
-            await supabase.from("cura_notifications").insert(alertRows);
+            void supabase.from("cura_notifications").insert(alertRows);
+
+            void (async () => {
+                const { data: profile } = await supabase
+                    .from("cura_profiles")
+                    .select("expo_push_token")
+                    .eq("id", patient.profileId)
+                    .maybeSingle();
+
+                const token = profile?.expo_push_token;
+                if (!token) return;
+
+                await fetch("https://exp.host/--/api/v2/push/send", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(
+                        alertRows.map((alert) => ({
+                            to: token,
+                            title: alert.title,
+                            body: alert.body,
+                            data: { type: alert.type, severity: alert.severity },
+                            priority: "high",
+                        })),
+                    ),
+                });
+            })();
         }
 
         return NextResponse.json({

@@ -300,7 +300,7 @@ export default function DashboardPage() {
                     <CardContent className="flex items-center justify-between gap-4 p-5">
                         <div>
                             <p className="font-medium text-foreground">Dashboard unavailable</p>
-                            <p className="text-sm text-muted-foreground">{error}</p>
+                            <p className="text-base text-muted-foreground">{error}</p>
                         </div>
                         <Button variant="outline" onClick={loadDashboard}>
                             Retry
@@ -346,7 +346,7 @@ export default function DashboardPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-xs text-muted-foreground">Appointments</p>
+                            <p className="text-base text-muted-foreground">Appointments</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -357,7 +357,7 @@ export default function DashboardPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-xs text-muted-foreground">Appointments</p>
+                            <p className="text-base text-muted-foreground">Appointments</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -368,7 +368,7 @@ export default function DashboardPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-xs text-muted-foreground">Ever visited</p>
+                            <p className="text-base text-muted-foreground">Ever visited</p>
                         </CardContent>
                     </Card>
                     <Card>
@@ -379,7 +379,7 @@ export default function DashboardPage() {
                             </CardTitle>
                         </CardHeader>
                         <CardContent>
-                            <p className="text-xs text-muted-foreground">Active staff</p>
+                            <p className="text-base text-muted-foreground">Active staff</p>
                         </CardContent>
                     </Card>
                 </div>
@@ -417,11 +417,11 @@ export default function DashboardPage() {
                                         <p className="font-medium text-foreground">
                                             {appointment.patient_name}
                                         </p>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             {formatDate(appointment.appointment_date)} at{" "}
                                             {formatTime(appointment.start_time)}
                                         </p>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             {appointment.reason_for_visit || "No visit reason recorded"}
                                         </p>
                                     </div>
@@ -478,7 +478,7 @@ export default function DashboardPage() {
                             <CardTitle>Operational notes</CardTitle>
                             <CardDescription>Signals derived from current records</CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-3 text-sm">
+                        <CardContent className="space-y-3 text-base">
                             <OperationalRow
                                 label="Pending appointments"
                                 value={String(pendingAppointments.length)}
@@ -526,11 +526,11 @@ export default function DashboardPage() {
                                         <p className="font-medium text-foreground">
                                             {patient.full_name}
                                         </p>
-                                        <p className="text-sm text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             {patient.email}
                                         </p>
                                     </div>
-                                    <span className="text-sm text-muted-foreground">
+                                    <span className="text-base text-muted-foreground">
                                         {patient.created_at
                                             ? formatDate(patient.created_at)
                                             : "Unknown"}
@@ -566,7 +566,7 @@ export default function DashboardPage() {
                                             <p className="font-medium text-foreground">
                                                 {staffMember.full_name}
                                             </p>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 {staffMember.email}
                                             </p>
                                         </div>
@@ -606,7 +606,7 @@ function MetricCard({
         <Card className="border shadow-sm">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                    <CardTitle className="text-base font-medium text-muted-foreground">
                         {title}
                     </CardTitle>
                     <div className="rounded-lg bg-primary/10 p-2 text-primary">
@@ -616,7 +616,7 @@ function MetricCard({
             </CardHeader>
             <CardContent>
                 <p className="text-3xl font-semibold text-foreground">{value}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+                <p className="mt-2 text-base text-muted-foreground">{description}</p>
             </CardContent>
         </Card>
     );
@@ -666,7 +666,7 @@ function OperationalRow({
     return (
         <div className="flex items-center justify-between gap-4 rounded-lg px-3 py-2">
             <span className="text-muted-foreground">{label}</span>
-            <span className={`rounded-full px-3 py-1 text-sm font-medium ${toneClasses}`}>
+            <span className={`rounded-full px-3 py-1 text-base font-medium ${toneClasses}`}>
                 {value}
             </span>
         </div>
@@ -690,7 +690,7 @@ function EmptyState({
                 <AlertCircle className="h-5 w-5 text-muted-foreground" />
             </div>
             <p className="font-medium text-foreground">{title}</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            <p className="mx-auto mt-2 max-w-md text-base text-muted-foreground">
                 {description}
             </p>
             <Link href={href} className="mt-4 inline-flex">

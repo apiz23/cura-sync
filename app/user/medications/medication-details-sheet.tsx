@@ -170,7 +170,7 @@ export default function MedicationDetailsSheet({
                                 <SheetTitle className="text-xl font-semibold text-foreground">
                                     {medication.name}
                                 </SheetTitle>
-                                <p className="text-sm text-muted-foreground mt-1">
+                                <p className="text-base text-muted-foreground mt-1">
                                     {medication.dosage}
                                 </p>
                             </div>
@@ -201,7 +201,7 @@ export default function MedicationDetailsSheet({
                         <div className="space-y-4">
                             {isActive && progress > 0 && (
                                 <div className="space-y-3">
-                                    <div className="flex items-center justify-between text-sm">
+                                    <div className="flex items-center justify-between text-base">
                                         <span className="font-medium text-foreground">
                                             Course Progress
                                         </span>
@@ -220,10 +220,10 @@ export default function MedicationDetailsSheet({
                                 <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
                                     <AlertTriangle className="h-4 w-4 text-amber-600" />
                                     <div>
-                                        <p className="text-sm font-medium text-amber-700">
+                                        <p className="text-base font-medium text-amber-700">
                                             Course Expired
                                         </p>
-                                        <p className="text-xs text-amber-600">
+                                        <p className="text-base text-amber-600">
                                             Review with your healthcare provider
                                         </p>
                                     </div>
@@ -236,11 +236,11 @@ export default function MedicationDetailsSheet({
                     <div className="grid grid-cols-2 gap-4">
                         <Card className="p-4">
                             <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
+                                <div className="flex items-center gap-2 text-base text-muted-foreground uppercase tracking-wide">
                                     <Syringe className="h-3.5 w-3.5" />
                                     <span>Dosage</span>
                                 </div>
-                                <p className="font-semibold text-sm">
+                                <p className="font-semibold text-base">
                                     {medication.dosage}
                                 </p>
                             </div>
@@ -248,11 +248,11 @@ export default function MedicationDetailsSheet({
 
                         <Card className="p-4">
                             <div className="space-y-2">
-                                <div className="flex items-center gap-2 text-xs text-muted-foreground uppercase tracking-wide">
+                                <div className="flex items-center gap-2 text-base text-muted-foreground uppercase tracking-wide">
                                     <BellRing className="h-3.5 w-3.5" />
                                     <span>Frequency</span>
                                 </div>
-                                <p className="font-semibold text-sm">
+                                <p className="font-semibold text-base">
                                     {medication.frequency}
                                 </p>
                             </div>
@@ -263,7 +263,7 @@ export default function MedicationDetailsSheet({
                     {medication.schedule && (
                         <Card className="p-4">
                             <div className="space-y-3">
-                                <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                <div className="flex items-center gap-2 text-base text-muted-foreground">
                                     <Clock className="h-4 w-4" />
                                     <span>Schedule</span>
                                 </div>
@@ -273,7 +273,7 @@ export default function MedicationDetailsSheet({
                                     </p>
                                 </div>
                                 {isActive && (
-                                    <div className="flex items-center gap-2 text-xs text-blue-600">
+                                    <div className="flex items-center gap-2 text-base text-blue-600">
                                         <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
                                         Next dose coming up
                                     </div>
@@ -285,27 +285,27 @@ export default function MedicationDetailsSheet({
                     {/* Dates Card */}
                     <Card className="p-4">
                         <div className="space-y-4">
-                            <h4 className="font-medium text-sm flex items-center gap-2">
+                            <h4 className="font-medium text-base flex items-center gap-2">
                                 <Calendar className="h-4 w-4 text-muted-foreground" />
                                 Treatment Period
                             </h4>
                             <div className="space-y-3">
                                 <div className="flex items-center justify-between">
-                                    <span className="text-sm text-muted-foreground">
+                                    <span className="text-base text-muted-foreground">
                                         Start Date
                                     </span>
-                                    <span className="font-medium text-sm">
+                                    <span className="font-medium text-base">
                                         {formatDate(medication.start_date)}
                                     </span>
                                 </div>
                                 {medication.end_date && (
                                     <div className="flex items-center justify-between">
-                                        <span className="text-sm text-muted-foreground">
+                                        <span className="text-base text-muted-foreground">
                                             End Date
                                         </span>
                                         <span
                                             className={cn(
-                                                "font-medium text-sm",
+                                                "font-medium text-base",
                                                 isExpired && "text-amber-600"
                                             )}
                                         >
@@ -323,11 +323,11 @@ export default function MedicationDetailsSheet({
                             <div className="space-y-4">
                                 {prescribedByLabel && (
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2 text-base text-muted-foreground">
                                             <User className="h-4 w-4" />
                                             <span>Prescribed By</span>
                                         </div>
-                                        <p className="font-medium text-sm">
+                                        <p className="font-medium text-base">
                                             {prescribedByLabel}
                                         </p>
                                     </div>
@@ -335,12 +335,12 @@ export default function MedicationDetailsSheet({
 
                                 {medication.notes && (
                                     <div className="space-y-2">
-                                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                                        <div className="flex items-center gap-2 text-base text-muted-foreground">
                                             <FileText className="h-4 w-4" />
                                             <span>Instructions & Notes</span>
                                         </div>
                                         <div className="p-3 bg-muted/30 rounded-lg">
-                                            <p className="text-sm leading-relaxed">
+                                            <p className="text-base leading-relaxed">
                                                 {medication.notes}
                                             </p>
                                         </div>
@@ -383,7 +383,7 @@ export default function MedicationDetailsSheet({
 
                     {/* Last Updated */}
                     {lastUpdated && (
-                        <div className="text-center text-xs text-muted-foreground pt-4 border-t border-border/50">
+                        <div className="text-center text-base text-muted-foreground pt-4 border-t border-border/50">
                             Last updated: {formatDate(medication.updated_at)} at{" "}
                             {formatTime(medication.updated_at)}
                         </div>

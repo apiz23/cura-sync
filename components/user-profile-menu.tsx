@@ -60,11 +60,11 @@ export default function UserProfileMenu() {
                                     {initials}
                                 </AvatarFallback>
                             </Avatar>
-                            <div className="grid flex-1 text-left text-sm leading-tight">
+                            <div className="grid flex-1 text-left text-base leading-tight">
                                 <span className="truncate font-medium">
                                     {fullName}
                                 </span>
-                                <span className="truncate text-xs text-muted-foreground">
+                                <span className="truncate text-base text-muted-foreground">
                                     {userRole}
                                 </span>
                             </div>
@@ -78,7 +78,7 @@ export default function UserProfileMenu() {
                         sideOffset={4}
                     >
                         <DropdownMenuLabel className="p-0 font-normal">
-                            <div className="flex items-center gap-2 px-1 py-1.5 text-left text-sm">
+                            <div className="flex items-center gap-2 px-1 py-1.5 text-left text-base">
                                 <Avatar className="h-8 w-8 rounded-lg">
                                     {userImage ? (
                                         <AvatarImage
@@ -90,11 +90,11 @@ export default function UserProfileMenu() {
                                         {initials}
                                     </AvatarFallback>
                                 </Avatar>
-                                <div className="grid flex-1 text-left text-sm leading-tight">
+                                <div className="grid flex-1 text-left text-base leading-tight">
                                     <span className="truncate font-medium">
                                         {fullName}
                                     </span>
-                                    <span className="truncate text-xs text-muted-foreground">
+                                    <span className="truncate text-base text-muted-foreground">
                                         {email}
                                     </span>
                                 </div>

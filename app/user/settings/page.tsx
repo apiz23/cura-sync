@@ -24,12 +24,12 @@ export default function SettingsPage() {
 
             {/* Appearance */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
                     Appearance
                 </h2>
                 <div className="rounded-xl border border-border bg-card p-5">
                     <p className="font-medium text-foreground">Theme</p>
-                    <p className="mt-1 text-sm text-muted-foreground">
+                    <p className="mt-1 text-base text-muted-foreground">
                         Choose how CuraSync looks on your device.
                     </p>
                     <div className="mt-4 flex flex-wrap gap-3">
@@ -37,7 +37,7 @@ export default function SettingsPage() {
                             <button
                                 key={value}
                                 onClick={() => setTheme(value)}
-                                className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-colors ${
+                                className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-base font-medium transition-colors ${
                                     theme === value
                                         ? "border-primary bg-primary/10 text-primary"
                                         : "border-border bg-background text-muted-foreground hover:border-primary/50 hover:text-foreground"
@@ -53,7 +53,7 @@ export default function SettingsPage() {
 
             {/* Language & Region */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
                     Language & Region
                 </h2>
                 <div className="rounded-xl border border-border bg-card p-5">
@@ -64,7 +64,7 @@ export default function SettingsPage() {
                             </div>
                             <div>
                                 <p className="font-medium text-foreground">Language</p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-base text-muted-foreground">
                                     English (United Kingdom)
                                 </p>
                             </div>
@@ -80,7 +80,7 @@ export default function SettingsPage() {
                             </div>
                             <div>
                                 <p className="font-medium text-foreground">Time zone</p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-base text-muted-foreground">
                                     Asia/Kuala_Lumpur (UTC+8)
                                 </p>
                             </div>
@@ -94,7 +94,7 @@ export default function SettingsPage() {
 
             {/* About */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
                     About
                 </h2>
                 <div className="rounded-xl border border-border bg-card p-5 space-y-3">
@@ -102,7 +102,7 @@ export default function SettingsPage() {
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
                             <Info className="h-4 w-4" />
                         </div>
-                        <div className="space-y-1.5 text-sm">
+                        <div className="space-y-1.5 text-base">
                             <div className="flex items-center justify-between gap-4">
                                 <span className="text-muted-foreground">Platform</span>
                                 <span className="font-medium text-foreground">CuraSync Web</span>

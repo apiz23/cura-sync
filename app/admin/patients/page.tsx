@@ -213,10 +213,10 @@ export default function PatientListPage() {
                             </AvatarFallback>
                         </Avatar>
                         <div>
-                            <div className="font-semibold text-sm text-foreground">
+                            <div className="font-semibold text-base text-foreground">
                                 {row.original.full_name}
                             </div>
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-base text-muted-foreground">
                                 ID: {row.original.id.slice(0, 8)}...
                                 {age !== null ? ` | ${age} years` : ""}
                             </div>
@@ -232,15 +232,15 @@ export default function PatientListPage() {
             ),
             cell: ({ row }) => (
                 <div className="space-y-2">
-                    <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center gap-2 text-base">
                         <Mail className="h-3.5 w-3.5 text-muted-foreground" />
                         <span className="truncate">{row.original.email}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-base text-muted-foreground">
                         <Phone className="h-3.5 w-3.5" />
                         <span>{row.original.phone_number || "No phone recorded"}</span>
                     </div>
-                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-base text-muted-foreground">
                         <AlertCircle className="h-3 w-3" />
                         <span>
                             Emergency contact:{" "}
@@ -272,15 +272,15 @@ export default function PatientListPage() {
                             </Badge>
                         </div>
                         {bmi ? (
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-base text-muted-foreground">
                                 BMI: <span className="font-medium text-foreground">{bmi}</span>
                             </div>
                         ) : (
-                            <div className="text-xs text-muted-foreground">
+                            <div className="text-base text-muted-foreground">
                                 BMI unavailable
                             </div>
                         )}
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-base text-muted-foreground">
                             Conditions: {row.original.chronic_conditions || "None recorded"}
                         </div>
                     </div>
@@ -303,11 +303,11 @@ export default function PatientListPage() {
 
         //         return (
         //             <div className="space-y-2">
-        //                 <Badge variant="outline" className="text-xs">
+        //                 <Badge variant="outline" className="text-base">
         //                     {statusLabel}
         //                 </Badge>
         //                 <div className="space-y-1">
-        //                     <div className="flex items-center justify-between text-xs">
+        //                     <div className="flex items-center justify-between text-base">
         //                         <span className="text-muted-foreground">
         //                             Completion
         //                         </span>
@@ -317,7 +317,7 @@ export default function PatientListPage() {
         //                     </div>
         //                     <Progress value={completion.percentage} className="h-1.5" />
         //                 </div>
-        //                 <div className="text-xs text-muted-foreground">
+        //                 <div className="text-base text-muted-foreground">
         //                     Registered: {formatDate(row.original.created_at)}
         //                 </div>
         //             </div>
@@ -331,7 +331,7 @@ export default function PatientListPage() {
                 <div className="flex justify-end">
                     <button
                         type="button"
-                        className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                        className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-base font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                         onClick={(event) => {
                             event.stopPropagation();
                             openPatientProfile(row.original.id);
@@ -410,7 +410,7 @@ export default function PatientListPage() {
                                 <p className="font-medium text-foreground">
                                     Patient data unavailable
                                 </p>
-                                <p className="text-sm text-muted-foreground">{error}</p>
+                                <p className="text-base text-muted-foreground">{error}</p>
                             </div>
                             <Button variant="outline" onClick={fetchPatients}>
                                 Retry
@@ -454,11 +454,11 @@ export default function PatientListPage() {
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                         <div className="space-y-1">
                             <h2 className="text-2xl font-semibold">Patient Directory</h2>
-                            <p className="text-sm text-muted-foreground">
+                            <p className="text-base text-muted-foreground">
                                 {filteredPatients.length} patients found
                                 {searchQuery && ` for "${searchQuery}"`}
                             </p>
-                             <p className="text-xs text-muted-foreground">
+                             <p className="text-base text-muted-foreground">
                                 Click any row to open the full patient profile.
                              </p>
                         </div>
@@ -605,7 +605,7 @@ export default function PatientListPage() {
                                         <p className="text-2xl font-bold text-foreground">
                                             {patients.filter((patient) => !!patient.blood_type).length}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             Patients with blood type on file
                                         </p>
                                     </div>
@@ -624,7 +624,7 @@ export default function PatientListPage() {
                                         <p className="text-2xl font-bold text-foreground">
                                             {patients.length}
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             Every patient record includes an email
                                         </p>
                                     </div>
@@ -646,7 +646,7 @@ export default function PatientListPage() {
                                                     .length
                                             }
                                         </p>
-                                        <p className="text-xs text-muted-foreground">
+                                        <p className="text-base text-muted-foreground">
                                             Profiles needing a safer emergency record
                                         </p>
                                     </div>
@@ -677,9 +677,9 @@ function MetricCard({
             <CardContent className="p-6">
                 <div className="flex items-center justify-between">
                     <div>
-                        <p className="text-sm font-medium text-muted-foreground">{label}</p>
+                        <p className="text-base font-medium text-muted-foreground">{label}</p>
                         <h3 className="mt-2 text-3xl font-bold">{value}</h3>
-                        <p className="mt-2 text-xs text-muted-foreground">{helper}</p>
+                        <p className="mt-2 text-base text-muted-foreground">{helper}</p>
                     </div>
                     <div className="rounded-full bg-primary/10 p-3">
                         <Icon className="h-6 w-6 text-primary" />

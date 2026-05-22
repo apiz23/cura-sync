@@ -447,7 +447,7 @@ export default function EditFacilityPage() {
                                             <Label className="font-medium">
                                                 Facility Status
                                             </Label>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 Show or hide facility to
                                                 patients
                                             </p>
@@ -547,7 +547,7 @@ export default function EditFacilityPage() {
                                                                     {facility.name ||
                                                                         "Your Facility"}
                                                                 </p>
-                                                                <p className="text-sm text-muted-foreground">
+                                                                <p className="text-base text-muted-foreground">
                                                                     {facility.address ||
                                                                         "No address set"}
                                                                 </p>
@@ -561,7 +561,7 @@ export default function EditFacilityPage() {
                                                                 {facility.type}
                                                             </Badge>
                                                         )}
-                                                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                                                        <div className="flex items-center gap-2 text-base text-muted-foreground">
                                                             <Globe className="w-3 h-3" />
                                                             <span>
                                                                 {parseFloat(
@@ -583,7 +583,7 @@ export default function EditFacilityPage() {
                                             <p className="text-lg font-medium text-muted-foreground">
                                                 No coordinates set
                                             </p>
-                                            <p className="text-sm text-muted-foreground mt-1 text-center max-w-sm">
+                                            <p className="text-base text-muted-foreground mt-1 text-center max-w-sm">
                                                 Add latitude and longitude in
                                                 the form to view the map
                                             </p>
@@ -636,7 +636,7 @@ export default function EditFacilityPage() {
                                                 })
                                             }
                                         />
-                                        <p className="text-xs text-muted-foreground mt-2">
+                                        <p className="text-base text-muted-foreground mt-2">
                                             Decimal format (e.g., 40.7128)
                                         </p>
                                     </div>
@@ -659,14 +659,14 @@ export default function EditFacilityPage() {
                                                 })
                                             }
                                         />
-                                        <p className="text-xs text-muted-foreground mt-2">
+                                        <p className="text-base text-muted-foreground mt-2">
                                             Decimal format (e.g., -74.0060)
                                         </p>
                                     </div>
 
                                     <div className="flex items-start gap-2 p-3 rounded-lg bg-primary/5 border border-primary/10">
                                         <Info className="w-4 h-4 text-primary mt-0.5" />
-                                        <div className="text-sm">
+                                        <div className="text-base">
                                             <p className="font-medium text-primary mb-1">
                                                 How to get coordinates
                                             </p>
@@ -728,7 +728,7 @@ export default function EditFacilityPage() {
                                                 <p className="text-muted-foreground font-medium">
                                                     Enter coordinates
                                                 </p>
-                                                <p className="text-sm text-muted-foreground mt-1">
+                                                <p className="text-base text-muted-foreground mt-1">
                                                     Add latitude and longitude
                                                 </p>
                                             </div>
@@ -738,7 +738,7 @@ export default function EditFacilityPage() {
                                     {facility.latitude &&
                                         facility.longitude && (
                                             <div className="text-center p-3 rounded-lg bg-muted/30">
-                                                <p className="text-sm font-mono">
+                                                <p className="text-base font-mono">
                                                     {parseFloat(
                                                         facility.latitude
                                                     ).toFixed(6)}
@@ -800,7 +800,7 @@ export default function EditFacilityPage() {
                                                                 ]
                                                             }
                                                         </h4>
-                                                        <p className="text-sm text-muted-foreground">
+                                                        <p className="text-base text-muted-foreground">
                                                             Operating hours for
                                                             this day
                                                         </p>
@@ -821,7 +821,7 @@ export default function EditFacilityPage() {
                                             <div className="space-y-3">
                                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                                                     <div>
-                                                        <Label className="text-sm font-medium mb-2">
+                                                        <Label className="text-base font-medium mb-2">
                                                             Day
                                                         </Label>
                                                         <Select
@@ -857,7 +857,7 @@ export default function EditFacilityPage() {
                                                     </div>
 
                                                     <div>
-                                                        <Label className="text-sm font-medium mb-2">
+                                                        <Label className="text-base font-medium mb-2">
                                                             Start Time
                                                         </Label>
                                                         <Input
@@ -875,7 +875,7 @@ export default function EditFacilityPage() {
                                                     </div>
 
                                                     <div>
-                                                        <Label className="text-sm font-medium mb-2">
+                                                        <Label className="text-base font-medium mb-2">
                                                             End Time
                                                         </Label>
                                                         <Input
@@ -893,7 +893,7 @@ export default function EditFacilityPage() {
                                                     </div>
 
                                                     <div>
-                                                        <Label className="text-sm font-medium mb-2">
+                                                        <Label className="text-base font-medium mb-2">
                                                             Slot Duration (min)
                                                         </Label>
                                                         <Input
@@ -917,11 +917,11 @@ export default function EditFacilityPage() {
                                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1 border-t border-dashed border-border/60">
                                                     <div className="flex items-center gap-2 md:col-span-1">
                                                         <Clock className="h-4 w-4 text-amber-500" />
-                                                        <span className="text-xs font-medium text-muted-foreground">Break Time</span>
-                                                        <span className="text-xs text-muted-foreground">(optional)</span>
+                                                        <span className="text-base font-medium text-muted-foreground">Break Time</span>
+                                                        <span className="text-base text-muted-foreground">(optional)</span>
                                                     </div>
                                                     <div>
-                                                        <Label className="text-sm font-medium mb-2">
+                                                        <Label className="text-base font-medium mb-2">
                                                             Break Start
                                                         </Label>
                                                         <Input
@@ -938,7 +938,7 @@ export default function EditFacilityPage() {
                                                         />
                                                     </div>
                                                     <div>
-                                                        <Label className="text-sm font-medium mb-2">
+                                                        <Label className="text-base font-medium mb-2">
                                                             Break End
                                                         </Label>
                                                         <Input
@@ -956,7 +956,7 @@ export default function EditFacilityPage() {
                                                     </div>
                                                     <div className="flex items-end pb-1">
                                                         {schedule.break_start && schedule.break_end && (
-                                                            <span className="text-xs text-amber-600 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-2 py-1 rounded-md">
+                                                            <span className="text-base text-amber-600 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-2 py-1 rounded-md">
                                                                 {schedule.break_start.slice(0, 5)} – {schedule.break_end.slice(0, 5)} blocked
                                                             </span>
                                                         )}
@@ -972,7 +972,7 @@ export default function EditFacilityPage() {
                                     <h3 className="text-lg font-medium text-muted-foreground mb-2">
                                         No schedule added
                                     </h3>
-                                    <p className="text-sm text-muted-foreground mb-4 max-w-sm mx-auto">
+                                    <p className="text-base text-muted-foreground mb-4 max-w-sm mx-auto">
                                         Add operating hours for each day your
                                         facility is open
                                     </p>
@@ -989,7 +989,7 @@ export default function EditFacilityPage() {
                 </div>
                 {/* Footer Actions */}
                 <div className="flex flex-col sm:flex-row gap-3 pt-6 border-t">
-                    <div className="text-sm text-muted-foreground">
+                    <div className="text-base text-muted-foreground">
                         <p className="font-medium">
                             Facility ID: {facility.id}
                         </p>

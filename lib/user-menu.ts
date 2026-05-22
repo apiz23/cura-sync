@@ -8,6 +8,7 @@ import {
     Pill,
     Activity,
     Lock,
+    Settings,
 } from "lucide-react";
 
 export const userMenu = [
@@ -68,6 +69,11 @@ export const userMenu = [
                 title: "Profile Settings",
                 url: "/user/profile",
                 icon: User,
+            },
+            {
+                title: "Preferences",
+                url: "/user/settings",
+                icon: Settings,
             },
             {
                 title: "Security",

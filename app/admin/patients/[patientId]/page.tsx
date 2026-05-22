@@ -369,7 +369,7 @@ export default function PatientDetailPage() {
 											{patient.status}
 										</Badge>
 									)}
-									<span className="text-sm text-muted-foreground flex items-center gap-1">
+									<span className="text-base text-muted-foreground flex items-center gap-1">
 										<Clock className="w-3.5 h-3.5" />
 										ID: {patient.id.slice(0, 8)}
 									</span>
@@ -474,7 +474,7 @@ export default function PatientDetailPage() {
 													<Heart className="w-4 h-4 text-red-600" />
 												</div>
 												<div>
-													<p className="text-sm text-muted-foreground">Blood Type</p>
+													<p className="text-base text-muted-foreground">Blood Type</p>
 													<p className="font-medium">{patient.blood_type}</p>
 												</div>
 											</div>
@@ -485,7 +485,7 @@ export default function PatientDetailPage() {
 													<User className="w-4 h-4 text-blue-600" />
 												</div>
 												<div>
-													<p className="text-sm text-muted-foreground">Height</p>
+													<p className="text-base text-muted-foreground">Height</p>
 													<p className="font-medium">{patient.height_cm} cm</p>
 												</div>
 											</div>
@@ -496,7 +496,7 @@ export default function PatientDetailPage() {
 													<Activity className="w-4 h-4 text-green-600" />
 												</div>
 												<div>
-													<p className="text-sm text-muted-foreground">Weight</p>
+													<p className="text-base text-muted-foreground">Weight</p>
 													<p className="font-medium">{patient.weight_kg} kg</p>
 												</div>
 											</div>
@@ -507,7 +507,7 @@ export default function PatientDetailPage() {
 													<Clipboard className="w-4 h-4 text-amber-600" />
 												</div>
 												<div>
-													<p className="text-sm text-muted-foreground">BMI</p>
+													<p className="text-base text-muted-foreground">BMI</p>
 													<p className="font-medium">{bmi}</p>
 												</div>
 											</div>
@@ -654,7 +654,12 @@ export default function PatientDetailPage() {
 													))}
 												</div>
 											) : medicalRecords ? (
-												<MedicalRecordsTabs records={medicalRecords} />
+												<MedicalRecordsTabs
+												records={medicalRecords}
+												patientId={patientId}
+												canManage={canManage}
+												onRefresh={() => void fetchMedicalRecords()}
+											/>
 											) : null}
 										</div>
 									</TabsContent>
@@ -664,7 +669,7 @@ export default function PatientDetailPage() {
 										<div className="flex items-center justify-between">
 											<div>
 												<h3 className="font-semibold text-lg">Medications</h3>
-												<p className="text-sm text-muted-foreground">
+												<p className="text-base text-muted-foreground">
 													{medications.length} medications recorded
 												</p>
 											</div>
@@ -759,7 +764,17 @@ export default function PatientDetailPage() {
 
 // ── Medical Records Tabs ───────────────────────────────────────────────────────
 
-function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
+function MedicalRecordsTabs({
+	records,
+	patientId,
+	canManage,
+	onRefresh,
+}: {
+	records: MedicalRecordsData;
+	patientId: string;
+	canManage: boolean;
+	onRefresh: () => void;
+}) {
 	const total =
 		records.conditions.length +
 		records.allergies.length +
@@ -771,7 +786,7 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 			<div className="rounded-xl border border-dashed p-8 text-center">
 				<History className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-40" />
 				<p className="font-medium text-foreground">No records yet</p>
-				<p className="mt-1 text-sm text-muted-foreground">
+				<p className="mt-1 text-base text-muted-foreground">
 					Use &ldquo;Add Record&rdquo; to document conditions, allergies, procedures, or encounters.
 				</p>
 			</div>
@@ -784,7 +799,7 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 				<TabsTrigger value="conditions">
 					Conditions
 					{records.conditions.length > 0 && (
-						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
 							{records.conditions.length}
 						</span>
 					)}
@@ -792,7 +807,7 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 				<TabsTrigger value="allergies">
 					Allergies
 					{records.allergies.length > 0 && (
-						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
 							{records.allergies.length}
 						</span>
 					)}
@@ -800,7 +815,7 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 				<TabsTrigger value="procedures">
 					Procedures
 					{records.procedures.length > 0 && (
-						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
 							{records.procedures.length}
 						</span>
 					)}
@@ -808,7 +823,7 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 				<TabsTrigger value="encounters">
 					Encounters
 					{records.encounters.length > 0 && (
-						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+						<span className="ml-1.5 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
 							{records.encounters.length}
 						</span>
 					)}
@@ -829,14 +844,14 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 									<div>
 										<p className="font-semibold text-foreground">{c.name}</p>
 										{c.onset_date && (
-											<p className="text-xs text-muted-foreground">
+											<p className="text-base text-muted-foreground">
 												Since {formatDate(c.onset_date)}
 												{c.resolved_date ? ` · Resolved ${formatDate(c.resolved_date)}` : null}
 											</p>
 										)}
 									</div>
 								</div>
-								<div className="flex flex-wrap gap-2">
+								<div className="flex flex-wrap items-center gap-2">
 									<Badge variant={c.status === "ACTIVE" ? "destructive" : c.status === "CHRONIC" ? "secondary" : "outline"}>
 										{c.status}
 									</Badge>
@@ -845,9 +860,28 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 											{c.severity}
 										</Badge>
 									)}
+									{canManage && (
+										<EditMedicalRecordSheet
+											patientId={patientId}
+											recordId={c.id}
+											recordType="condition"
+											initialFields={{
+												name: c.name,
+												status: c.status,
+												severity: c.severity ?? "",
+												onset_date: c.onset_date ?? "",
+												notes: c.notes ?? "",
+											}}
+											onSuccess={onRefresh}
+										>
+											<Button size="sm" variant="ghost" className="h-7 px-2">
+												<Edit className="h-3.5 w-3.5" />
+											</Button>
+										</EditMedicalRecordSheet>
+									)}
 								</div>
 							</div>
-							{c.notes && <p className="mt-3 text-sm text-muted-foreground">{c.notes}</p>}
+							{c.notes && <p className="mt-3 text-base text-muted-foreground">{c.notes}</p>}
 						</div>
 					))
 				)}
@@ -867,11 +901,11 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 									<div>
 										<p className="font-semibold text-foreground">{a.allergen}</p>
 										{a.reaction && (
-											<p className="text-xs text-muted-foreground">Reaction: {a.reaction}</p>
+											<p className="text-base text-muted-foreground">Reaction: {a.reaction}</p>
 										)}
 									</div>
 								</div>
-								<div className="flex flex-wrap gap-2">
+								<div className="flex flex-wrap items-center gap-2">
 									<Badge variant={a.status === "ACTIVE" ? "destructive" : "outline"}>
 										{a.status}
 									</Badge>
@@ -880,9 +914,28 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 											{a.severity}
 										</Badge>
 									)}
+									{canManage && (
+										<EditMedicalRecordSheet
+											patientId={patientId}
+											recordId={a.id}
+											recordType="allergy"
+											initialFields={{
+												allergen: a.allergen,
+												reaction: a.reaction ?? "",
+												severity: a.severity ?? "",
+												status: a.status,
+												notes: a.notes ?? "",
+											}}
+											onSuccess={onRefresh}
+										>
+											<Button size="sm" variant="ghost" className="h-7 px-2">
+												<Edit className="h-3.5 w-3.5" />
+											</Button>
+										</EditMedicalRecordSheet>
+									)}
 								</div>
 							</div>
-							{a.notes && <p className="mt-3 text-sm text-muted-foreground">{a.notes}</p>}
+							{a.notes && <p className="mt-3 text-base text-muted-foreground">{a.notes}</p>}
 						</div>
 					))
 				)}
@@ -894,25 +947,46 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 				) : (
 					records.procedures.map((p) => (
 						<div key={p.id} className="rounded-xl border border-border bg-card p-4">
-							<div className="flex items-center gap-3">
-								<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-									<Scissors className="h-4 w-4" />
+							<div className="flex flex-wrap items-start justify-between gap-3">
+								<div className="flex items-center gap-3">
+									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+										<Scissors className="h-4 w-4" />
+									</div>
+									<div>
+										<p className="font-semibold text-foreground">{p.name}</p>
+										<p className="text-base text-muted-foreground">
+											{p.procedure_date ? formatDate(p.procedure_date) : "Date unknown"}
+											{p.facility_name ? ` · ${p.facility_name}` : null}
+										</p>
+									</div>
 								</div>
-								<div>
-									<p className="font-semibold text-foreground">{p.name}</p>
-									<p className="text-xs text-muted-foreground">
-										{p.procedure_date ? formatDate(p.procedure_date) : "Date unknown"}
-										{p.facility_name ? ` · ${p.facility_name}` : null}
-									</p>
-								</div>
+								{canManage && (
+									<EditMedicalRecordSheet
+										patientId={patientId}
+										recordId={p.id}
+										recordType="procedure"
+										initialFields={{
+											name: p.name,
+											procedure_date: p.procedure_date ?? "",
+											facility_name: p.facility_name ?? "",
+											outcome: p.outcome ?? "",
+											notes: p.notes ?? "",
+										}}
+										onSuccess={onRefresh}
+									>
+										<Button size="sm" variant="ghost" className="h-7 px-2">
+											<Edit className="h-3.5 w-3.5" />
+										</Button>
+									</EditMedicalRecordSheet>
+								)}
 							</div>
 							{p.outcome && (
-								<p className="mt-3 text-sm text-muted-foreground">
+								<p className="mt-3 text-base text-muted-foreground">
 									<span className="font-medium text-foreground">Outcome: </span>
 									{p.outcome}
 								</p>
 							)}
-							{p.notes && <p className="mt-1 text-sm text-muted-foreground">{p.notes}</p>}
+							{p.notes && <p className="mt-1 text-base text-muted-foreground">{p.notes}</p>}
 						</div>
 					))
 				)}
@@ -931,22 +1005,45 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 									</div>
 									<div>
 										<p className="font-semibold text-foreground">{e.reason ?? "Visit"}</p>
-										<p className="text-xs text-muted-foreground">
+										<p className="text-base text-muted-foreground">
 											{formatDate(e.encounter_date)}
 											{e.facility_name ? ` · ${e.facility_name}` : null}
 											{e.provider_name ? ` · ${e.provider_name}` : null}
 										</p>
 									</div>
 								</div>
-								<Badge variant="outline">{e.encounter_type}</Badge>
+								<div className="flex flex-wrap items-center gap-2">
+									<Badge variant="outline">{e.encounter_type}</Badge>
+									{canManage && (
+										<EditMedicalRecordSheet
+											patientId={patientId}
+											recordId={e.id}
+											recordType="encounter"
+											initialFields={{
+												encounter_type: e.encounter_type,
+												encounter_date: e.encounter_date,
+												facility_name: e.facility_name ?? "",
+												provider_name: e.provider_name ?? "",
+												reason: e.reason ?? "",
+												diagnosis_summary: e.diagnosis_summary ?? "",
+												notes: e.notes ?? "",
+											}}
+											onSuccess={onRefresh}
+										>
+											<Button size="sm" variant="ghost" className="h-7 px-2">
+												<Edit className="h-3.5 w-3.5" />
+											</Button>
+										</EditMedicalRecordSheet>
+									)}
+								</div>
 							</div>
 							{e.diagnosis_summary && (
-								<p className="mt-3 text-sm text-muted-foreground">
+								<p className="mt-3 text-base text-muted-foreground">
 									<span className="font-medium text-foreground">Diagnosis: </span>
 									{e.diagnosis_summary}
 								</p>
 							)}
-							{e.notes && <p className="mt-1 text-sm text-muted-foreground">{e.notes}</p>}
+							{e.notes && <p className="mt-1 text-base text-muted-foreground">{e.notes}</p>}
 						</div>
 					))
 				)}
@@ -958,7 +1055,7 @@ function MedicalRecordsTabs({ records }: { records: MedicalRecordsData }) {
 function MedEmptyState({ label }: { label: string }) {
 	return (
 		<div className="rounded-xl border border-dashed p-6 text-center">
-			<p className="text-sm font-medium text-muted-foreground">No {label} on record</p>
+			<p className="text-base font-medium text-muted-foreground">No {label} on record</p>
 		</div>
 	);
 }
@@ -1275,6 +1372,299 @@ function AddMedicalRecordSheet({
 	);
 }
 
+// ── Edit Medical Record Sheet ─────────────────────────────────────────────────
+
+function EditMedicalRecordSheet({
+	patientId,
+	recordId,
+	recordType,
+	initialFields,
+	onSuccess,
+	children,
+}: {
+	patientId: string;
+	recordId: string;
+	recordType: RecordType;
+	initialFields: Record<string, string>;
+	onSuccess: () => void;
+	children: React.ReactNode;
+}) {
+	const [open, setOpen] = useState(false);
+	const [submitting, setSubmitting] = useState(false);
+	const [fields, setFields] = useState<Record<string, string>>(initialFields);
+
+	function field(name: string, value: string) {
+		setFields((prev) => ({ ...prev, [name]: value }));
+	}
+
+	async function handleSubmit(e: React.FormEvent) {
+		e.preventDefault();
+		setSubmitting(true);
+		try {
+			const res = await fetch(
+				`/api/patients/${patientId}/records/${recordId}`,
+				{
+					method: "PATCH",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({ record_type: recordType, ...fields }),
+				},
+			);
+			if (!res.ok) {
+				const err = (await res.json().catch(() => null)) as {
+					error?: string;
+				} | null;
+				throw new Error(err?.error ?? "Failed to update record");
+			}
+			const data = (await res.json()) as { blockchain?: { tx_hash?: string | null } };
+			const txHash = data.blockchain?.tx_hash;
+			toast.success("Record updated" + (txHash ? " and anchored on-chain" : ""));
+			setOpen(false);
+			onSuccess();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Something went wrong");
+		} finally {
+			setSubmitting(false);
+		}
+	}
+
+	return (
+		<Sheet
+			open={open}
+			onOpenChange={(v) => {
+				setOpen(v);
+				if (!v) setFields(initialFields);
+			}}
+		>
+			<SheetTrigger asChild>{children}</SheetTrigger>
+			<SheetContent className="w-full overflow-y-auto sm:max-w-md">
+				<SheetHeader>
+					<SheetTitle>Edit {recordType.charAt(0).toUpperCase() + recordType.slice(1)}</SheetTitle>
+				</SheetHeader>
+
+				<form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-5">
+					{recordType === "condition" && (
+						<>
+							<div className="space-y-2">
+								<Label>Condition name *</Label>
+								<Input
+									required
+									value={fields.name ?? ""}
+									onChange={(e) => field("name", e.target.value)}
+								/>
+							</div>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-2">
+									<Label>Status</Label>
+									<Select value={fields.status ?? "ACTIVE"} onValueChange={(v) => field("status", v)}>
+										<SelectTrigger><SelectValue /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="ACTIVE">Active</SelectItem>
+											<SelectItem value="CHRONIC">Chronic</SelectItem>
+											<SelectItem value="RESOLVED">Resolved</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<Label>Severity</Label>
+									<Select value={fields.severity ?? ""} onValueChange={(v) => field("severity", v)}>
+										<SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="MILD">Mild</SelectItem>
+											<SelectItem value="MODERATE">Moderate</SelectItem>
+											<SelectItem value="SEVERE">Severe</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label>Onset date</Label>
+								<Input
+									type="date"
+									value={fields.onset_date ?? ""}
+									onChange={(e) => field("onset_date", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Notes</Label>
+								<Textarea
+									rows={3}
+									value={fields.notes ?? ""}
+									onChange={(e) => field("notes", e.target.value)}
+								/>
+							</div>
+						</>
+					)}
+
+					{recordType === "allergy" && (
+						<>
+							<div className="space-y-2">
+								<Label>Allergen *</Label>
+								<Input
+									required
+									value={fields.allergen ?? ""}
+									onChange={(e) => field("allergen", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Reaction</Label>
+								<Input
+									value={fields.reaction ?? ""}
+									onChange={(e) => field("reaction", e.target.value)}
+								/>
+							</div>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-2">
+									<Label>Severity</Label>
+									<Select value={fields.severity ?? ""} onValueChange={(v) => field("severity", v)}>
+										<SelectTrigger><SelectValue placeholder="Optional" /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="MILD">Mild</SelectItem>
+											<SelectItem value="MODERATE">Moderate</SelectItem>
+											<SelectItem value="SEVERE">Severe</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<Label>Status</Label>
+									<Select value={fields.status ?? "ACTIVE"} onValueChange={(v) => field("status", v)}>
+										<SelectTrigger><SelectValue /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="ACTIVE">Active</SelectItem>
+											<SelectItem value="RESOLVED">Resolved</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label>Notes</Label>
+								<Textarea
+									rows={3}
+									value={fields.notes ?? ""}
+									onChange={(e) => field("notes", e.target.value)}
+								/>
+							</div>
+						</>
+					)}
+
+					{recordType === "procedure" && (
+						<>
+							<div className="space-y-2">
+								<Label>Procedure name *</Label>
+								<Input
+									required
+									value={fields.name ?? ""}
+									onChange={(e) => field("name", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Date</Label>
+								<Input
+									type="date"
+									value={fields.procedure_date ?? ""}
+									onChange={(e) => field("procedure_date", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Facility</Label>
+								<Input
+									value={fields.facility_name ?? ""}
+									onChange={(e) => field("facility_name", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Outcome</Label>
+								<Input
+									value={fields.outcome ?? ""}
+									onChange={(e) => field("outcome", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Notes</Label>
+								<Textarea
+									rows={3}
+									value={fields.notes ?? ""}
+									onChange={(e) => field("notes", e.target.value)}
+								/>
+							</div>
+						</>
+					)}
+
+					{recordType === "encounter" && (
+						<>
+							<div className="grid grid-cols-2 gap-3">
+								<div className="space-y-2">
+									<Label>Type *</Label>
+									<Select
+										value={fields.encounter_type ?? "CLINIC"}
+										onValueChange={(v) => field("encounter_type", v)}
+									>
+										<SelectTrigger><SelectValue /></SelectTrigger>
+										<SelectContent>
+											<SelectItem value="CLINIC">Clinic</SelectItem>
+											<SelectItem value="ER">ER</SelectItem>
+											<SelectItem value="HOSPITAL">Hospital</SelectItem>
+											<SelectItem value="TELEHEALTH">Telehealth</SelectItem>
+										</SelectContent>
+									</Select>
+								</div>
+								<div className="space-y-2">
+									<Label>Date</Label>
+									<Input
+										type="date"
+										value={fields.encounter_date ?? ""}
+										onChange={(e) => field("encounter_date", e.target.value)}
+									/>
+								</div>
+							</div>
+							<div className="space-y-2">
+								<Label>Facility</Label>
+								<Input
+									value={fields.facility_name ?? ""}
+									onChange={(e) => field("facility_name", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Provider</Label>
+								<Input
+									value={fields.provider_name ?? ""}
+									onChange={(e) => field("provider_name", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Reason</Label>
+								<Input
+									value={fields.reason ?? ""}
+									onChange={(e) => field("reason", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Diagnosis summary</Label>
+								<Textarea
+									rows={3}
+									value={fields.diagnosis_summary ?? ""}
+									onChange={(e) => field("diagnosis_summary", e.target.value)}
+								/>
+							</div>
+							<div className="space-y-2">
+								<Label>Notes</Label>
+								<Textarea
+									rows={2}
+									value={fields.notes ?? ""}
+									onChange={(e) => field("notes", e.target.value)}
+								/>
+							</div>
+						</>
+					)}
+
+					<Button type="submit" className="w-full" disabled={submitting}>
+						{submitting ? "Saving..." : "Save Changes"}
+					</Button>
+				</form>
+			</SheetContent>
+		</Sheet>
+	);
+}
+
 // ── Sub-components ────────────────────────────────────────────────────────────
 
 function PatientDetailSkeleton() {
@@ -1327,7 +1717,7 @@ function InfoItem({
 				<div className="p-2 bg-muted rounded-lg">
 					<Icon className="w-4 h-4 text-muted-foreground" />
 				</div>
-				<span className="text-sm text-muted-foreground">{label}</span>
+				<span className="text-base text-muted-foreground">{label}</span>
 			</div>
 			<span className="font-medium">{value}</span>
 		</div>
@@ -1349,7 +1739,7 @@ function ContactItem({
 				<Icon className="w-4 h-4 text-muted-foreground" />
 			</div>
 			<div className="flex-1 min-w-0">
-				<p className="text-sm text-muted-foreground mb-1">{label}</p>
+				<p className="text-base text-muted-foreground mb-1">{label}</p>
 				<p className="font-medium truncate">{value}</p>
 			</div>
 		</div>
@@ -1366,8 +1756,8 @@ function CopyableId({ value }: { value: string }) {
 					<Hash className="w-4 h-4 text-primary" />
 				</div>
 				<div className="min-w-0">
-					<p className="text-sm text-muted-foreground mb-1 truncate">Patient ID</p>
-					<code className="text-sm font-mono truncate block">{value}</code>
+					<p className="text-base text-muted-foreground mb-1 truncate">Patient ID</p>
+					<code className="text-base font-mono truncate block">{value}</code>
 				</div>
 			</div>
 			<Button
@@ -1394,7 +1784,7 @@ function InfoCard({ label, value }: { label: string; value?: string | null }) {
 	if (!value) return null;
 	return (
 		<div className="p-4 bg-muted/20 rounded-lg">
-			<p className="text-sm text-muted-foreground mb-1">{label}</p>
+			<p className="text-base text-muted-foreground mb-1">{label}</p>
 			<p className="font-medium">{value}</p>
 		</div>
 	);
@@ -1423,7 +1813,7 @@ function AlertBox({
 				<Icon className="w-5 h-5 flex-shrink-0 mt-0.5" />
 				<div>
 					<h4 className="font-medium mb-1">{title}</h4>
-					<p className="text-sm opacity-90">{content}</p>
+					<p className="text-base opacity-90">{content}</p>
 				</div>
 			</div>
 		</div>
@@ -1449,12 +1839,12 @@ function TimelineItem({
 			<div className="flex-1">
 				<div className="flex items-center justify-between mb-1">
 					<h4 className="font-medium">{title}</h4>
-					<span className="text-xs text-muted-foreground">
+					<span className="text-base text-muted-foreground">
 						{date.toLocaleDateString()} at{" "}
 						{date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
 					</span>
 				</div>
-				<p className="text-sm text-muted-foreground">{description}</p>
+				<p className="text-base text-muted-foreground">{description}</p>
 			</div>
 		</div>
 	);

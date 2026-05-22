@@ -346,7 +346,7 @@ export default function AppointmentsPage() {
                         <div className="font-medium text-foreground">
                             {row.original.patient_name}
                         </div>
-                        <div className="text-xs text-muted-foreground">
+                        <div className="text-base text-muted-foreground">
                             ID: {row.original.id.slice(0, 8)}...
                         </div>
                     </div>
@@ -360,11 +360,11 @@ export default function AppointmentsPage() {
             ),
             cell: ({ row }) => (
                 <div className="space-y-1.5">
-                    <div className="flex items-center gap-2 text-sm font-medium text-foreground">
+                    <div className="flex items-center gap-2 text-base font-medium text-foreground">
                         <Calendar className="h-4 w-4 text-muted-foreground" />
                         {formatDate(row.original.appointment_date)}
                     </div>
-                    <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-2 text-base text-muted-foreground">
                         <Clock className="h-4 w-4" />
                         {formatTime(row.original.start_time)}
                     </div>
@@ -377,7 +377,7 @@ export default function AppointmentsPage() {
                 <TableColumnHeader column={column} title="Reason" />
             ),
             cell: ({ row }) => (
-                <div className="flex max-w-xs items-start gap-2 text-sm text-foreground">
+                <div className="flex max-w-xs items-start gap-2 text-base text-foreground">
                     <FileText className="mt-0.5 h-4 w-4 flex-shrink-0 text-muted-foreground" />
                     <span className="line-clamp-2">
                         {row.original.reason_for_visit || "No reason provided"}
@@ -397,7 +397,7 @@ export default function AppointmentsPage() {
                 return (
                     <Badge
                         variant="outline"
-                        className={`gap-2 rounded-lg px-3 py-1.5 text-xs font-medium ${status.className}`}
+                        className={`gap-2 rounded-lg px-3 py-1.5 text-base font-medium ${status.className}`}
                     >
                         <span className={`h-2 w-2 rounded-full ${status.dotClassName}`} />
                         <StatusIcon className="h-3 w-3" />
@@ -411,7 +411,7 @@ export default function AppointmentsPage() {
             header: () => <div className="text-right">Actions</div>,
             cell: ({ row }) => {
                 if (!canQuickCheckIn) {
-                    return <div className="text-right text-xs text-muted-foreground">-</div>;
+                    return <div className="text-right text-base text-muted-foreground">-</div>;
                 }
 
                 const appt = row.original;
@@ -423,7 +423,7 @@ export default function AppointmentsPage() {
                             type="button"
                             variant="outline"
                             size="sm"
-                            className="h-8 rounded-full px-3 text-xs"
+                            className="h-8 rounded-full px-3 text-base"
                             disabled={disabled}
                             onClick={(event) => {
                                 event.stopPropagation();
@@ -443,7 +443,7 @@ export default function AppointmentsPage() {
                 <div className="flex justify-end">
                     <button
                         type="button"
-                        className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                        className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-base font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                         onClick={(event) => {
                             event.stopPropagation();
                             openAppointmentSheet(row.original);
@@ -461,7 +461,7 @@ export default function AppointmentsPage() {
         return (
             <div className="flex min-h-[500px] flex-col items-center justify-center space-y-4">
                 <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                <p className="text-sm text-muted-foreground">Loading appointments...</p>
+                <p className="text-base text-muted-foreground">Loading appointments...</p>
             </div>
         );
     }
@@ -498,7 +498,7 @@ export default function AppointmentsPage() {
                                 <p className="font-medium text-foreground">
                                     Appointment data unavailable
                                 </p>
-                                <p className="text-sm text-muted-foreground">{error}</p>
+                                <p className="text-base text-muted-foreground">{error}</p>
                             </div>
                             <Button variant="outline" onClick={fetchAppointments}>
                                 Retry
@@ -542,13 +542,13 @@ export default function AppointmentsPage() {
                             <CardContent className="p-4">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <p className="mb-1 text-sm text-muted-foreground">
+                                        <p className="mb-1 text-base text-muted-foreground">
                                             {item.label}
                                         </p>
                                         <p className="text-2xl font-bold text-foreground">
                                             {item.value}
                                         </p>
-                                        <p className="mt-1 text-xs text-muted-foreground">
+                                        <p className="mt-1 text-base text-muted-foreground">
                                             {item.helper}
                                         </p>
                                     </div>
@@ -567,10 +567,10 @@ export default function AppointmentsPage() {
                     <CardContent className="p-5">
                         <div className="flex items-start justify-between gap-4">
                             <div>
-                                <p className="text-sm font-semibold text-foreground">
+                                <p className="text-base font-semibold text-foreground">
                                     Today's queue
                                 </p>
-                                <p className="mt-1 text-xs text-muted-foreground">
+                                <p className="mt-1 text-base text-muted-foreground">
                                     Staff check-in patients. Doctors can complete only after check-in.
                                 </p>
                             </div>
@@ -588,10 +588,10 @@ export default function AppointmentsPage() {
                                         className="flex w-full items-center justify-between gap-4 rounded-xl border border-border/60 bg-background/40 p-3 text-left transition-colors hover:bg-muted/40"
                                     >
                                         <div className="min-w-0">
-                                            <p className="truncate text-sm font-medium text-foreground">
+                                            <p className="truncate text-base font-medium text-foreground">
                                                 {appt.patient_name}
                                             </p>
-                                            <p className="truncate text-xs text-muted-foreground">
+                                            <p className="truncate text-base text-muted-foreground">
                                                 {formatTime(appt.start_time)} · {appt.reason_for_visit || "No reason"}
                                             </p>
                                         </div>
@@ -599,7 +599,7 @@ export default function AppointmentsPage() {
                                     </button>
                                 ))
                             ) : (
-                                <div className="rounded-xl border border-dashed p-4 text-sm text-muted-foreground">
+                                <div className="rounded-xl border border-dashed p-4 text-base text-muted-foreground">
                                     No confirmed or checked-in appointments today.
                                 </div>
                             )}
@@ -679,12 +679,12 @@ export default function AppointmentsPage() {
                                 {statusFilter !== "all" && ` | Status: ${statusFilter}`}
                                 {dateFilter && ` | Date: ${getFullDate(dateFilter)}`}
                             </CardDescription>
-                            <p className="mt-2 text-xs text-muted-foreground">
+                            <p className="mt-2 text-base text-muted-foreground">
                                 Click any row or the View details pill to open the
                                 appointment sheet.
                             </p>
                         </div>
-                        <div className="flex items-center gap-3 text-sm">
+                        <div className="flex items-center gap-3 text-base">
                             <span className="text-muted-foreground">Show:</span>
                             <Select
                                 value={itemsPerPage.toString()}
@@ -713,7 +713,7 @@ export default function AppointmentsPage() {
                             <h3 className="mb-2 text-lg font-medium text-foreground">
                                 No appointments found
                             </h3>
-                            <p className="max-w-md text-sm text-muted-foreground">
+                            <p className="max-w-md text-base text-muted-foreground">
                                 {searchTerm || statusFilter !== "all" || dateFilter
                                     ? "No appointments match your filters. Try adjusting your search criteria."
                                     : "This facility does not have appointments recorded yet."}
@@ -759,7 +759,7 @@ export default function AppointmentsPage() {
                             {filteredAppointments.length > itemsPerPage && (
                                 <div className="border-t border-border bg-sidebar px-5 py-4">
                                     <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
-                                        <div className="text-sm text-muted-foreground">
+                                        <div className="text-base text-muted-foreground">
                                             Showing{" "}
                                             <span className="font-medium text-foreground">
                                                 {startIndex + 1}
@@ -789,7 +789,7 @@ export default function AppointmentsPage() {
                                             >
                                                 <ChevronLeft className="h-4 w-4" />
                                             </Button>
-                                            <span className="min-w-[90px] text-center text-sm text-muted-foreground">
+                                            <span className="min-w-[90px] text-center text-base text-muted-foreground">
                                                 Page {currentPage} of {totalPages}
                                             </span>
                                             <Button

@@ -250,7 +250,19 @@ export default function FacilitiesMapPage() {
               };
 
     return (
-        <div className="min-h-[100dvh] bg-background px-4 pb-20 pt-20">
+        <div className="relative min-h-[100dvh] overflow-hidden bg-background px-4 pb-20 pt-20">
+            {/* Square grid */}
+            <div
+                aria-hidden="true"
+                className="pointer-events-none absolute inset-0"
+                style={{
+                    backgroundImage:
+                        "linear-gradient(color-mix(in oklch, var(--primary) 4%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--primary) 4%, transparent) 1px, transparent 1px)",
+                    backgroundSize: "64px 64px",
+                }}
+            />
+            {/* Top fade */}
+            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background to-transparent" />
             <PageTitle title="Facilities" />
             <div className="mx-auto max-w-7xl space-y-7 pt-8">
 

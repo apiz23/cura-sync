@@ -3,23 +3,32 @@
 import {
 	AlertCircle,
 	AlertTriangle,
+	Activity,
+	BadgeCheck,
 	Brain,
 	Check,
 	Clock,
 	FileText,
-	MapPin,
+	FlaskRound,
 	HeartPulse,
 	Hospital,
 	Loader2,
-	Shield,
+	MapPin,
+	Microscope,
+	RefreshCw,
+	ShieldCheck,
 	Sparkles,
 	Stethoscope,
 	ThumbsDown,
 	ThumbsUp,
-	User,
+	User as UserIcon,
+	X,
 } from "lucide-react";
-import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { toast } from "sonner";
+
 import AnimatedTags from "@/components/smoothui/animated-tags";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { Badge } from "@/components/ui/badge";
@@ -32,6 +41,9 @@ import {
 	CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { cn } from "@/lib/utils";
+
+// ── Types ────────────────────────────────────────────────────────────────────
 
 type AnalysisResult = {
 	possible_disease: string;
@@ -41,6 +53,7 @@ type AnalysisResult = {
 	disclaimer?: string;
 	normalized_symptoms?: string[];
 	source?: string;
+	iot_flags?: string[];
 };
 
 type UserProfile = {
@@ -67,6 +80,13 @@ type PatientContext = {
 	chronic_conditions?: string;
 };
 
+type IoTData = {
+	heart_rate_bpm?: number;
+	sleep_hours?: number;
+	steps_today?: number;
+	spo2_percent?: number;
+};
+
 type Facility = {
 	id: string;
 	name: string;
@@ -81,6 +101,19 @@ type Coordinates = {
 	latitude: number;
 	longitude: number;
 };
+
+function finiteNumber(value: unknown) {
+	const parsed =
+		typeof value === "number"
+			? value
+			: typeof value === "string" && value.trim()
+				? Number(value)
+				: NaN;
+
+	return Number.isFinite(parsed) ? parsed : undefined;
+}
+
+// ── Constants ────────────────────────────────────────────────────────────────
 
 const COMMON_SYMPTOMS = [
 	"Fever",
@@ -97,50 +130,302 @@ const COMMON_SYMPTOMS = [
 	"Sneezing",
 ];
 
-function urgencyLabel(urgency: AnalysisResult["urgency"]) {
+const ANALYSIS_STEPS = [
+	{
+		label: "Red-flag triage",
+		description: "Checks urgent symptoms first.",
+		icon: ShieldCheck,
+	},
+	{
+		label: "Wearable review",
+		description: "Adds recent vitals when available.",
+		icon: HeartPulse,
+	},
+	{
+		label: "Knowledge match",
+		description: "Compares common clinical patterns.",
+		icon: FileText,
+	},
+	{
+		label: "Clinical NLP",
+		description: "Extracts symptom entities.",
+		icon: Microscope,
+	},
+	{
+		label: "RAG summary",
+		description: "Generates the care summary.",
+		icon: Brain,
+	},
+];
+
+// ── Helpers ──────────────────────────────────────────────────────────────────
+
+function urgencyConfig(urgency: AnalysisResult["urgency"]) {
 	switch (urgency) {
 		case "emergency":
-			return "Immediate care";
+			return {
+				label: "Emergency",
+				timeline: "Seek immediate care",
+				filled: 4,
+				barColor: "bg-destructive",
+				badgeClass: "bg-destructive/10 text-destructive border-destructive/20",
+			};
 		case "high":
-			return "Prompt medical review";
+			return {
+				label: "High urgency",
+				timeline: "As soon as possible",
+				filled: 3,
+				barColor: "bg-orange-500",
+				badgeClass: "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400",
+			};
 		case "medium":
-			return "Review soon";
+			return {
+				label: "Medium urgency",
+				timeline: "Within 2 to 3 days",
+				filled: 2,
+				barColor: "bg-yellow-500",
+				badgeClass: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20 dark:text-yellow-400",
+			};
 		case "low":
-			return "Monitor and follow up";
+			return {
+				label: "Low urgency",
+				timeline: "Monitor and follow up",
+				filled: 1,
+				barColor: "bg-primary",
+				badgeClass: "bg-primary/10 text-primary border-primary/20",
+			};
 		default:
-			return "Clinical judgment";
+			return {
+				label: "Unknown",
+				timeline: "Use clinical judgment",
+				filled: 0,
+				barColor: "bg-muted-foreground",
+				badgeClass: "bg-muted text-muted-foreground border-border",
+			};
 	}
 }
 
-function urgencyBadgeClass(urgency: AnalysisResult["urgency"]) {
-	switch (urgency) {
-		case "emergency":
-			return "bg-red-600 text-white";
-		case "high":
-			return "bg-red-500 text-white";
-		case "medium":
-			return "bg-amber-500 text-white";
-		case "low":
-			return "bg-emerald-500 text-white";
-		default:
-			return "bg-muted text-foreground";
-	}
-}
-
-function sourceLabel(source: string | undefined): { label: string; className: string } | null {
+function sourceLabel(
+	source: string | undefined,
+): { label: string; className: string } | null {
 	switch (source) {
+		case "biobert_enhanced_ai":
 		case "jamai_structured":
-			return { label: "AI-powered", className: "bg-violet-100 text-violet-700 border-violet-200" };
+			return {
+				label: "AI-powered",
+				className: "bg-primary/10 text-primary border-primary/20",
+			};
 		case "knowledge_base":
-			return { label: "Knowledge Base", className: "bg-blue-100 text-blue-700 border-blue-200" };
+			return {
+				label: "Knowledge Base",
+				className: "bg-secondary/10 text-foreground border-secondary/30",
+			};
+		case "iot_safety":
+			return {
+				label: "IoT Alert",
+				className: "bg-destructive/10 text-destructive border-destructive/20",
+			};
 		case "rule_based_safety":
-			return { label: "Rule-based Triage", className: "bg-amber-100 text-amber-700 border-amber-200" };
+			return {
+				label: "Rule-based Triage",
+				className: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20 dark:text-yellow-400",
+			};
 		case "fallback":
-			return { label: "General Guidance", className: "bg-gray-100 text-gray-600 border-gray-200" };
+			return {
+				label: "General Guidance",
+				className: "bg-muted text-muted-foreground border-border",
+			};
 		default:
 			return null;
 	}
 }
+
+function calculateAge(dateOfBirth?: string | null) {
+	if (!dateOfBirth) return null;
+	const birthDate = new Date(dateOfBirth);
+	if (Number.isNaN(birthDate.getTime())) return null;
+	const today = new Date();
+	let age = today.getFullYear() - birthDate.getFullYear();
+	const hadBirthday =
+		today.getMonth() > birthDate.getMonth() ||
+		(today.getMonth() === birthDate.getMonth() &&
+			today.getDate() >= birthDate.getDate());
+	if (!hadBirthday) age -= 1;
+	return age >= 0 ? age : null;
+}
+
+function distanceFromUser(
+	facility: Facility,
+	userLocation: Coordinates | null,
+) {
+	if (!userLocation || !facility.latitude || !facility.longitude) return null;
+	const lat = Number(facility.latitude);
+	const lon = Number(facility.longitude);
+	if (Number.isNaN(lat) || Number.isNaN(lon)) return null;
+	return haversineKm(userLocation.latitude, userLocation.longitude, lat, lon);
+}
+
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+	const toRad = (v: number) => (v * Math.PI) / 180;
+	const R = 6371;
+	const dLat = toRad(lat2 - lat1);
+	const dLon = toRad(lon2 - lon1);
+	const a =
+		Math.sin(dLat / 2) ** 2 +
+		Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon / 2) ** 2;
+	return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+function mapHref(facility: Facility) {
+	if (facility.latitude && facility.longitude) {
+		return `https://www.google.com/maps/search/?api=1&query=${facility.latitude},${facility.longitude}`;
+	}
+	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(facility.address)}`;
+}
+
+// ── Sub-components ───────────────────────────────────────────────────────────
+
+function UrgencySeverityBar({
+	urgency,
+}: {
+	urgency: AnalysisResult["urgency"];
+}) {
+	const { filled, barColor, label } = urgencyConfig(urgency);
+	return (
+		<div
+			className="flex gap-1.5"
+			role="progressbar"
+			aria-label={`Urgency severity: ${label}`}
+			aria-valuemin={0}
+			aria-valuemax={4}
+			aria-valuenow={filled}
+			aria-valuetext={`${label} (${filled} of 4)`}
+		>
+			{Array.from({ length: 4 }, (_, i) => (
+				<motion.div
+					key={i}
+					aria-hidden="true"
+					className={cn(
+						"h-1.5 flex-1 rounded-sm",
+						i < filled ? barColor : "bg-muted",
+					)}
+					initial={{ scaleX: 0, opacity: 0 }}
+					animate={{ scaleX: 1, opacity: 1 }}
+					transition={{
+						type: "spring",
+						stiffness: 120,
+						damping: 22,
+						delay: 0.15 + i * 0.06,
+					}}
+					style={{ originX: 0 }}
+				/>
+			))}
+		</div>
+	);
+}
+
+function DataPill({
+	icon: Icon,
+	label,
+	value,
+	tone = "neutral",
+}: {
+	icon: typeof Activity;
+	label: string;
+	value: string;
+	tone?: "neutral" | "primary" | "danger";
+}) {
+	return (
+		<div
+			className={cn(
+				"min-w-0 rounded-lg border px-3 py-2",
+				tone === "primary" && "border-primary/20 bg-primary/5 text-primary",
+				tone === "danger" && "border-destructive/20 bg-destructive/5 text-destructive",
+				tone === "neutral" && "border-border/70 bg-card",
+			)}
+		>
+			<div className="flex items-center gap-2 text-muted-foreground">
+				<Icon className="h-3.5 w-3.5 shrink-0" />
+				<span className="truncate text-xs font-medium">{label}</span>
+			</div>
+			<p className="mt-1 truncate font-mono text-sm font-semibold text-foreground">
+				{value}
+			</p>
+		</div>
+	);
+}
+
+function AnalysisProgressPanel() {
+	return (
+		<motion.div
+			initial={{ opacity: 0, y: 8 }}
+			animate={{ opacity: 1, y: 0 }}
+			exit={{ opacity: 0, y: -8 }}
+			className="rounded-xl border border-primary/15 bg-primary/5 p-4"
+		>
+			<div className="mb-4 flex items-center justify-between gap-3">
+				<div>
+					<p className="text-sm font-semibold text-foreground">
+						Analyzing health data
+					</p>
+					<p className="text-xs text-muted-foreground">
+						Running the five-layer review pipeline.
+					</p>
+				</div>
+				<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+			</div>
+			<div className="grid gap-2 sm:grid-cols-5">
+				{ANALYSIS_STEPS.map((step, index) => (
+					<motion.div
+						key={step.label}
+						initial={{ opacity: 0, y: 6 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ delay: index * 0.08 }}
+						className="rounded-lg border border-border/60 bg-card p-3"
+					>
+						<div className="mb-2 flex items-center gap-2">
+							<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+								<step.icon className="h-3.5 w-3.5" />
+							</div>
+							<span className="font-mono text-xs text-muted-foreground">
+								0{index + 1}
+							</span>
+						</div>
+						<p className="text-sm font-semibold leading-tight text-foreground">
+							{step.label}
+						</p>
+						<p className="mt-1 text-xs leading-snug text-muted-foreground">
+							{step.description}
+						</p>
+					</motion.div>
+				))}
+			</div>
+		</motion.div>
+	);
+}
+
+// ── Variants ─────────────────────────────────────────────────────────────────
+
+const stagger: Variants = {
+	hidden: {},
+	visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
+};
+
+const fadeUp: Variants = {
+	hidden: { opacity: 0, y: 14 },
+	visible: {
+		opacity: 1,
+		y: 0,
+		transition: { type: "spring", stiffness: 90, damping: 22 },
+	},
+};
+
+const fadeIn: Variants = {
+	hidden: { opacity: 0 },
+	visible: { opacity: 1, transition: { duration: 0.3 } },
+};
+
+// ── Page ─────────────────────────────────────────────────────────────────────
 
 export default function SymptomsCheckPage() {
 	const [selectedSymptoms, setSelectedSymptoms] = useState<string[]>([]);
@@ -151,27 +436,24 @@ export default function SymptomsCheckPage() {
 	const [profile, setProfile] = useState<UserProfile | null>(null);
 	const [facilities, setFacilities] = useState<Facility[]>([]);
 	const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
+	const [iotData, setIotData] = useState<IoTData | null>(null);
 	const [feedbackGiven, setFeedbackGiven] = useState(false);
 	const [feedbackSent, setFeedbackSent] = useState(false);
+	const analyzeAbortRef = useRef<AbortController | null>(null);
+	const resultRef = useRef<HTMLDivElement | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
-
-		const loadProfile = async () => {
+		void (async () => {
 			try {
 				const res = await fetch("/api/user/profile");
 				if (!res.ok) return;
 				const data = (await res.json()) as UserProfile;
-				if (!cancelled) {
-					setProfile(data);
-				}
-			} catch (profileError) {
-				console.error("Profile context fetch error:", profileError);
+				if (!cancelled) setProfile(data);
+			} catch (e) {
+				console.error("Profile fetch error:", e);
 			}
-		};
-
-		void loadProfile();
-
+		})();
 		return () => {
 			cancelled = true;
 		};
@@ -179,22 +461,50 @@ export default function SymptomsCheckPage() {
 
 	useEffect(() => {
 		let cancelled = false;
-
-		const loadFacilities = async () => {
+		void (async () => {
 			try {
 				const res = await fetch("/api/facilities");
 				if (!res.ok) return;
 				const data = (await res.json()) as Facility[];
-				if (!cancelled) {
-					setFacilities(Array.isArray(data) ? data : []);
-				}
-			} catch (facilityError) {
-				console.error("Facility suggestion fetch error:", facilityError);
+				if (!cancelled) setFacilities(Array.isArray(data) ? data : []);
+			} catch (e) {
+				console.error("Facility fetch error:", e);
 			}
+		})();
+		return () => {
+			cancelled = true;
 		};
+	}, []);
 
-		void loadFacilities();
+	useEffect(() => {
+		let cancelled = false;
+		void (async () => {
+			try {
+				const res = await fetch("/api/user/health-sync?days=1");
+				if (!res.ok) return;
+				const data = await res.json().catch(() => null);
+				const latest = data?.data?.latest ?? data?.data?.recent?.[0] ?? null;
+				if (cancelled || !latest?.summary) return;
 
+				const iot: IoTData = {};
+				const heartRate = finiteNumber(latest.summary.averageHeartRateBpm);
+				const sleepMinutes = finiteNumber(latest.summary.totalSleepMinutes);
+				const steps = finiteNumber(latest.summary.stepsCount);
+
+				if (heartRate !== undefined) {
+					iot.heart_rate_bpm = heartRate;
+				}
+				if (sleepMinutes !== undefined && sleepMinutes > 0) {
+					iot.sleep_hours = parseFloat((sleepMinutes / 60).toFixed(1));
+				}
+				if (steps !== undefined && steps > 0) {
+					iot.steps_today = Math.trunc(steps);
+				}
+				if (Object.keys(iot).length > 0) setIotData(iot);
+			} catch {
+				// optional — silent fail
+			}
+		})();
 		return () => {
 			cancelled = true;
 		};
@@ -202,17 +512,13 @@ export default function SymptomsCheckPage() {
 
 	useEffect(() => {
 		if (typeof window === "undefined" || !("geolocation" in navigator)) return;
-
 		navigator.geolocation.getCurrentPosition(
-			(position) => {
+			(pos) =>
 				setUserLocation({
-					latitude: position.coords.latitude,
-					longitude: position.coords.longitude,
-				});
-			},
-			() => {
-				setUserLocation(null);
-			},
+					latitude: pos.coords.latitude,
+					longitude: pos.coords.longitude,
+				}),
+			() => setUserLocation(null),
 			{ enableHighAccuracy: true, timeout: 8000, maximumAge: 300000 },
 		);
 	}, []);
@@ -223,7 +529,7 @@ export default function SymptomsCheckPage() {
 		return list;
 	}, [selectedSymptoms, textInput]);
 
-	const actions = useMemo(() => {
+	const actionLines = useMemo(() => {
 		if (!result?.suggested_action) return [];
 		return result.suggested_action
 			.split("\n")
@@ -232,60 +538,64 @@ export default function SymptomsCheckPage() {
 	}, [result]);
 
 	const patientContext = useMemo(() => {
-		const patientProfile = profile?.patient_profile;
-		if (!patientProfile) return null;
-
-		const age = calculateAge(patientProfile.date_of_birth);
-		const context: PatientContext = {};
-
-		if (age !== null) context.age = age;
-		if (patientProfile.date_of_birth) {
-			context.date_of_birth = patientProfile.date_of_birth;
-		}
-		if (patientProfile.gender) context.gender = patientProfile.gender;
-		if (patientProfile.blood_type) context.blood_type = patientProfile.blood_type;
-		if (patientProfile.height_cm != null) context.height_cm = patientProfile.height_cm;
-		if (patientProfile.weight_kg != null) context.weight_kg = patientProfile.weight_kg;
-		if (patientProfile.allergies) context.allergies = patientProfile.allergies;
-		if (patientProfile.chronic_conditions) {
-			context.chronic_conditions = patientProfile.chronic_conditions;
-		}
-
-		return Object.keys(context).length > 0 ? context : null;
+		const p = profile?.patient_profile;
+		if (!p) return null;
+		const age = calculateAge(p.date_of_birth);
+		const ctx: PatientContext = {};
+		if (age !== null) ctx.age = age;
+		if (p.date_of_birth) ctx.date_of_birth = p.date_of_birth;
+		if (p.gender) ctx.gender = p.gender;
+		if (p.blood_type) ctx.blood_type = p.blood_type;
+		if (p.height_cm != null) ctx.height_cm = p.height_cm;
+		if (p.weight_kg != null) ctx.weight_kg = p.weight_kg;
+		if (p.allergies) ctx.allergies = p.allergies;
+		if (p.chronic_conditions) ctx.chronic_conditions = p.chronic_conditions;
+		return Object.keys(ctx).length > 0 ? ctx : null;
 	}, [profile]);
 
 	const patientContextItems = useMemo(() => {
 		if (!patientContext) return [];
-
 		return [
-			patientContext.age ? `${patientContext.age} years old` : null,
+			patientContext.age ? `${patientContext.age} yrs` : null,
 			patientContext.gender ?? null,
-			patientContext.blood_type ? `Blood type ${patientContext.blood_type}` : null,
-			patientContext.height_cm ? `${patientContext.height_cm} cm` : null,
-			patientContext.weight_kg ? `${patientContext.weight_kg} kg` : null,
-			patientContext.allergies ? `Allergies: ${patientContext.allergies}` : null,
+			patientContext.blood_type ? `Blood ${patientContext.blood_type}` : null,
+			patientContext.allergies ? `Allergy: ${patientContext.allergies}` : null,
 			patientContext.chronic_conditions
-				? `Conditions: ${patientContext.chronic_conditions}`
+				? `Cond: ${patientContext.chronic_conditions}`
 				: null,
 		].filter(Boolean) as string[];
 	}, [patientContext]);
 
+	const iotSummaryItems = useMemo(() => {
+		if (!iotData) return [];
+		return [
+			iotData.heart_rate_bpm != null
+				? `HR ${Math.round(iotData.heart_rate_bpm)} bpm`
+				: null,
+			iotData.spo2_percent != null
+				? `SpO₂ ${Math.round(iotData.spo2_percent)}%`
+				: null,
+			iotData.sleep_hours != null
+				? `Sleep ${iotData.sleep_hours.toFixed(1)} h`
+				: null,
+			iotData.steps_today != null
+				? `${iotData.steps_today.toLocaleString()} steps`
+				: null,
+		].filter(Boolean) as string[];
+	}, [iotData]);
+
 	const recommendedFacilities = useMemo(() => {
-		const sorted = [...facilities].sort((left, right) => {
-			const leftDistance = distanceFromUser(left, userLocation);
-			const rightDistance = distanceFromUser(right, userLocation);
-
-			if (leftDistance !== null && rightDistance !== null) {
-				return leftDistance - rightDistance;
-			}
-			if (leftDistance !== null) return -1;
-			if (rightDistance !== null) return 1;
-			return left.name.localeCompare(right.name);
+		const sorted = [...facilities].sort((a, b) => {
+			const da = distanceFromUser(a, userLocation);
+			const db = distanceFromUser(b, userLocation);
+			if (da !== null && db !== null) return da - db;
+			if (da !== null) return -1;
+			if (db !== null) return 1;
+			return a.name.localeCompare(b.name);
 		});
-
-		return sorted.slice(0, 3).map((facility) => ({
-			...facility,
-			distanceKm: distanceFromUser(facility, userLocation),
+		return sorted.slice(0, 3).map((f) => ({
+			...f,
+			distanceKm: distanceFromUser(f, userLocation),
 		}));
 	}, [facilities, userLocation]);
 
@@ -304,455 +614,799 @@ export default function SymptomsCheckPage() {
 		setFeedbackSent(false);
 	}, []);
 
-	const handleFeedback = useCallback(async (wasAccurate: boolean) => {
-		if (!result || feedbackGiven) return;
-		setFeedbackGiven(true);
-		try {
-			await fetch("/api/feedback", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					symptoms: allSymptoms.join(", "),
-					was_accurate: wasAccurate,
-					possible_disease: result.possible_disease,
-				}),
-			});
-			setFeedbackSent(true);
-		} catch {
-			// silent — feedback failure must not interrupt user
-		}
-	}, [result, feedbackGiven, allSymptoms]);
+	const handleFeedback = useCallback(
+		async (wasAccurate: boolean) => {
+			if (!result || feedbackGiven) return;
+			setFeedbackGiven(true);
+			try {
+				const res = await fetch("/api/feedback", {
+					method: "POST",
+					headers: { "Content-Type": "application/json" },
+					body: JSON.stringify({
+						symptoms: allSymptoms.join(", "),
+						was_accurate: wasAccurate,
+						possible_disease: result.possible_disease,
+					}),
+				});
+				if (res.ok) setFeedbackSent(true);
+			} catch {
+				// silent — feedback failure shouldn't block flow
+			}
+		},
+		[result, feedbackGiven, allSymptoms],
+	);
+
+	const scrollToResult = useCallback(() => {
+		resultRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
+	}, []);
 
 	const handleAnalyze = async () => {
 		if (allSymptoms.length === 0) {
-			setError("Please select or describe at least one symptom.");
+			toast.warning("No symptoms selected", {
+				description: "Pick or describe at least one symptom first.",
+			});
 			return;
 		}
+
+		analyzeAbortRef.current?.abort();
+		const controller = new AbortController();
+		analyzeAbortRef.current = controller;
 
 		setLoading(true);
 		setError(null);
 
-		try {
-			console.log("[symptom-analyzer] patientContext:", patientContext);
-			const res = await fetch("/api/analyze", {
-				method: "POST",
-				headers: { "Content-Type": "application/json" },
-				body: JSON.stringify({
-					symptoms: allSymptoms.join(", "),
-					patient_context: patientContext,
-				}),
+		const analyzePromise = fetch("/api/analyze", {
+			method: "POST",
+			headers: { "Content-Type": "application/json" },
+			body: JSON.stringify({
+				symptoms: allSymptoms.join(", "),
+				patient_context: patientContext,
+				...(iotData ? { iot_data: iotData } : {}),
+			}),
+			signal: controller.signal,
+		})
+			.then(async (res) => {
+				if (!res.ok) {
+					const err = await res.json().catch(() => null);
+					throw new Error(err?.error || "Analysis failed");
+				}
+				return res.json();
+			})
+			.then((data: AnalysisResult) => {
+				setResult(data);
+				setTimeout(scrollToResult, 120);
+				return data;
 			});
 
-			if (!res.ok) {
-				const err = await res.json().catch(() => null);
-				throw new Error(err?.error || "Analysis failed");
-			}
+		toast.promise(analyzePromise, {
+			loading: "Analyzing your symptoms...",
+			success: "Analysis complete",
+			error: (err: Error) => err.message,
+		});
 
-			const data = await res.json();
-			setResult(data);
+		try {
+			await analyzePromise;
 		} catch (err) {
-			console.error(err);
+			if (err instanceof Error && err.name === "AbortError") return;
 			setError(
 				err instanceof Error
 					? err.message
 					: "Something went wrong. Please try again.",
 			);
 		} finally {
+			if (analyzeAbortRef.current === controller) {
+				analyzeAbortRef.current = null;
+			}
 			setLoading(false);
 		}
 	};
 
-	const sourceBadgeProps = result ? sourceLabel(result.source) : null;
+	const cancelAnalyze = useCallback(() => {
+		analyzeAbortRef.current?.abort();
+		analyzeAbortRef.current = null;
+		setLoading(false);
+	}, []);
+
+	const urgencyCfg = result ? urgencyConfig(result.urgency) : null;
+	const sourceBadge = result ? sourceLabel(result.source) : null;
 
 	return (
-		<UserPageShell>
+		<UserPageShell
+			className="bg-background"
+			contentClassName="gap-6 lg:px-8 xl:px-10"
+		>
 			<UserPageHeader
 				icon={Brain}
-				title="AI Symptom Analyzer"
-				description="Organize symptom details and review the summary with a qualified healthcare professional."
-				align="center"
+				title="AI symptom analyzer"
+				description="Capture symptoms, saved profile context, and wearable readings in one review before you talk to a healthcare professional."
+				className="border-border/60 bg-card shadow-none"
+				meta={
+					<>
+						<Badge
+							variant="outline"
+							className="rounded-md border-primary/20 bg-primary/8 text-primary"
+						>
+							<Microscope className="mr-1 h-3 w-3" />
+							BioClinicalBERT
+						</Badge>
+						<Badge
+							variant="outline"
+							className="rounded-md border-secondary/30 bg-secondary/10 text-foreground"
+						>
+							<FlaskRound className="mr-1 h-3 w-3" />
+							JamAIBase RAG
+						</Badge>
+						{iotData ? (
+							<Badge
+								variant="outline"
+								className="rounded-md border-primary/20 bg-primary/8 text-primary"
+							>
+								<HeartPulse className="mr-1 h-3 w-3" />
+								IoT linked
+							</Badge>
+						) : null}
+					</>
+				}
+				actions={
+					(selectedSymptoms.length > 0 || textInput || result) && (
+						<Button
+							variant="outline"
+							size="sm"
+							onClick={clearAll}
+							className="gap-1.5 rounded-md border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+						>
+							<RefreshCw className="h-3.5 w-3.5" />
+							Reset
+						</Button>
+					)
+				}
 			/>
 
-			<div className="grid gap-6 lg:grid-cols-[1.4fr_0.6fr]">
-				<Card className="border-2 shadow-sm">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<Stethoscope className="h-5 w-5 text-primary" />
-							Symptom input
-						</CardTitle>
-						<CardDescription>
-							Detailed descriptions improve the analysis. Saved profile context is optional and used when available.
-						</CardDescription>
-					</CardHeader>
-					<CardContent className="space-y-6">
-						<div className="space-y-3">
-							<h3 className="text-sm font-semibold">Common symptoms</h3>
-							<AnimatedTags
-								initialTags={COMMON_SYMPTOMS}
-								onChange={handleTagChange}
-								selectedTags={selectedSymptoms}
-								className="w-full"
-							/>
-						</div>
+			{/* Emergency banner */}
+			<motion.div
+				initial={{ opacity: 0, y: 8 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ type: "spring", stiffness: 80, damping: 20 }}
+				className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/8 px-5 py-4"
+			>
+				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-card text-destructive">
+					<AlertTriangle className="h-4 w-4" />
+				</div>
+				<p className="max-w-5xl text-sm leading-relaxed text-foreground sm:text-base">
+					<span className="font-semibold text-destructive">Emergency care first: </span>
+					Chest pain, severe breathing difficulty, severe bleeding, or loss of
+					consciousness means you should seek urgent medical care now.
+				</p>
+			</motion.div>
 
-						<div className="space-y-3">
-							<label className="text-sm font-semibold">Additional details</label>
-							<Textarea
-								value={textInput}
-								onChange={(e) => setTextInput(e.target.value)}
-								placeholder="Describe duration, severity, or anything else that feels relevant..."
-								rows={4}
-								className="min-h-[120px] resize-none"
-							/>
-						</div>
-
-						{patientContextItems.length ? (
-							<div className="space-y-3 rounded-xl border bg-muted/30 p-4">
-								<div className="flex items-center gap-2">
-									<HeartPulse className="h-4 w-4 text-primary" />
-									<h3 className="text-sm font-semibold">
-										Profile context included
-									</h3>
-								</div>
-								<div className="flex flex-wrap gap-2">
-									{patientContextItems.map((item) => (
-										<Badge key={item} variant="outline">
-											{item}
-										</Badge>
-									))}
-								</div>
-								<p className="text-xs text-muted-foreground">
-									Your saved health profile details will be included automatically.
-									You can still analyze symptoms even if your profile is incomplete.
-								</p>
-							</div>
-						) : (
-							<div className="space-y-2 rounded-xl border border-dashed bg-muted/20 p-4">
-								<h3 className="text-sm font-semibold">No saved profile context</h3>
-								<p className="text-xs text-muted-foreground">
-									This analysis will use only the symptoms you enter. Add profile details later for more personalized context.
-								</p>
-							</div>
-						)}
-
-						{allSymptoms.length > 0 ? (
-							<div className="space-y-3">
-								<div className="flex items-center justify-between">
-									<h4 className="text-sm font-semibold">Ready to analyze</h4>
-									<Button variant="ghost" size="sm" onClick={clearAll}>
-										Clear all
-									</Button>
-								</div>
-								<div className="flex flex-wrap gap-2 rounded-lg bg-muted/40 p-3">
-									{allSymptoms.map((symptom, index) => (
-										<Badge key={`${symptom}-${index}`} variant="secondary">
-											{symptom}
-										</Badge>
-									))}
-								</div>
-							</div>
-						) : null}
-
-						{error ? (
-							<div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-sm text-destructive">
-								<div className="flex items-center gap-2 font-medium">
-									<AlertCircle className="h-4 w-4" />
-									{error}
-								</div>
-							</div>
-						) : null}
-
-						<Button
-							onClick={handleAnalyze}
-							disabled={loading || allSymptoms.length === 0}
-							className="h-12 w-full"
-						>
-							{loading ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Analyzing symptoms...
-								</>
-							) : (
-								<>
-									<Sparkles className="mr-2 h-4 w-4" />
-									Analyze with AI
-								</>
-							)}
-						</Button>
-					</CardContent>
-				</Card>
-
-				<Card className="border-2 shadow-sm">
-					<CardHeader>
-						<CardTitle className="flex items-center gap-2">
-							<FileText className="h-5 w-5 text-primary" />
-							Safety information
-						</CardTitle>
-					</CardHeader>
-					<CardContent className="space-y-4 text-sm text-muted-foreground">
-						<div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-amber-900">
-							If you have chest pain, severe breathing difficulty, severe bleeding,
-							or loss of consciousness, seek urgent medical care now.
-						</div>
-						<p>This tool is informational and does not provide a diagnosis.</p>
-						<p>Use the summary to help explain symptoms during a clinical visit.</p>
-					</CardContent>
-				</Card>
-			</div>
-
-			{result ? (
-				<Card className="mt-6 border-2 shadow-sm">
-					<CardHeader className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-						<div>
-							<CardTitle className="text-2xl">Analysis summary</CardTitle>
-							<CardDescription>
-								Review this information with a healthcare professional if you need
-								medical advice.
+			<motion.div
+				variants={stagger}
+				initial="hidden"
+				animate="visible"
+				className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]"
+			>
+				{/* ── Input card ──────────────────────────────────────── */}
+				<motion.div variants={fadeUp}>
+					<Card className="overflow-hidden border-border/60 bg-card shadow-none transition-shadow hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
+						<CardHeader className="border-b border-border/60 bg-muted/30">
+							<CardTitle className="flex items-center gap-2 text-foreground">
+								<span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
+									<Stethoscope className="h-4 w-4" />
+								</span>
+								Symptom input
+							</CardTitle>
+							<CardDescription className="max-w-2xl text-sm text-muted-foreground">
+								Detailed descriptions improve the analysis. Saved profile and IoT data
+								are used automatically when available.
 							</CardDescription>
-						</div>
-						<div className="flex flex-wrap items-center gap-2">
-							<Badge className={urgencyBadgeClass(result.urgency)}>
-								{result.urgency.toUpperCase()}
-							</Badge>
-							{sourceBadgeProps && (
-								<Badge className={sourceBadgeProps.className}>
-									{sourceBadgeProps.label}
-								</Badge>
-							)}
-						</div>
-					</CardHeader>
-					<CardContent className="space-y-6">
-						<div className="grid gap-4 md:grid-cols-2">
-							<div className="rounded-xl border bg-muted/40 p-4">
-								<p className="text-sm font-semibold text-muted-foreground">
-									Possible condition
-								</p>
-								<p className="mt-2 text-2xl font-semibold text-primary">
-									{result.possible_disease}
-								</p>
-							</div>
-							<div className="rounded-xl border bg-muted/40 p-4">
-								<p className="text-sm font-semibold text-muted-foreground">
-									Suggested timeline
-								</p>
-								<div className="mt-2 flex items-center gap-2">
-									<Clock className="h-4 w-4 text-primary" />
-									<p className="font-medium">{urgencyLabel(result.urgency)}</p>
-								</div>
-							</div>
-						</div>
-
-						<div className="grid gap-4 md:grid-cols-2">
-							<div className="rounded-xl border bg-muted/40 p-4">
-								<p className="text-sm font-semibold text-muted-foreground">
-									Assessment confidence
-								</p>
-								<p className="mt-2 text-lg font-medium capitalize">
-									{result.confidence_level}
-								</p>
-							</div>
-							<div className="rounded-xl border bg-muted/40 p-4">
-								<p className="text-sm font-semibold text-muted-foreground">
-									Recommended follow-up
-								</p>
-								<div className="mt-2 flex items-center gap-2">
-									<User className="h-4 w-4 text-primary" />
-									<p className="text-sm text-muted-foreground">
-										Consult a qualified healthcare professional.
-									</p>
-								</div>
-							</div>
-						</div>
-
-						{result.normalized_symptoms?.length ? (
+						</CardHeader>
+						<CardContent className="space-y-6 p-5 sm:p-6">
 							<div className="space-y-3">
-								<h3 className="text-sm font-semibold">Recognized symptoms</h3>
-								<div className="flex flex-wrap gap-2">
-									{result.normalized_symptoms.map((symptom) => (
-										<Badge key={symptom} variant="outline">
-											{symptom}
-										</Badge>
-									))}
+								<div className="flex items-center justify-between gap-3">
+									<label className="font-mono text-xs font-medium uppercase tracking-widest text-muted-foreground">
+										Common symptoms
+									</label>
+									<span className="font-mono text-xs text-muted-foreground">
+										{selectedSymptoms.length}/12 selected
+									</span>
 								</div>
+								<AnimatedTags
+									initialTags={COMMON_SYMPTOMS}
+									onChange={handleTagChange}
+									selectedTags={selectedSymptoms}
+									className="w-full"
+								/>
 							</div>
-						) : null}
 
-						<div className="space-y-3">
-							<h3 className="flex items-center gap-2 text-lg font-semibold">
-								<AlertTriangle className="h-5 w-5 text-primary" />
-								Recommended actions
-							</h3>
 							<div className="space-y-3">
-								{actions.map((line, index) => (
-									<div
-										key={`${line}-${index}`}
-										className="flex items-start gap-3 rounded-lg bg-muted p-3"
-									>
-										<div className="mt-0.5 rounded-full bg-primary/10 p-1">
-											<Check className="h-3 w-3 text-primary" />
+								<div className="flex items-center justify-between gap-3">
+									<label className="font-mono text-xs font-medium uppercase tracking-widest text-muted-foreground">
+										Additional details
+									</label>
+									<span className="font-mono text-xs text-muted-foreground">
+										{textInput.trim().length}/1000
+									</span>
+								</div>
+								<Textarea
+									value={textInput}
+									onChange={(e) => setTextInput(e.target.value)}
+									placeholder="Describe duration, severity, or anything else relevant..."
+									rows={4}
+									className="min-h-[132px] resize-none rounded-xl border-border/70 bg-background text-base shadow-none focus-visible:ring-ring/30"
+								/>
+							</div>
+
+							<div className="grid gap-3 md:grid-cols-2">
+								<motion.div
+									variants={fadeUp}
+									className={cn(
+										"space-y-3 rounded-xl border p-4",
+										patientContextItems.length
+											? "border-primary/15 bg-primary/5"
+											: "border-dashed border-border bg-muted/20",
+									)}
+								>
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-2">
+											<UserIcon className="h-4 w-4 text-muted-foreground" />
+											<h3 className="text-sm font-semibold text-foreground">
+												Profile context
+											</h3>
 										</div>
-										<span className="text-sm leading-relaxed">{line}</span>
-									</div>
-								))}
-							</div>
-						</div>
-
-						<div className="rounded-xl border bg-accent p-4">
-							<div className="flex items-start gap-3">
-								<Shield className="mt-0.5 h-5 w-5 text-primary" />
-								<div>
-									<p className="font-semibold">Medical disclaimer</p>
-									<p className="mt-1 text-sm text-muted-foreground">
-										{result.disclaimer ||
-											"This analysis is for informational purposes only and does not replace professional medical advice."}
-									</p>
-								</div>
-							</div>
-						</div>
-
-						<div className="flex items-center gap-3 rounded-xl border bg-muted/30 p-4">
-							<p className="flex-1 text-sm text-muted-foreground">Was this analysis helpful?</p>
-							{feedbackSent ? (
-								<p className="text-sm text-muted-foreground">Thanks for your feedback!</p>
-							) : (
-								<div className="flex gap-2">
-									<Button
-										variant="outline"
-										size="sm"
-										disabled={feedbackGiven}
-										onClick={() => void handleFeedback(true)}
-									>
-										<ThumbsUp className="mr-1 h-4 w-4" /> Yes
-									</Button>
-									<Button
-										variant="outline"
-										size="sm"
-										disabled={feedbackGiven}
-										onClick={() => void handleFeedback(false)}
-									>
-										<ThumbsDown className="mr-1 h-4 w-4" /> No
-									</Button>
-								</div>
-							)}
-						</div>
-
-						{recommendedFacilities.length ? (
-							<div className="space-y-4">
-								<h3 className="flex items-center gap-2 text-lg font-semibold">
-									<Hospital className="h-5 w-5 text-primary" />
-									Recommended registered care nearby
-								</h3>
-								<div className="grid gap-3">
-									{recommendedFacilities.map((facility) => (
-										<div
-											key={facility.id}
-											className="rounded-xl border bg-muted/30 p-4"
+										<Badge
+											variant="outline"
+											className="rounded-md border-border bg-card font-mono text-xs text-muted-foreground"
 										>
-											<div className="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
-												<div className="space-y-2">
-													<div className="flex flex-wrap items-center gap-2">
-														<p className="font-semibold">{facility.name}</p>
-														{facility.type ? (
-															<Badge variant="secondary">{facility.type}</Badge>
-														) : null}
-														{facility.distanceKm !== null ? (
-															<Badge variant="outline">
-																{facility.distanceKm.toFixed(1)} km away
-															</Badge>
-														) : null}
-													</div>
-													<p className="text-sm text-muted-foreground">
-														{facility.specialty || "General care"}
-													</p>
-													<div className="flex items-start gap-2 text-sm text-muted-foreground">
-														<MapPin className="mt-0.5 h-4 w-4 text-primary" />
-														<span>{facility.address}</span>
-													</div>
-												</div>
-												<div className="flex flex-wrap gap-2">
-													<Button asChild variant="outline" size="sm">
-														<a
-															href={mapHref(facility)}
-															target="_blank"
-															rel="noreferrer"
-														>
-															Open map
-														</a>
-													</Button>
-													<Button asChild size="sm">
-														<Link href={`/user/appointments/${facility.id}`}>
-															Book now
-														</Link>
-													</Button>
-												</div>
+											{patientContextItems.length ? "included" : "not set"}
+										</Badge>
+									</div>
+									{patientContextItems.length ? (
+										<div className="grid gap-2 sm:grid-cols-2">
+											{patientContextItems.map((item) => (
+												<DataPill
+													key={item}
+													icon={BadgeCheck}
+													label="Patient"
+													value={item}
+													tone="primary"
+												/>
+											))}
+										</div>
+									) : (
+										<p className="text-sm leading-relaxed text-muted-foreground">
+											Add profile details in settings for more personalized analysis.
+										</p>
+									)}
+								</motion.div>
+
+								<motion.div
+									variants={fadeUp}
+									className={cn(
+										"space-y-3 rounded-xl border p-4",
+										iotSummaryItems.length
+											? "border-secondary/20 bg-secondary/5"
+											: "border-dashed border-border bg-muted/20",
+									)}
+								>
+									<div className="flex items-center justify-between gap-3">
+										<div className="flex items-center gap-2">
+											<HeartPulse className="h-4 w-4 text-muted-foreground" />
+											<h3 className="text-sm font-semibold text-foreground">
+												Wearable readings
+											</h3>
+										</div>
+										<Badge
+											variant="outline"
+											className="rounded-md border-border bg-card font-mono text-xs text-muted-foreground"
+										>
+											last 24 h
+										</Badge>
+									</div>
+									{iotSummaryItems.length ? (
+										<div className="grid gap-2 sm:grid-cols-2">
+											{iotSummaryItems.map((item) => (
+												<DataPill
+													key={item}
+													icon={Activity}
+													label="Reading"
+													value={item}
+												/>
+											))}
+										</div>
+									) : (
+										<p className="text-sm leading-relaxed text-muted-foreground">
+											No recent health-sync data found. Symptom text can still be analyzed.
+										</p>
+									)}
+								</motion.div>
+							</div>
+
+							{/* Selected preview */}
+							<AnimatePresence>
+								{allSymptoms.length > 0 && (
+									<motion.div
+										initial={{ opacity: 0, height: 0 }}
+										animate={{ opacity: 1, height: "auto" }}
+										exit={{ opacity: 0, height: 0 }}
+										transition={{
+											type: "spring",
+											stiffness: 120,
+											damping: 22,
+										}}
+										className="overflow-hidden"
+									>
+										<div className="rounded-xl border border-primary/15 bg-primary/5 p-4">
+											<div className="mb-2 flex items-center justify-between">
+												<p className="font-mono text-sm font-medium text-primary">
+													{allSymptoms.length} symptom
+													{allSymptoms.length > 1 ? "s" : ""} queued
+												</p>
+												<button
+													onClick={clearAll}
+													className="flex items-center gap-1 rounded-md px-2 py-1 text-sm text-muted-foreground transition-colors hover:bg-card hover:text-foreground"
+												>
+													<X className="h-3 w-3" />
+													Clear
+												</button>
+											</div>
+											<div className="flex flex-wrap gap-1.5">
+												{allSymptoms.map((s, i) => (
+													<span
+														key={`${s}-${i}`}
+														className="rounded-md border border-primary/15 bg-card px-2.5 py-1 font-mono text-sm text-primary"
+													>
+														{s}
+													</span>
+												))}
 											</div>
 										</div>
-									))}
+									</motion.div>
+								)}
+							</AnimatePresence>
+
+							{/* Error */}
+							<AnimatePresence>
+								{error && (
+									<motion.div
+										initial={{ opacity: 0, y: 6 }}
+										animate={{ opacity: 1, y: 0 }}
+										exit={{ opacity: 0, y: 6 }}
+										className="flex items-center gap-2 rounded-xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive"
+									>
+										<AlertCircle className="h-4 w-4 shrink-0" />
+										{error}
+									</motion.div>
+								)}
+							</AnimatePresence>
+
+							{/* CTA + cancel */}
+							<div className="flex flex-col gap-2 sm:flex-row">
+								<Button
+									onClick={handleAnalyze}
+									disabled={loading || allSymptoms.length === 0}
+									className="h-12 flex-1 rounded-[6px] bg-foreground font-semibold text-background shadow-none transition-all hover:bg-foreground/80 active:scale-[0.98]"
+									aria-label={
+										loading ? "Analyzing symptoms" : "Analyze symptoms with AI"
+									}
+								>
+									{loading ? (
+										<>
+											<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+											Analyzing...
+										</>
+									) : (
+										<>
+											<Sparkles className="mr-2 h-4 w-4" />
+											Analyze with AI
+										</>
+									)}
+								</Button>
+								{loading && (
+									<motion.button
+										initial={{ opacity: 0, scale: 0.95 }}
+										animate={{ opacity: 1, scale: 1 }}
+										whileTap={{ scale: 0.96 }}
+										onClick={cancelAnalyze}
+										aria-label="Cancel analysis"
+										className="flex h-12 items-center justify-center gap-1.5 rounded-[6px] border border-border bg-card px-4 text-sm font-medium text-muted-foreground transition-colors hover:border-foreground hover:text-foreground"
+									>
+										<X className="h-4 w-4" />
+										Cancel
+									</motion.button>
+								)}
+							</div>
+							<AnimatePresence>
+								{loading ? <AnalysisProgressPanel /> : null}
+							</AnimatePresence>
+						</CardContent>
+					</Card>
+				</motion.div>
+
+				{/* ── Sidebar ─────────────────────────────────────────── */}
+				<motion.div variants={fadeUp} className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+					<Card className="border-border/60 bg-card shadow-none">
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2 text-foreground">
+								<FileText className="h-5 w-5 text-muted-foreground" />
+								Review pipeline
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+							<p>
+								Five-layer pipeline: rule-based red-flag triage, IoT vitals safety,
+								knowledge-base match, BioClinicalBERT NER enrichment, and JamAIBase RAG
+								reasoning.
+							</p>
+							<p>
+								Saved profile, allergies, and recent wearable data feed the model when
+								available.
+							</p>
+							<p className="font-medium text-foreground">
+								Informational only — not a medical diagnosis.
+							</p>
+						</CardContent>
+					</Card>
+
+					<Card className="border-destructive/20 bg-destructive/8 shadow-none">
+						<CardContent className="pt-6">
+							<div className="flex items-start gap-3">
+								<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-card text-destructive">
+									<AlertTriangle className="h-4 w-4" />
+								</div>
+								<div className="space-y-1">
+									<p className="text-sm font-semibold text-destructive">
+										When to skip this tool
+									</p>
+									<p className="text-sm leading-relaxed text-muted-foreground">
+										Severe chest pain, breathing difficulty, severe bleeding, or loss of
+										consciousness — seek urgent care directly.
+									</p>
 								</div>
 							</div>
+						</CardContent>
+					</Card>
+				</motion.div>
+			</motion.div>
+
+			{/* ── Results ─────────────────────────────────────────────── */}
+			<AnimatePresence mode="wait">
+				{result && urgencyCfg ? (
+					<motion.div
+						ref={resultRef}
+						key="results"
+						variants={stagger}
+						initial="hidden"
+						animate="visible"
+						exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
+						className="mt-2 space-y-4"
+					>
+						{/* Hero result card */}
+						<motion.div variants={fadeUp}>
+							<Card className="overflow-hidden border-border/60 bg-card shadow-none">
+								<div className={cn("h-1.5 w-full", urgencyCfg.barColor)} />
+								<CardContent className="p-5 sm:p-8 lg:p-10">
+									<div className="flex flex-wrap items-start justify-between gap-5">
+										<div className="max-w-3xl">
+											<p className="font-mono text-xs font-medium uppercase tracking-widest text-muted-foreground">
+												Possible condition
+											</p>
+											<h2
+												className="mt-2 text-2xl font-semibold leading-tight text-foreground sm:text-4xl lg:text-5xl"
+												style={{ letterSpacing: "-0.025em" }}
+											>
+												{result.possible_disease}
+											</h2>
+										</div>
+										<div className="flex flex-wrap gap-2">
+											<span
+												className={cn(
+													"rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-[0.05em]",
+													urgencyCfg.badgeClass,
+												)}
+											>
+												{urgencyCfg.label}
+											</span>
+											{sourceBadge && (
+												<span
+													className={cn(
+														"rounded-full border px-3 py-1 text-xs font-medium tracking-[0.03em]",
+														sourceBadge.className,
+													)}
+												>
+													{sourceBadge.label}
+												</span>
+											)}
+										</div>
+									</div>
+
+									{/* Severity */}
+									<div className="mt-7">
+										<div className="mb-2 flex items-center justify-between">
+											<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+												Severity level
+											</p>
+											<p className="font-mono text-xs text-muted-foreground">
+												{urgencyCfg.filled}/4
+											</p>
+										</div>
+										<UrgencySeverityBar urgency={result.urgency} />
+									</div>
+
+									{/* Stats strip */}
+									<div className="mt-6 grid grid-cols-1 divide-y divide-border overflow-hidden rounded-xl border border-border/60 bg-muted/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+										<div className="px-5 py-4">
+											<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+												Confidence
+											</p>
+											<p className="mt-1.5 text-lg font-semibold capitalize text-foreground">
+												{result.confidence_level}
+											</p>
+										</div>
+										<div className="px-5 py-4">
+											<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+												Suggested timeline
+											</p>
+											<div className="mt-1.5 flex items-center gap-1.5">
+												<Clock className="h-3.5 w-3.5 text-muted-foreground" />
+												<p className="text-lg font-semibold text-foreground">
+													{urgencyCfg.timeline}
+												</p>
+											</div>
+										</div>
+										<div className="px-5 py-4">
+											<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+												Next step
+											</p>
+											<p className="mt-1.5 text-sm text-muted-foreground">
+												Consult a healthcare professional.
+											</p>
+										</div>
+									</div>
+
+									{/* IoT alert flags */}
+									{result.iot_flags && result.iot_flags.length > 0 ? (
+										<div className="mt-6 rounded-xl border border-destructive/20 bg-destructive/8 p-4">
+											<div className="flex items-center gap-2">
+												<HeartPulse className="h-4 w-4 text-destructive" />
+												<p className="text-sm font-semibold text-foreground">
+													Wearable alerts
+												</p>
+											</div>
+											<ul className="mt-2 space-y-1">
+												{result.iot_flags.map((flag, i) => (
+													<li
+														key={`${flag}-${i}`}
+														className="text-sm text-muted-foreground"
+													>
+														— {flag}
+													</li>
+												))}
+											</ul>
+										</div>
+									) : null}
+								</CardContent>
+							</Card>
+						</motion.div>
+
+						{/* Actions + sidebar */}
+						<div className="grid gap-4 lg:grid-cols-[1fr_400px]">
+							<motion.div variants={fadeUp} className="space-y-4">
+								{result.normalized_symptoms?.length ? (
+									<Card className="border-border/60 bg-card shadow-none">
+										<CardHeader>
+											<CardTitle className="text-base text-foreground">Recognized symptoms</CardTitle>
+										</CardHeader>
+										<CardContent>
+											<div className="flex flex-wrap gap-2">
+												{result.normalized_symptoms.map((s) => (
+													<Badge
+														key={s}
+														variant="outline"
+														className="rounded-full border-border bg-muted/40 font-mono text-muted-foreground"
+													>
+														{s}
+													</Badge>
+												))}
+											</div>
+										</CardContent>
+									</Card>
+								) : null}
+
+								{actionLines.length ? (
+									<Card className="border-border/60 bg-card shadow-none">
+										<CardHeader>
+											<CardTitle className="flex items-center gap-2 text-base text-foreground">
+												<Brain className="h-4 w-4 text-muted-foreground" />
+												Recommended actions
+											</CardTitle>
+										</CardHeader>
+										<CardContent className="space-y-2">
+											{actionLines.map((line, i) => (
+												<motion.div
+													key={`${line}-${i}`}
+													initial={{ opacity: 0, x: -8 }}
+													animate={{ opacity: 1, x: 0 }}
+													transition={{
+														type: "spring",
+														stiffness: 100,
+														damping: 20,
+														delay: 0.1 + i * 0.05,
+													}}
+													className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 px-4 py-3"
+												>
+													<div className="mt-0.5 rounded-sm bg-muted p-1">
+														<Check className="h-3 w-3 text-muted-foreground" />
+													</div>
+													<span className="text-sm leading-relaxed text-foreground">
+														{line}
+													</span>
+												</motion.div>
+											))}
+										</CardContent>
+									</Card>
+								) : null}
+							</motion.div>
+
+							{/* Right column — disclaimer + feedback */}
+							<motion.div variants={fadeUp} className="space-y-4">
+								<Card className="border-border/60 bg-card shadow-none">
+									<CardContent className="pt-6">
+										<div className="flex items-start gap-3">
+											<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-muted">
+												<ShieldCheck className="h-4 w-4 text-muted-foreground" />
+											</div>
+											<div>
+												<p className="text-sm font-semibold text-foreground">
+													Medical disclaimer
+												</p>
+												<p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+													{result.disclaimer ||
+														"This analysis is for informational purposes only and does not replace professional medical advice."}
+												</p>
+											</div>
+										</div>
+									</CardContent>
+								</Card>
+
+								<Card className="border-border/60 bg-card shadow-none">
+									<CardContent className="pt-6">
+										<AnimatePresence mode="wait">
+											{feedbackSent ? (
+												<motion.div
+													key="sent"
+													variants={fadeIn}
+													initial="hidden"
+													animate="visible"
+													className="flex items-center gap-2"
+												>
+													<Check className="h-4 w-4 text-primary" />
+													<p className="text-sm font-medium text-foreground">
+														Thanks for your feedback.
+													</p>
+												</motion.div>
+											) : (
+												<motion.div
+													key="form"
+													variants={fadeIn}
+													initial="hidden"
+													animate="visible"
+												>
+													<p className="mb-3 text-sm font-medium text-foreground">
+														Was this analysis accurate?
+													</p>
+													<div className="flex gap-2">
+														<Button
+															variant="outline"
+															size="sm"
+															className="flex-1 border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+															disabled={feedbackGiven}
+															onClick={() => void handleFeedback(true)}
+														>
+															<ThumbsUp className="mr-1.5 h-4 w-4" />
+															Yes
+														</Button>
+														<Button
+															variant="outline"
+															size="sm"
+															className="flex-1 border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+															disabled={feedbackGiven}
+															onClick={() => void handleFeedback(false)}
+														>
+															<ThumbsDown className="mr-1.5 h-4 w-4" />
+															No
+														</Button>
+													</div>
+												</motion.div>
+											)}
+										</AnimatePresence>
+									</CardContent>
+								</Card>
+							</motion.div>
+						</div>
+
+						{/* Facilities */}
+						{recommendedFacilities.length ? (
+							<motion.div variants={fadeUp}>
+								<Card className="border-border/60 bg-card shadow-none">
+									<CardHeader>
+										<CardTitle className="flex items-center gap-2 text-base text-foreground">
+											<Hospital className="h-4 w-4 text-muted-foreground" />
+											Registered care nearby
+										</CardTitle>
+									</CardHeader>
+									<CardContent>
+										<div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+											{recommendedFacilities.map((facility, i) => (
+												<motion.div
+													key={facility.id}
+													initial={{ opacity: 0, y: 12 }}
+													animate={{ opacity: 1, y: 0 }}
+													transition={{
+														type: "spring",
+														stiffness: 100,
+														damping: 22,
+														delay: i * 0.07,
+													}}
+													className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 p-4 transition-shadow hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+												>
+													<div>
+														<div className="flex flex-wrap items-center gap-1.5">
+															<p className="text-sm font-semibold text-foreground">
+																{facility.name}
+															</p>
+															{facility.distanceKm !== null ? (
+																<span className="rounded-full bg-muted px-2 py-0.5 font-mono text-xs font-semibold text-muted-foreground">
+																	{facility.distanceKm.toFixed(1)} km
+																</span>
+															) : null}
+														</div>
+														<p className="mt-0.5 text-sm text-muted-foreground">
+															{facility.specialty || "General care"}
+														</p>
+														{facility.type ? (
+															<span className="mt-1 inline-block rounded-md border border-border px-2 py-0.5 font-mono text-xs text-muted-foreground">
+																{facility.type}
+															</span>
+														) : null}
+														<div className="mt-2 flex items-start gap-1.5">
+															<MapPin className="mt-0.5 h-3 w-3 shrink-0 text-muted-foreground" />
+															<p className="text-sm text-muted-foreground">
+																{facility.address}
+															</p>
+														</div>
+													</div>
+													<div className="flex gap-2 pt-1">
+														<Button asChild variant="outline" size="sm" className="flex-1 border-border text-muted-foreground hover:border-foreground hover:text-foreground">
+															<a href={mapHref(facility)} target="_blank" rel="noreferrer">
+																Map
+															</a>
+														</Button>
+														<Button asChild size="sm" className="flex-1 rounded-[6px] bg-foreground text-background shadow-none hover:bg-foreground/80">
+															<Link href={`/user/appointments/${facility.id}`}>Book</Link>
+														</Button>
+													</div>
+												</motion.div>
+											))}
+										</div>
+									</CardContent>
+								</Card>
+							</motion.div>
 						) : null}
-					</CardContent>
-				</Card>
-			) : null}
+
+						{/* Reset */}
+						<motion.div variants={fadeUp} className="flex justify-center">
+							<Button
+								variant="outline"
+								onClick={clearAll}
+								className="gap-2 rounded-[6px] border-border px-8 text-muted-foreground hover:border-foreground hover:text-foreground"
+							>
+								<RefreshCw className="h-4 w-4" />
+								Start a new analysis
+							</Button>
+						</motion.div>
+					</motion.div>
+				) : null}
+			</AnimatePresence>
 		</UserPageShell>
 	);
-}
-
-function calculateAge(dateOfBirth?: string | null) {
-	if (!dateOfBirth) return null;
-
-	const birthDate = new Date(dateOfBirth);
-	if (Number.isNaN(birthDate.getTime())) return null;
-
-	const today = new Date();
-	let age = today.getFullYear() - birthDate.getFullYear();
-	const hasHadBirthdayThisYear =
-		today.getMonth() > birthDate.getMonth() ||
-		(today.getMonth() === birthDate.getMonth() &&
-			today.getDate() >= birthDate.getDate());
-
-	if (!hasHadBirthdayThisYear) {
-		age -= 1;
-	}
-
-	return age >= 0 ? age : null;
-}
-
-function distanceFromUser(facility: Facility, userLocation: Coordinates | null) {
-	if (!userLocation || !facility.latitude || !facility.longitude) return null;
-
-	const latitude = Number(facility.latitude);
-	const longitude = Number(facility.longitude);
-
-	if (Number.isNaN(latitude) || Number.isNaN(longitude)) return null;
-
-	return haversineKm(
-		userLocation.latitude,
-		userLocation.longitude,
-		latitude,
-		longitude,
-	);
-}
-
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
-	const toRad = (value: number) => (value * Math.PI) / 180;
-	const earthRadiusKm = 6371;
-	const dLat = toRad(lat2 - lat1);
-	const dLon = toRad(lon2 - lon1);
-	const a =
-		Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-		Math.cos(toRad(lat1)) *
-			Math.cos(toRad(lat2)) *
-			Math.sin(dLon / 2) *
-			Math.sin(dLon / 2);
-
-	return 2 * earthRadiusKm * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function mapHref(facility: Facility) {
-	if (facility.latitude && facility.longitude) {
-		return `https://www.google.com/maps/search/?api=1&query=${facility.latitude},${facility.longitude}`;
-	}
-
-	return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(facility.address)}`;
 }

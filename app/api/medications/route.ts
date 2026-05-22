@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import supabase from "@/lib/supabase";
-import { requireAnySession } from "@/lib/authz";
+import { requireAnySession, requireStaffSession, requirePatientSession } from "@/lib/authz";
 import { MEDICATION_STATUS } from "@/lib/constants";
 import { logAudit, actorFromSession } from "@/lib/audit";
 import { presentMedications } from "@/lib/medication-presenter";
@@ -22,50 +22,55 @@ const createMedicationSchema = z.object({
    GET /api/medications
    ========================= */
 export async function GET(req: NextRequest) {
-    const session = await requireAnySession(req);
-    if (session instanceof NextResponse) return session;
-
     const { searchParams } = new URL(req.url);
-    const profileId =
-        session.kind === "patient"
-            ? session.profileId
-            : searchParams.get("profile_id");
+    const profileIdParam = searchParams.get("profile_id");
 
-    if (session.kind === "staff") {
-        if (!profileId) {
-            return NextResponse.json(
-                { error: "profile_id is required" },
-                { status: 400 }
-            );
+    // Staff accessing a specific patient's medications (profile_id param present).
+    // Use staff session explicitly so a nurse with a residual Clerk session is
+    // not misidentified as a patient by requireAnySession.
+    if (profileIdParam) {
+        const session = await requireStaffSession(req);
+        if (session instanceof NextResponse) return session;
+
+        // Admin and doctor can access any patient; staff limited to their facility.
+        if (!session.isAdmin && session.role !== "doctor") {
+            const { data: reg, error: regError } = await supabase
+                .from("cura_patient_facilities")
+                .select("id")
+                .eq("profile_id", profileIdParam)
+                .eq("facility_id", session.facilityId)
+                .maybeSingle();
+
+            if (regError) {
+                return NextResponse.json({ error: "Access check failed" }, { status: 500 });
+            }
+            if (!reg) {
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+            }
         }
 
-        const { data: reg, error: regError } = await supabase
-            .from("cura_patient_facilities")
-            .select("id")
-            .eq("profile_id", profileId)
-            .eq("facility_id", session.facilityId)
-            .eq("status", "active")
-            .maybeSingle();
+        const { data, error } = await supabase
+            .from("cura_medications")
+            .select("*")
+            .eq("profile_id", profileIdParam)
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false });
 
-        if (regError) {
-            return NextResponse.json(
-                { error: "Access check failed" },
-                { status: 500 }
-            );
+        if (error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
         }
 
-        if (!reg) {
-            return NextResponse.json(
-                { error: "Forbidden" },
-                { status: 403 }
-            );
-        }
+        return NextResponse.json(await presentMedications(data ?? []));
     }
+
+    // Patient accessing their own medications.
+    const session = await requirePatientSession(req);
+    if (session instanceof NextResponse) return session;
 
     const { data, error } = await supabase
         .from("cura_medications")
         .select("*")
-        .eq("profile_id", profileId)
+        .eq("profile_id", session.profileId)
         .is("deleted_at", null)
         .order("created_at", { ascending: false });
 

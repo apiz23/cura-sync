@@ -19,7 +19,7 @@ import {
 	PiX,
 } from "react-icons/pi";
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -138,6 +138,8 @@ function sourceLabel(source: string | undefined): { label: string; class: string
 	switch (source) {
 		case "jamai_structured":
 			return { label: "AI-powered", class: "bg-primary/10 text-primary border-primary/20" };
+		case "biobert_enhanced_ai":
+			return { label: "BioBERT + AI", class: "bg-primary/10 text-primary border-primary/20" };
 		case "knowledge_base":
 			return {
 				label: "Knowledge Base",
@@ -147,6 +149,11 @@ function sourceLabel(source: string | undefined): { label: string; class: string
 			return {
 				label: "Rule-based Triage",
 				class: "bg-warning/10 text-warning-foreground border-warning/20",
+			};
+		case "iot_safety":
+			return {
+				label: "IoT Safety Alert",
+				class: "bg-destructive/10 text-destructive border-destructive/20",
 			};
 		case "fallback":
 			return {
@@ -186,12 +193,21 @@ function mapHref(facility: Facility) {
 // ── Sub-components ───────────────────────────────────────────────────────────
 
 function UrgencySeverityBar({ urgency }: { urgency: AnalysisResult["urgency"] }) {
-	const { filled, barColor } = urgencyConfig(urgency);
+	const { filled, barColor, label } = urgencyConfig(urgency);
 	return (
-		<div className="flex gap-1.5">
+		<div
+			className="flex gap-1.5"
+			role="progressbar"
+			aria-label={`Urgency severity: ${label}`}
+			aria-valuemin={0}
+			aria-valuemax={4}
+			aria-valuenow={filled}
+			aria-valuetext={`${label} (${filled} of 4)`}
+		>
 			{Array.from({ length: 4 }, (_, i) => (
 				<motion.div
 					key={i}
+					aria-hidden="true"
 					className={cn("h-2 flex-1 rounded-full", i < filled ? barColor : "bg-muted")}
 					initial={{ scaleX: 0, opacity: 0 }}
 					animate={{ scaleX: 1, opacity: 1 }}
@@ -245,6 +261,7 @@ export default function AnalyzePage() {
 	const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
 	const [feedbackGiven, setFeedbackGiven] = useState(false);
 	const [feedbackSent, setFeedbackSent] = useState(false);
+	const analyzeAbortRef = useRef<AbortController | null>(null);
 
 	useEffect(() => {
 		let cancelled = false;
@@ -373,6 +390,10 @@ export default function AnalyzePage() {
 			return;
 		}
 
+		analyzeAbortRef.current?.abort();
+		const controller = new AbortController();
+		analyzeAbortRef.current = controller;
+
 		setLoading(true);
 		setError(null);
 
@@ -383,6 +404,7 @@ export default function AnalyzePage() {
 				symptoms: allSymptoms.join(", "),
 				patient_context: patientContext,
 			}),
+			signal: controller.signal,
 		})
 			.then(async (res) => {
 				if (!res.ok) {
@@ -405,19 +427,53 @@ export default function AnalyzePage() {
 		try {
 			await analyzePromise;
 		} catch (err) {
+			if (err instanceof Error && err.name === "AbortError") {
+				// User cancelled — silent
+				return;
+			}
 			setError(
 				err instanceof Error ? err.message : "Something went wrong. Please try again.",
 			);
 		} finally {
+			if (analyzeAbortRef.current === controller) {
+				analyzeAbortRef.current = null;
+			}
 			setLoading(false);
 		}
 	};
+
+	const cancelAnalyze = useCallback(() => {
+		analyzeAbortRef.current?.abort();
+		analyzeAbortRef.current = null;
+		setLoading(false);
+	}, []);
 
 	const urgencyCfg = result ? urgencyConfig(result.urgency) : null;
 	const sourceBadge = result ? sourceLabel(result.source) : null;
 
 	return (
-		<div className="min-h-[100dvh] bg-background">
+		<div className="relative min-h-[100dvh] overflow-hidden bg-background">
+			{/* Horizontal rules */}
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute inset-0"
+				style={{
+					backgroundImage:
+						"linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px)",
+					backgroundSize: "100% 72px",
+				}}
+			/>
+			{/* Center radial glow */}
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute inset-0"
+				style={{
+					background:
+						"radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in oklch, var(--primary) 6%, transparent) 0%, transparent 70%)",
+				}}
+			/>
+			{/* Top fade */}
+			<div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
 			<div className="mx-auto max-w-[1400px] px-6 pb-20 pt-10 lg:px-10">
 
 				{/* ── Page header — left-aligned, not centered ─────────────── */}
@@ -507,6 +563,7 @@ export default function AnalyzePage() {
 								variants={fadeUp}
 								className="overflow-hidden rounded-3xl border border-border bg-card"
 							>
+								<div className={cn("h-1 w-full", urgencyCfg?.barColor ?? "bg-muted")} />
 								<div className="p-8">
 									<div className="flex flex-wrap items-start justify-between gap-4">
 										<div>
@@ -988,30 +1045,46 @@ export default function AnalyzePage() {
 									)}
 								</AnimatePresence>
 
-								{/* Analyze CTA */}
-								<motion.button
-									whileTap={{ scale: 0.98 }}
-									onClick={handleAnalyze}
-									disabled={loading || allSymptoms.length === 0}
-									className={cn(
-										"flex h-12 w-full items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all",
-										"bg-foreground text-background hover:bg-foreground/90",
-										"disabled:cursor-not-allowed disabled:opacity-40",
+								{/* Analyze CTA + cancel */}
+								<div className="flex gap-2">
+									<motion.button
+										whileTap={{ scale: 0.98 }}
+										onClick={handleAnalyze}
+										disabled={loading || allSymptoms.length === 0}
+										aria-label={loading ? "Analyzing symptoms" : "Analyze symptoms with AI"}
+										className={cn(
+											"flex h-12 flex-1 items-center justify-center gap-2 rounded-xl text-sm font-semibold transition-all",
+											"bg-primary text-primary-foreground hover:bg-primary/90",
+											"disabled:cursor-not-allowed disabled:opacity-40",
+										)}
+									>
+										{loading ? (
+											<>
+												<PiCircleNotch className="h-4 w-4 animate-spin" />
+												Analyzing symptoms...
+											</>
+										) : (
+											<>
+												<PiSparkleFill className="h-4 w-4" />
+												Analyze with AI
+												<PiArrowRight className="h-4 w-4" />
+											</>
+										)}
+									</motion.button>
+									{loading && (
+										<motion.button
+											initial={{ opacity: 0, scale: 0.95 }}
+											animate={{ opacity: 1, scale: 1 }}
+											whileTap={{ scale: 0.96 }}
+											onClick={cancelAnalyze}
+											aria-label="Cancel analysis"
+											className="flex h-12 items-center justify-center gap-1.5 rounded-xl border border-border bg-card px-4 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+										>
+											<PiX className="h-4 w-4" />
+											Cancel
+										</motion.button>
 									)}
-								>
-									{loading ? (
-										<>
-											<PiCircleNotch className="h-4 w-4 animate-spin" />
-											Analyzing symptoms...
-										</>
-									) : (
-										<>
-											<PiSparkleFill className="h-4 w-4" />
-											Analyze with AI
-											<PiArrowRight className="h-4 w-4" />
-										</>
-									)}
-								</motion.button>
+								</div>
 							</motion.div>
 
 							{/* Right — info sidebar */}

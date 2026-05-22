@@ -135,7 +135,7 @@ export default function StaffDetailPage() {
                     <CardTitle>Staff Profile</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base text-muted-foreground">
                         Only facility administrators can view staff profiles.
                     </p>
                 </CardContent>
@@ -163,7 +163,7 @@ export default function StaffDetailPage() {
                         </Button>
                         <h1 className="text-2xl font-bold text-foreground">{title}</h1>
                     </div>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base text-muted-foreground">
                         Facility staff account details
                     </p>
                 </div>
@@ -212,28 +212,28 @@ export default function StaffDetailPage() {
 
                             <div className="grid gap-3 sm:grid-cols-2">
                                 <div className="rounded-lg border border-border bg-card p-4">
-                                    <p className="text-xs text-muted-foreground">Email</p>
-                                    <p className="mt-1 flex items-center gap-2 text-sm font-medium">
+                                    <p className="text-base text-muted-foreground">Email</p>
+                                    <p className="mt-1 flex items-center gap-2 text-base font-medium">
                                         <Mail className="h-4 w-4 text-muted-foreground" />
                                         {staff.email}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border border-border bg-card p-4">
-                                    <p className="text-xs text-muted-foreground">Joined</p>
-                                    <p className="mt-1 flex items-center gap-2 text-sm font-medium">
+                                    <p className="text-base text-muted-foreground">Joined</p>
+                                    <p className="mt-1 flex items-center gap-2 text-base font-medium">
                                         <Calendar className="h-4 w-4 text-muted-foreground" />
                                         {formatDate(staff.created_at)}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border border-border bg-card p-4">
-                                    <p className="text-xs text-muted-foreground">License</p>
-                                    <p className="mt-1 text-sm font-medium">
+                                    <p className="text-base text-muted-foreground">License</p>
+                                    <p className="mt-1 text-base font-medium">
                                         {staff.license_number ?? "Not set"}
                                     </p>
                                 </div>
                                 <div className="rounded-lg border border-border bg-card p-4">
-                                    <p className="text-xs text-muted-foreground">Experience</p>
-                                    <p className="mt-1 text-sm font-medium">
+                                    <p className="text-base text-muted-foreground">Experience</p>
+                                    <p className="mt-1 text-base font-medium">
                                         {staff.years_of_experience ?? "Not set"}
                                     </p>
                                 </div>

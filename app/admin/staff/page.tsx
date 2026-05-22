@@ -97,7 +97,7 @@ export default function StaffPage() {
                     <CardTitle>Staff Management</CardTitle>
                 </CardHeader>
                 <CardContent>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-base text-muted-foreground">
                         Only facility administrators can manage staff accounts.
                     </p>
                 </CardContent>
@@ -208,7 +208,7 @@ export default function StaffPage() {
                             <div className="font-medium text-foreground group-hover/patient:text-primary transition-colors">
                                 {row.original.full_name}
                             </div>
-                            <div className="flex items-center gap-1 text-muted-foreground text-xs">
+                            <div className="flex items-center gap-1 text-muted-foreground text-base">
                                 <Mail className="w-3.5 h-3.5" />
                                 <span className="truncate">
                                     {row.original.email}
@@ -250,11 +250,11 @@ export default function StaffPage() {
             cell: ({ row }) => (
                 <div className="max-w-[200px]">
                     {row.original.specialization ? (
-                        <span className="text-sm">
+                        <span className="text-base">
                             {row.original.specialization}
                         </span>
                     ) : (
-                        <span className="text-muted-foreground text-sm">
+                        <span className="text-muted-foreground text-base">
                             Not specified
                         </span>
                     )}
@@ -267,7 +267,7 @@ export default function StaffPage() {
                 <TableColumnHeader column={column} title="Joined" />
             ),
             cell: ({ row }) => (
-                <div className="flex items-center gap-1.5 text-sm text-muted-foreground">
+                <div className="flex items-center gap-1.5 text-base text-muted-foreground">
                     <Calendar className="w-3.5 h-3.5" />
                     {formatDate(row.original.created_at)}
                 </div>
@@ -280,7 +280,7 @@ export default function StaffPage() {
                 <div className="flex justify-end">
                     <button
                         type="button"
-                        className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
+                        className="inline-flex items-center gap-1 rounded-full border border-border px-3 py-1.5 text-base font-medium text-muted-foreground transition-colors hover:border-primary/40 hover:text-primary"
                         onClick={(event) => {
                             event.stopPropagation();
                             openStaffProfile(row.original.id);
@@ -315,7 +315,7 @@ export default function StaffPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-blue-600 dark:text-blue-400">
+                                <p className="text-base font-medium text-blue-600 dark:text-blue-400">
                                     Total Staff
                                 </p>
                                 <p className="text-3xl font-bold mt-2">
@@ -331,7 +331,7 @@ export default function StaffPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                                <p className="text-base font-medium text-emerald-600 dark:text-emerald-400">
                                     Medical Staff
                                 </p>
                                 <p className="text-3xl font-bold mt-2">
@@ -353,7 +353,7 @@ export default function StaffPage() {
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-sm font-medium text-purple-600 dark:text-purple-400">
+                                <p className="text-base font-medium text-purple-600 dark:text-purple-400">
                                     Administrators
                                 </p>
                                 <p className="text-3xl font-bold mt-2">
@@ -378,11 +378,11 @@ export default function StaffPage() {
                                 <Users className="w-5 h-5" />
                                 Staff Members
                             </CardTitle>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-base text-muted-foreground">
                                 Click any row to open the full staff profile.
                             </p>
                         </div>
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                        <div className="flex items-center gap-2 text-base text-muted-foreground">
                             <Filter className="w-4 h-4" />
                             <span>
                                 Showing {filteredStaff.length} of {staff.length}{" "}

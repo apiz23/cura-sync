@@ -118,7 +118,7 @@ export default function HealthTrackingPage() {
                     {alerts.map((alert) => (
                         <div
                             key={alert.id}
-                            className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-sm ${severityStyles[alert.severity] ?? severityStyles.WARNING}`}
+                            className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-base ${severityStyles[alert.severity] ?? severityStyles.WARNING}`}
                         >
                             <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
                             <div className="flex-1">
@@ -151,7 +151,7 @@ export default function HealthTrackingPage() {
                     <Skeleton className="h-56 rounded-xl" />
                 </div>
             ) : error ? (
-                <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-sm text-destructive">
+                <div className="rounded-xl border border-destructive/30 bg-destructive/5 p-6 text-base text-destructive">
                     {error}
                 </div>
             ) : (

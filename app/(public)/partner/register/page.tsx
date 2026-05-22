@@ -235,7 +235,22 @@ export default function RegisterClinicPage() {
 	}
 
 	return (
-		<div className="min-h-[100dvh] bg-background px-4 pb-12 pt-20">
+		<div className="relative min-h-[100dvh] overflow-hidden bg-background px-4 pb-12 pt-20">
+			{/* Dot grid */}
+			<div
+				aria-hidden="true"
+				className="pointer-events-none absolute inset-0"
+				style={{
+					backgroundImage:
+						"radial-gradient(color-mix(in oklch, var(--primary) 10%, transparent) 1px, transparent 1px)",
+					backgroundSize: "40px 40px",
+				}}
+			/>
+			{/* Right gradient accent */}
+			<div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden w-[35vw] bg-gradient-to-l from-primary/[0.04] to-transparent lg:block" />
+			{/* Edge fades */}
+			<div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-[15vw] bg-gradient-to-r from-background to-transparent" />
+			<div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
 			<PageTitle title="Register Health Center" />
 
 			<div className="mx-auto max-w-4xl pt-12 pb-12">

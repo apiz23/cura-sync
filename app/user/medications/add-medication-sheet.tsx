@@ -244,7 +244,7 @@ export default function AddMedicationSheet({
                                 Medication Name *
                             </Label>
                             {errors.name && (
-                                <span className="text-sm text-destructive flex items-center gap-1">
+                                <span className="text-base text-destructive flex items-center gap-1">
                                     <AlertCircle className="h-3 w-3" />
                                     {errors.name}
                                 </span>
@@ -272,7 +272,7 @@ export default function AddMedicationSheet({
                                 Dosage *
                             </Label>
                             {errors.dosage && (
-                                <span className="text-sm text-destructive flex items-center gap-1">
+                                <span className="text-base text-destructive flex items-center gap-1">
                                     <AlertCircle className="h-3 w-3" />
                                     {errors.dosage}
                                 </span>
@@ -451,7 +451,7 @@ export default function AddMedicationSheet({
                     {/* Submit Error */}
                     {errors.submit && (
                         <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                            <p className="text-sm text-destructive flex items-center gap-2">
+                            <p className="text-base text-destructive flex items-center gap-2">
                                 <AlertCircle className="h-4 w-4" />
                                 {errors.submit}
                             </p>

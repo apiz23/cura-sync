@@ -115,7 +115,7 @@ export default function AuditTrailPage() {
                 <CardContent className="pt-5">
                     <div className="flex flex-wrap gap-3 items-end">
                         <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground">Actor type</span>
+                            <span className="text-base font-medium text-muted-foreground">Actor type</span>
                             <Select value={actorType} onValueChange={setActorType}>
                                 <SelectTrigger className="w-36">
                                     <SelectValue />
@@ -129,7 +129,7 @@ export default function AuditTrailPage() {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground">Action</span>
+                            <span className="text-base font-medium text-muted-foreground">Action</span>
                             <Select value={action} onValueChange={setAction}>
                                 <SelectTrigger className="w-36">
                                     <SelectValue />
@@ -145,7 +145,7 @@ export default function AuditTrailPage() {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground">Resource</span>
+                            <span className="text-base font-medium text-muted-foreground">Resource</span>
                             <Select value={resourceType} onValueChange={setResourceType}>
                                 <SelectTrigger className="w-40">
                                     <SelectValue />
@@ -163,7 +163,7 @@ export default function AuditTrailPage() {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground">From</span>
+                            <span className="text-base font-medium text-muted-foreground">From</span>
                             <Input
                                 type="date"
                                 value={from}
@@ -173,7 +173,7 @@ export default function AuditTrailPage() {
                         </div>
 
                         <div className="flex flex-col gap-1.5">
-                            <span className="text-xs font-medium text-muted-foreground">To</span>
+                            <span className="text-base font-medium text-muted-foreground">To</span>
                             <Input
                                 type="date"
                                 value={to}
@@ -196,9 +196,9 @@ export default function AuditTrailPage() {
             <Card className="border-border/50">
                 <CardContent className="p-0">
                     <div className="overflow-x-auto">
-                        <table className="w-full text-sm">
+                        <table className="w-full text-base">
                             <thead>
-                                <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
+                                <tr className="border-b bg-muted/30 text-base uppercase tracking-wide text-muted-foreground">
                                     <th className="px-4 py-3 text-left font-medium">Time</th>
                                     <th className="px-4 py-3 text-left font-medium">Actor</th>
                                     <th className="px-4 py-3 text-left font-medium">Action</th>
@@ -226,9 +226,9 @@ export default function AuditTrailPage() {
                                 ) : (
                                     logs.map((log) => (
                                         <tr key={log.id} className="border-b last:border-0 hover:bg-muted/20 transition-colors">
-                                            <td className="px-4 py-3 whitespace-nowrap text-muted-foreground text-xs">
+                                            <td className="px-4 py-3 whitespace-nowrap text-muted-foreground text-base">
                                                 {formatRelative(log.created_at)}
-                                                <div className="text-[10px] opacity-60">{formatDateTime(log.created_at)}</div>
+                                                <div className="text-base opacity-60">{formatDateTime(log.created_at)}</div>
                                             </td>
                                             <td className="px-4 py-3">
                                                 <div className="font-medium text-foreground">
@@ -236,7 +236,7 @@ export default function AuditTrailPage() {
                                                 </div>
                                                 <Badge
                                                     variant="outline"
-                                                    className={`mt-1 text-[10px] px-1.5 py-0 ${ACTOR_COLORS[log.actor_type]}`}
+                                                    className={`mt-1 text-base px-1.5 py-0 ${ACTOR_COLORS[log.actor_type]}`}
                                                 >
                                                     {log.actor_type}
                                                 </Badge>
@@ -249,10 +249,10 @@ export default function AuditTrailPage() {
                                                     {log.action}
                                                 </Badge>
                                             </td>
-                                            <td className="px-4 py-3 font-mono text-xs text-foreground">
+                                            <td className="px-4 py-3 font-mono text-base text-foreground">
                                                 {log.resource_type}
                                             </td>
-                                            <td className="px-4 py-3 text-xs text-muted-foreground max-w-[200px]">
+                                            <td className="px-4 py-3 text-base text-muted-foreground max-w-[200px]">
                                                 {log.resource_id && (
                                                     <div className="font-mono truncate">
                                                         id: {truncateId(log.resource_id)}
@@ -284,7 +284,7 @@ export default function AuditTrailPage() {
                                 <ChevronLeft className="h-4 w-4" />
                                 Prev
                             </Button>
-                            <span className="text-sm text-muted-foreground">
+                            <span className="text-base text-muted-foreground">
                                 Page {page} of {pages}
                             </span>
                             <Button

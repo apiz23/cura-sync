@@ -111,21 +111,21 @@ export default function ViewPatientSheet({
 					<Card>
 						<CardContent className="grid gap-4 p-5 md:grid-cols-2">
 							<div className="space-y-1">
-								<p className="text-sm text-muted-foreground flex items-center gap-2">
+								<p className="text-base text-muted-foreground flex items-center gap-2">
 									<Mail className="h-4 w-4" />
 									Email
 								</p>
 								<p className="font-medium">{patient.email}</p>
 							</div>
 							<div className="space-y-1">
-								<p className="text-sm text-muted-foreground flex items-center gap-2">
+								<p className="text-base text-muted-foreground flex items-center gap-2">
 									<Phone className="h-4 w-4" />
 									Phone
 								</p>
 								<p className="font-medium">{patient.phone_number || "Not provided"}</p>
 							</div>
 							<div className="space-y-1">
-								<p className="text-sm text-muted-foreground flex items-center gap-2">
+								<p className="text-base text-muted-foreground flex items-center gap-2">
 									<Calendar className="h-4 w-4" />
 									Date of Birth
 								</p>
@@ -138,11 +138,11 @@ export default function ViewPatientSheet({
 								</p>
 							</div>
 							<div className="space-y-1">
-								<p className="text-sm text-muted-foreground flex items-center gap-2">
+								<p className="text-base text-muted-foreground flex items-center gap-2">
 									<User className="h-4 w-4" />
 									Patient ID
 								</p>
-								<p className="font-mono text-sm">{patient.id}</p>
+								<p className="font-mono text-base">{patient.id}</p>
 							</div>
 						</CardContent>
 					</Card>
@@ -150,21 +150,21 @@ export default function ViewPatientSheet({
 					<Card>
 						<CardContent className="grid gap-4 p-5 md:grid-cols-2">
 							<div className="space-y-1">
-								<p className="text-sm text-muted-foreground flex items-center gap-2">
+								<p className="text-base text-muted-foreground flex items-center gap-2">
 									<Heart className="h-4 w-4" />
 									Blood Type
 								</p>
 								<p className="font-medium">{patient.blood_type || "Not provided"}</p>
 							</div>
 							<div className="space-y-1">
-								<p className="text-sm text-muted-foreground flex items-center gap-2">
+								<p className="text-base text-muted-foreground flex items-center gap-2">
 									<Activity className="h-4 w-4" />
 									BMI
 								</p>
 								<p className="font-medium">{bmi || "Not available"}</p>
 							</div>
 							<div className="space-y-1">
-								<p className="text-sm text-muted-foreground">Height / Weight</p>
+								<p className="text-base text-muted-foreground">Height / Weight</p>
 								<p className="font-medium">
 									{patient.height_cm ? `${patient.height_cm} cm` : "N/A"}
 									{" / "}
@@ -172,7 +172,7 @@ export default function ViewPatientSheet({
 								</p>
 							</div>
 							<div className="space-y-1">
-								<p className="text-sm text-muted-foreground">Last Visit</p>
+								<p className="text-base text-muted-foreground">Last Visit</p>
 								<p className="font-medium">
 									{formatPatientDate(patient.last_visit, undefined, "Not available")}
 								</p>
@@ -187,7 +187,7 @@ export default function ViewPatientSheet({
 							<CardContent className="space-y-4 p-5">
 								{patient.allergies && (
 									<div className="space-y-1">
-										<p className="text-sm text-muted-foreground flex items-center gap-2">
+										<p className="text-base text-muted-foreground flex items-center gap-2">
 											<AlertCircle className="h-4 w-4 text-amber-600" />
 											Allergies
 										</p>
@@ -196,13 +196,13 @@ export default function ViewPatientSheet({
 								)}
 								{patient.chronic_conditions && (
 									<div className="space-y-1">
-										<p className="text-sm text-muted-foreground">Chronic Conditions</p>
+										<p className="text-base text-muted-foreground">Chronic Conditions</p>
 										<p className="font-medium">{patient.chronic_conditions}</p>
 									</div>
 								)}
 								{patient.emergency_contact && (
 									<div className="space-y-1">
-										<p className="text-sm text-muted-foreground flex items-center gap-2">
+										<p className="text-base text-muted-foreground flex items-center gap-2">
 											<UserCircle className="h-4 w-4" />
 											Emergency Contact
 										</p>

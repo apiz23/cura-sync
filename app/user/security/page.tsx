@@ -26,7 +26,7 @@ function StatusRow({
 }) {
     return (
         <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/40 px-4 py-3">
-            <span className="text-sm text-muted-foreground">{label}</span>
+            <span className="text-base text-muted-foreground">{label}</span>
             <div className="flex items-center gap-2">
                 {active !== undefined ? (
                     active ? (
@@ -35,7 +35,7 @@ function StatusRow({
                         <XCircle className="h-4 w-4 text-muted-foreground" />
                     )
                 ) : null}
-                <span className="text-right text-sm font-medium text-foreground">{value}</span>
+                <span className="text-right text-base font-medium text-foreground">{value}</span>
             </div>
         </div>
     );
@@ -77,7 +77,7 @@ export default function SecurityPage() {
 
             {/* Account identity */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
                     Account identity
                 </h2>
                 <div className="rounded-xl border border-border bg-card p-5 space-y-3">
@@ -87,7 +87,7 @@ export default function SecurityPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                             <p className="truncate font-medium text-foreground">{primaryEmail}</p>
-                            <p className="text-xs text-muted-foreground">
+                            <p className="text-base text-muted-foreground">
                                 {emailVerified ? "Verified" : "Not verified"}
                             </p>
                         </div>
@@ -102,7 +102,7 @@ export default function SecurityPage() {
 
             {/* Security status */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
                     Security status
                 </h2>
                 <div className="space-y-2">
@@ -133,7 +133,7 @@ export default function SecurityPage() {
 
             {/* Actions */}
             <section className="space-y-4">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-muted-foreground">
+                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
                     Actions
                 </h2>
                 <div className="space-y-3">
@@ -144,7 +144,7 @@ export default function SecurityPage() {
                             </div>
                             <div>
                                 <p className="font-medium text-foreground">Password & 2FA</p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-base text-muted-foreground">
                                     Update password and manage two-factor authentication
                                 </p>
                             </div>
@@ -167,7 +167,7 @@ export default function SecurityPage() {
                             </div>
                             <div>
                                 <p className="font-medium text-foreground">Connected accounts</p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-base text-muted-foreground">
                                     Add or remove OAuth connections (Google, etc.)
                                 </p>
                             </div>
@@ -190,7 +190,7 @@ export default function SecurityPage() {
                             </div>
                             <div>
                                 <p className="font-medium text-foreground">Sign out</p>
-                                <p className="text-sm text-muted-foreground">
+                                <p className="text-base text-muted-foreground">
                                     End your current session on this device
                                 </p>
                             </div>

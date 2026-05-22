@@ -88,7 +88,7 @@ function EmptyState({ label }: { label: string }) {
     return (
         <div className="rounded-xl border border-dashed p-8 text-center">
             <p className="font-medium text-foreground">No {label} recorded</p>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
+            <p className="mx-auto mt-2 max-w-sm text-base text-muted-foreground">
                 Your clinic can update this section during your next visit. Records
                 appear here once added by your care team.
             </p>
@@ -156,7 +156,7 @@ export default function RecordsPage() {
                     <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
                     <div>
                         <p className="font-medium text-foreground">Could not load records</p>
-                        <p className="text-sm text-muted-foreground">{error}</p>
+                        <p className="text-base text-muted-foreground">{error}</p>
                     </div>
                 </div>
             ) : records ? (
@@ -165,7 +165,7 @@ export default function RecordsPage() {
                         <TabsTrigger value="conditions">
                             Conditions
                             {records.conditions.length ? (
-                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
                                     {records.conditions.length}
                                 </span>
                             ) : null}
@@ -173,7 +173,7 @@ export default function RecordsPage() {
                         <TabsTrigger value="allergies">
                             Allergies
                             {records.allergies.length ? (
-                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
                                     {records.allergies.length}
                                 </span>
                             ) : null}
@@ -181,7 +181,7 @@ export default function RecordsPage() {
                         <TabsTrigger value="procedures">
                             Procedures
                             {records.procedures.length ? (
-                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
                                     {records.procedures.length}
                                 </span>
                             ) : null}
@@ -189,7 +189,7 @@ export default function RecordsPage() {
                         <TabsTrigger value="encounters">
                             Encounters
                             {records.encounters.length ? (
-                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">
+                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
                                     {records.encounters.length}
                                 </span>
                             ) : null}
@@ -214,7 +214,7 @@ export default function RecordsPage() {
                                             <div>
                                                 <p className="font-semibold text-foreground">{condition.name}</p>
                                                 {condition.onset_date ? (
-                                                    <p className="text-xs text-muted-foreground">
+                                                    <p className="text-base text-muted-foreground">
                                                         Since {formatDate(condition.onset_date)}
                                                         {condition.resolved_date
                                                             ? ` · Resolved ${formatDate(condition.resolved_date)}`
@@ -235,7 +235,7 @@ export default function RecordsPage() {
                                         </div>
                                     </div>
                                     {condition.notes ? (
-                                        <p className="mt-3 text-sm text-muted-foreground">{condition.notes}</p>
+                                        <p className="mt-3 text-base text-muted-foreground">{condition.notes}</p>
                                     ) : null}
                                 </div>
                             ))
@@ -260,7 +260,7 @@ export default function RecordsPage() {
                                             <div>
                                                 <p className="font-semibold text-foreground">{allergy.allergen}</p>
                                                 {allergy.reaction ? (
-                                                    <p className="text-xs text-muted-foreground">
+                                                    <p className="text-base text-muted-foreground">
                                                         Reaction: {allergy.reaction}
                                                     </p>
                                                 ) : null}
@@ -278,7 +278,7 @@ export default function RecordsPage() {
                                         </div>
                                     </div>
                                     {allergy.notes ? (
-                                        <p className="mt-3 text-sm text-muted-foreground">{allergy.notes}</p>
+                                        <p className="mt-3 text-base text-muted-foreground">{allergy.notes}</p>
                                     ) : null}
                                 </div>
                             ))
@@ -301,20 +301,20 @@ export default function RecordsPage() {
                                         </div>
                                         <div>
                                             <p className="font-semibold text-foreground">{procedure.name}</p>
-                                            <p className="text-xs text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 {procedure.procedure_date ? formatDate(procedure.procedure_date) : "Date unknown"}
                                                 {procedure.facility_name ? ` · ${procedure.facility_name}` : null}
                                             </p>
                                         </div>
                                     </div>
                                     {procedure.outcome ? (
-                                        <p className="mt-3 text-sm text-muted-foreground">
+                                        <p className="mt-3 text-base text-muted-foreground">
                                             <span className="font-medium text-foreground">Outcome: </span>
                                             {procedure.outcome}
                                         </p>
                                     ) : null}
                                     {procedure.notes ? (
-                                        <p className="mt-1 text-sm text-muted-foreground">{procedure.notes}</p>
+                                        <p className="mt-1 text-base text-muted-foreground">{procedure.notes}</p>
                                     ) : null}
                                 </div>
                             ))
@@ -340,7 +340,7 @@ export default function RecordsPage() {
                                                 <p className="font-semibold text-foreground">
                                                     {encounter.reason ?? "Visit"}
                                                 </p>
-                                                <p className="text-xs text-muted-foreground">
+                                                <p className="text-base text-muted-foreground">
                                                     {formatDate(encounter.encounter_date)}
                                                     {encounter.facility_name ? ` · ${encounter.facility_name}` : null}
                                                     {encounter.provider_name ? ` · ${encounter.provider_name}` : null}
@@ -350,13 +350,13 @@ export default function RecordsPage() {
                                         <Badge variant="outline">{encounter.encounter_type}</Badge>
                                     </div>
                                     {encounter.diagnosis_summary ? (
-                                        <p className="mt-3 text-sm text-muted-foreground">
+                                        <p className="mt-3 text-base text-muted-foreground">
                                             <span className="font-medium text-foreground">Diagnosis: </span>
                                             {encounter.diagnosis_summary}
                                         </p>
                                     ) : null}
                                     {encounter.notes ? (
-                                        <p className="mt-1 text-sm text-muted-foreground">{encounter.notes}</p>
+                                        <p className="mt-1 text-base text-muted-foreground">{encounter.notes}</p>
                                     ) : null}
                                 </div>
                             ))

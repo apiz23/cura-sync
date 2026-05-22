@@ -150,7 +150,7 @@ function AppointmentList({
             <CalendarClock className="h-7 w-7 text-muted-foreground" />
           </div>
           <h3 className="text-lg font-semibold">{emptyTitle}</h3>
-          <p className="mt-2 text-sm text-muted-foreground">{emptyDescription}</p>
+          <p className="mt-2 text-base text-muted-foreground">{emptyDescription}</p>
         </CardContent>
       </Card>
     );
@@ -177,7 +177,7 @@ function AppointmentList({
                     {appointment.status.replaceAll("_", " ")}
                   </Badge>
                 </div>
-                <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <div className="flex flex-wrap gap-4 text-base text-muted-foreground">
                   <span className="flex items-center gap-2">
                     <Calendar className="h-4 w-4" />
                     {formatDate(appointment.appointment_date)}
@@ -188,7 +188,7 @@ function AppointmentList({
                     {formatTime(appointment.end_time)}
                   </span>
                 </div>
-                <p className="text-sm text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   {appointment.reason_for_visit?.trim() || "No reason provided."}
                 </p>
               </div>
@@ -201,7 +201,7 @@ function AppointmentList({
                   </Link>
                 ) : null}
                 {canCancel ? (
-                  <Badge variant="secondary" className="px-3 py-2 text-xs">
+                  <Badge variant="secondary" className="px-3 py-2 text-base">
                     Active booking
                   </Badge>
                 ) : null}
@@ -377,9 +377,9 @@ export default function AppointmentPage() {
             />
           </div>
           <div className="min-w-0 flex-1">
-            <div className="truncate text-sm font-semibold">{row.original.name}</div>
-            <div className="flex flex-wrap items-center gap-1 text-xs text-muted-foreground">
-              <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-xs">
+            <div className="truncate text-base font-semibold">{row.original.name}</div>
+            <div className="flex flex-wrap items-center gap-1 text-base text-muted-foreground">
+              <Badge variant="outline" className="shrink-0 px-1.5 py-0 text-base">
                 {row.original.type ?? "Unspecified"}
               </Badge>
               {row.original.specialty ? (
@@ -407,11 +407,11 @@ export default function AppointmentPage() {
           <div className="flex items-start gap-2">
             <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground" />
             <div className="min-w-0 flex-1">
-              <p className="line-clamp-2 text-sm wrap-break-words">
+              <p className="line-clamp-2 text-base wrap-break-words">
                 {row.original.address}
               </p>
               {row.original.latitude && row.original.longitude ? (
-                <p className="text-xs text-muted-foreground">
+                <p className="text-base text-muted-foreground">
                   Coordinates available
                 </p>
               ) : null}
@@ -430,25 +430,25 @@ export default function AppointmentPage() {
 
         return (
           <div className="min-w-55 space-y-2">
-            <div className="flex items-center gap-2 text-sm">
+            <div className="flex items-center gap-2 text-base">
               <Clock className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
               <span className="font-medium">{schedule.hours}</span>
             </div>
             <div className="flex flex-wrap gap-1">
               {schedule.days.length ? (
                 schedule.days.map((day) => (
-                  <Badge key={day} variant="secondary" className="text-xs">
+                  <Badge key={day} variant="secondary" className="text-base">
                     {day}
                   </Badge>
                 ))
               ) : (
-                <span className="text-xs text-muted-foreground">
+                <span className="text-base text-muted-foreground">
                   No weekly schedule set
                 </span>
               )}
             </div>
             {schedule.slotDuration ? (
-              <p className="text-xs text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 {schedule.slotDuration} min per slot
               </p>
             ) : null}
@@ -523,7 +523,7 @@ export default function AppointmentPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-base font-medium text-muted-foreground">
                     Active Appointments
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">
@@ -541,7 +541,7 @@ export default function AppointmentPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-base font-medium text-muted-foreground">
                     Appointment History
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">
@@ -559,7 +559,7 @@ export default function AppointmentPage() {
             <CardContent className="p-5">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-base font-medium text-muted-foreground">
                     Available Facilities
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">
@@ -673,7 +673,7 @@ export default function AppointmentPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-base font-medium text-muted-foreground">
                     Active Facilities
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">
@@ -691,7 +691,7 @@ export default function AppointmentPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-base font-medium text-muted-foreground">
                     With Schedules
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">
@@ -709,7 +709,7 @@ export default function AppointmentPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-base font-medium text-muted-foreground">
                     Facility Types
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">{facilityTypes.length}</h3>
@@ -725,7 +725,7 @@ export default function AppointmentPage() {
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <p className="text-sm font-medium text-muted-foreground">
+                  <p className="text-base font-medium text-muted-foreground">
                     Specialties
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">{specialtyCount}</h3>
@@ -742,7 +742,7 @@ export default function AppointmentPage() {
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-2xl font-semibold">Facilities</h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-base text-muted-foreground">
                 {filteredFacilities.length} facilities found
                 {searchQuery ? ` for "${searchQuery}"` : ""}
                 {filterType !== "all" ? ` - Filtered by: ${filterType}` : ""}

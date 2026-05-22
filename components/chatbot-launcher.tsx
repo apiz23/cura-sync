@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import {
     Sheet,
     SheetContent,
+    SheetDescription,
     SheetHeader,
     SheetTitle,
     SheetTrigger,
@@ -28,30 +29,31 @@ export default function ChatbotLauncher() {
             <Sheet>
                 <SheetTrigger className="fixed bottom-6 right-6 z-50" asChild>
                     <Button
-                        className="rounded-full h-14 w-14 bg-primary text-primary-foreground shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 group"
+                        aria-label="Open Cura Sync Mate"
+                        className="group size-12 rounded-full border border-primary/15 bg-primary text-primary-foreground shadow-md shadow-primary/10 hover:bg-primary/90 hover:shadow-lg sm:size-13"
                         size="icon"
                     >
                         <div className="relative">
-                            <MessageCircle className="h-6 w-6 transition-transform group-hover:scale-110" />
-                            <div className="absolute -top-1 -right-1 w-3 h-3 bg-green-400 rounded-full border-2 border-background animate-pulse" />
+                            <MessageCircle className="size-5 transition-transform duration-200 group-hover:-translate-y-0.5 sm:size-5.5" />
+                            <span className="absolute -right-1 -top-1 size-2.5 rounded-full border-2 border-background bg-secondary" />
                         </div>
                     </Button>
                 </SheetTrigger>
-                <SheetContent className="h-full p-0 overflow-y-auto w-full sm:max-w-xl border-l border-border">
+                <SheetContent className="h-full w-full gap-0 overflow-hidden border-l border-border bg-background p-0 shadow-xl sm:max-w-xl">
                     <div className="flex flex-col h-full">
-                        <SheetHeader className="px-6 py-4 border-b border-border bg-card/50 backdrop-blur-sm">
+                        <SheetHeader className="border-b border-border bg-background px-5 py-4 sm:px-6">
                             <div className="flex items-center justify-between">
                                 <div className="flex items-center gap-3">
-                                    <div className="bg-primary/10 p-2 rounded-xl">
-                                        <Bot className="h-6 w-6 text-primary" />
+                                    <div className="flex size-10 items-center justify-center rounded-lg border border-border bg-card text-primary shadow-xs">
+                                        <Bot className="size-5" />
                                     </div>
-                                    <div>
-                                        <SheetTitle className="text-lg font-semibold text-foreground">
+                                    <div className="min-w-0">
+                                        <SheetTitle className="text-base font-semibold leading-tight text-foreground">
                                             Cura Sync Mate
                                         </SheetTitle>
-                                        <p className="text-sm text-muted-foreground">
+                                        <SheetDescription className="mt-1 text-sm leading-none text-muted-foreground">
                                             How can I help you today?
-                                        </p>
+                                        </SheetDescription>
                                     </div>
                                 </div>
                             </div>

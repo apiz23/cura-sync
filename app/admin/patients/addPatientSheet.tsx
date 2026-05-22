@@ -135,7 +135,7 @@ export default function AddPatientSheet({
                                     <p className="font-medium">
                                         {u.full_name || "Unnamed User"}
                                     </p>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-base text-muted-foreground">
                                         {u.email}
                                     </p>
                                 </div>

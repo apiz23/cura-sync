@@ -215,7 +215,7 @@ export function AppointmentSheet({
                     {/* Main Content */}
                     <div className="flex-1 overflow-y-auto px-6 py-4 space-y-6">
                         {/* Appointment ID */}
-                        <div className="text-sm text-muted-foreground">
+                        <div className="text-base text-muted-foreground">
                             Appointment ID:{" "}
                             <span className="font-mono">
                                 {appointment.id.slice(0, 8)}...
@@ -224,7 +224,7 @@ export function AppointmentSheet({
 
                         {/* Patient Info */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-semibold text-foreground">
+                            <h3 className="text-base font-semibold text-foreground">
                                 Patient Information
                             </h3>
                             <div className="flex items-start gap-3 p-4 rounded-lg border bg-card">
@@ -245,7 +245,7 @@ export function AppointmentSheet({
                                     <p className="font-medium">
                                         {appointment.patient_name}
                                     </p>
-                                    <p className="text-sm text-muted-foreground">
+                                    <p className="text-base text-muted-foreground">
                                         Patient ID:{" "}
                                         {appointment.profile_id?.slice(0, 8)}...
                                     </p>
@@ -257,29 +257,29 @@ export function AppointmentSheet({
 
                         {/* Appointment Details */}
                         <div className="space-y-4">
-                            <h3 className="text-sm font-semibold text-foreground">
+                            <h3 className="text-base font-semibold text-foreground">
                                 Appointment Details
                             </h3>
                             <div className="grid grid-cols-2 gap-4">
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">
+                                    <Label className="text-base text-muted-foreground">
                                         Facility
                                     </Label>
                                     <div className="flex items-center gap-2 p-3 rounded-lg border bg-card">
                                         <Building2 className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm font-medium">
+                                        <span className="text-base font-medium">
                                             {appointment.facility_name}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">
+                                    <Label className="text-base text-muted-foreground">
                                         Date
                                     </Label>
                                     <div className="flex items-center gap-2 p-3 rounded-lg border bg-card">
                                         <Calendar className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm font-medium">
+                                        <span className="text-base font-medium">
                                             {formatDate(
                                                 appointment.appointment_date
                                             )}
@@ -288,24 +288,24 @@ export function AppointmentSheet({
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">
+                                    <Label className="text-base text-muted-foreground">
                                         Start Time
                                     </Label>
                                     <div className="flex items-center gap-2 p-3 rounded-lg border bg-card">
                                         <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm font-medium">
+                                        <span className="text-base font-medium">
                                             {formatTime(appointment.start_time)}
                                         </span>
                                     </div>
                                 </div>
 
                                 <div className="space-y-2">
-                                    <Label className="text-xs text-muted-foreground">
+                                    <Label className="text-base text-muted-foreground">
                                         End Time
                                     </Label>
                                     <div className="flex items-center gap-2 p-3 rounded-lg border bg-card">
                                         <Clock className="w-4 h-4 text-muted-foreground shrink-0" />
-                                        <span className="text-sm font-medium">
+                                        <span className="text-base font-medium">
                                             {formatTime(appointment.end_time)}
                                         </span>
                                     </div>
@@ -347,7 +347,7 @@ export function AppointmentSheet({
                                     </SelectContent>
                                 </Select>
                                 {!isAdmin ? (
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-base text-muted-foreground">
                                         Role rules: staff can confirm/check-in/cancel; doctors can complete; admins can override.
                                     </p>
                                 ) : null}
@@ -366,7 +366,7 @@ export function AppointmentSheet({
                                     disabled={isStaff && !isAdmin}
                                 />
                                 {isStaff && !isAdmin ? (
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-base text-muted-foreground">
                                         Staff cannot edit the reason field (status-only).
                                     </p>
                                 ) : null}

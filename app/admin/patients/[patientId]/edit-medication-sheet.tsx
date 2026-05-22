@@ -258,7 +258,7 @@ export default function EditMedicationSheet({
                                 <SheetTitle className="text-xl font-semibold text-foreground">
                                     Edit Medication
                                 </SheetTitle>
-                                <p className="text-sm text-muted-foreground mt-1">
+                                <p className="text-base text-muted-foreground mt-1">
                                     Update medication details
                                 </p>
                             </div>
@@ -326,7 +326,7 @@ export default function EditMedicationSheet({
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2.5">
-                                    <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
+                                    <Label className="text-base font-medium flex items-center gap-2 text-foreground">
                                         <Pill className="h-3.5 w-3.5 text-primary/70" />
                                         Medication Name *
                                     </Label>
@@ -341,7 +341,7 @@ export default function EditMedicationSheet({
                                 </div>
 
                                 <div className="space-y-2.5">
-                                    <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
+                                    <Label className="text-base font-medium flex items-center gap-2 text-foreground">
                                         <Syringe className="h-3.5 w-3.5 text-primary/70" />
                                         Dosage *
                                     </Label>
@@ -375,7 +375,7 @@ export default function EditMedicationSheet({
                         <div className="space-y-4">
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div className="space-y-2.5">
-                                    <Label className="text-sm font-medium text-foreground">
+                                    <Label className="text-base font-medium text-foreground">
                                         Frequency *
                                     </Label>
                                     <Select
@@ -402,7 +402,7 @@ export default function EditMedicationSheet({
                                 </div>
 
                                 <div className="space-y-2.5">
-                                    <Label className="text-sm font-medium text-foreground">
+                                    <Label className="text-base font-medium text-foreground">
                                         Specific Schedule
                                     </Label>
                                     <Select
@@ -444,7 +444,7 @@ export default function EditMedicationSheet({
 
                         <div className="space-y-5">
                             <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-foreground">
+                                <Label className="text-base font-medium text-foreground">
                                     Start Date *
                                 </Label>
 
@@ -483,10 +483,10 @@ export default function EditMedicationSheet({
 
                             <div className="flex items-center justify-between p-4 bg-muted/20 rounded-xl border border-border/40">
                                 <div className="space-y-1">
-                                    <Label className="text-sm font-medium text-foreground">
+                                    <Label className="text-base font-medium text-foreground">
                                         Ongoing Medication
                                     </Label>
-                                    <p className="text-xs text-muted-foreground">
+                                    <p className="text-base text-muted-foreground">
                                         No end date required
                                     </p>
                                 </div>
@@ -503,7 +503,7 @@ export default function EditMedicationSheet({
 
                             {!form.is_ongoing && (
                                 <div className="space-y-2.5">
-                                    <Label className="text-sm font-medium text-foreground">
+                                    <Label className="text-base font-medium text-foreground">
                                         End Date
                                     </Label>
 
@@ -561,7 +561,7 @@ export default function EditMedicationSheet({
 
                         <div className="space-y-5">
                             <div className="space-y-2.5">
-                                <Label className="text-sm font-medium flex items-center gap-2 text-foreground">
+                                <Label className="text-base font-medium flex items-center gap-2 text-foreground">
                                     <User className="h-3.5 w-3.5 text-primary/70" />
                                     Prescribed By
                                 </Label>
@@ -580,7 +580,7 @@ export default function EditMedicationSheet({
                             </div>
 
                             <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-foreground">
+                                <Label className="text-base font-medium text-foreground">
                                     Status
                                 </Label>
                                 <Select
@@ -625,7 +625,7 @@ export default function EditMedicationSheet({
                             </div>
 
                             <div className="space-y-2.5">
-                                <Label className="text-sm font-medium text-foreground">
+                                <Label className="text-base font-medium text-foreground">
                                     Notes
                                 </Label>
                                 <Textarea

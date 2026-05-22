@@ -315,7 +315,7 @@ export default function UserDashboardPage() {
                     <CardContent className="flex items-center justify-between gap-4 p-5">
                         <div>
                             <p className="font-medium text-foreground">Dashboard unavailable</p>
-                            <p className="text-sm text-muted-foreground">{error}</p>
+                            <p className="text-base text-muted-foreground">{error}</p>
                         </div>
                         <Link href="/user/profile">
                             <Button variant="outline">Open profile</Button>
@@ -401,7 +401,7 @@ export default function UserDashboardPage() {
                                             <p className="font-medium text-foreground">
                                                 {item.title}
                                             </p>
-                                            <p className="text-sm text-muted-foreground">
+                                            <p className="text-base text-muted-foreground">
                                                 {item.detail}
                                             </p>
                                         </div>
@@ -459,7 +459,7 @@ export default function UserDashboardPage() {
                                 Latest server snapshot uploaded from Health Connect
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-5 text-sm">
+                        <CardContent className="space-y-5 text-base">
                             <SummaryRow
                                 label="Last sync"
                                 value={
@@ -501,7 +501,7 @@ export default function UserDashboardPage() {
                             />
 
                             <div className="space-y-2">
-                                <p className="text-xs font-medium text-muted-foreground">
+                                <p className="text-base font-medium text-muted-foreground">
                                     Recent uploads
                                 </p>
                                 {recentHealthSync.length ? (
@@ -517,12 +517,12 @@ export default function UserDashboardPage() {
                                                             snapshot.syncedAt
                                                         )}
                                                     </p>
-                                                    <p className="truncate text-xs text-muted-foreground">
+                                                    <p className="truncate text-base text-muted-foreground">
                                                         {snapshot.source?.attribution ??
                                                             "Synced from Health Connect"}
                                                     </p>
                                                 </div>
-                                                <div className="shrink-0 text-right text-xs text-muted-foreground">
+                                                <div className="shrink-0 text-right text-base text-muted-foreground">
                                                     <p>
                                                         <span className="font-medium text-foreground">
                                                             {formatInteger(
@@ -544,7 +544,7 @@ export default function UserDashboardPage() {
                                         ))}
                                     </div>
                                 ) : (
-                                    <div className="rounded-lg bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                                    <div className="rounded-lg bg-muted/40 px-3 py-2 text-base text-muted-foreground">
                                         Sync in the mobile app to see your wearable history
                                         here.
                                     </div>
@@ -560,7 +560,7 @@ export default function UserDashboardPage() {
                                 Current state of your account and treatment data
                             </CardDescription>
                         </CardHeader>
-                        <CardContent className="space-y-4 text-sm">
+                        <CardContent className="space-y-4 text-base">
                             <SummaryRow
                                 label="Next appointment"
                                 value={
@@ -651,7 +651,7 @@ function SummaryCard({
         <Card className="border shadow-sm">
             <CardHeader className="pb-3">
                 <div className="flex items-center justify-between">
-                    <CardTitle className="text-sm font-medium text-muted-foreground">
+                    <CardTitle className="text-base font-medium text-muted-foreground">
                         {title}
                     </CardTitle>
                     <div className="rounded-lg bg-primary/10 p-2 text-primary">
@@ -661,7 +661,7 @@ function SummaryCard({
             </CardHeader>
             <CardContent>
                 <p className="text-3xl font-semibold text-foreground">{value}</p>
-                <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+                <p className="mt-2 text-base text-muted-foreground">{description}</p>
             </CardContent>
         </Card>
     );
@@ -715,7 +715,7 @@ function EmptyState({
     return (
         <div className="rounded-xl border border-dashed p-6 text-center">
             <p className="font-medium text-foreground">{title}</p>
-            <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+            <p className="mx-auto mt-2 max-w-md text-base text-muted-foreground">
                 {description}
             </p>
             <Link href={href} className="mt-4 inline-flex">

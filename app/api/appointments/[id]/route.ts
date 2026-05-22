@@ -129,10 +129,6 @@ export async function PATCH(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
 ) {
-    // Patients can cancel their own future appointments.
-    const any = await requireAnySession(req);
-    if (any instanceof NextResponse) return any;
-
     const { id } = await params;
     const body = await req.json();
 
@@ -146,62 +142,12 @@ export async function PATCH(
         return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
     }
 
-    if (any.kind === "patient") {
-        if (existing.profile_id !== any.profileId) {
-            return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-        }
-
-        const parsed = statusSchema.safeParse(body?.status);
-        if (!parsed.success || parsed.data !== "CANCELLED") {
-            return NextResponse.json(
-                { error: "Patients may only cancel appointments." },
-                { status: 400 },
-            );
-        }
-
-        const apptDate = new Date(`${existing.appointment_date}T00:00:00Z`);
-        const now = new Date();
-        const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
-        if (Number.isNaN(apptDate.getTime()) || apptDate.getTime() < todayUtc.getTime()) {
-            return NextResponse.json(
-                { error: "Past appointments cannot be cancelled." },
-                { status: 400 },
-            );
-        }
-
-        if (!canTransition(existing.status, "CANCELLED")) {
-            return NextResponse.json(
-                { error: "This appointment cannot be cancelled." },
-                { status: 400 },
-            );
-        }
-
-        const { data, error } = await supabase
-            .from("cura_appointments")
-            .update({ status: "CANCELLED" })
-            .eq("id", id)
-            .select()
-            .single();
-
-        if (error) {
-            return NextResponse.json({ error: error.message }, { status: 500 });
-        }
-
-        void logAudit({
-            actor_id: any.profileId,
-            actor_type: "patient",
-            action: "UPDATE",
-            resource_type: "appointment",
-            resource_id: id,
-            metadata: { status: "CANCELLED" },
-        });
-
-        return NextResponse.json(data);
-    }
-
-    // Staff update flow.
-    const session = await requireStaffSession(req);
-    if (session instanceof NextResponse) return session;
+    // Staff JWT takes priority over Clerk session. A staff member may have a residual
+    // Clerk session in their browser — checking staff first prevents them being
+    // misclassified as a patient by requireAnySession.
+    const staffSession = await requireStaffSession(req);
+    if (!(staffSession instanceof NextResponse)) {
+        const session = staffSession;
 
     const facilityAccess = ensureFacilityAccess(session, existing.facility_id);
     if (facilityAccess instanceof NextResponse) return facilityAccess;
@@ -307,5 +253,65 @@ export async function PATCH(
         nextStatus: nextStatus,
     }).catch((err) => console.error("Failed to send push notification", err));
 
-    return NextResponse.json(data);
+        return NextResponse.json(data);
+    }
+
+    // Patient fallback — can only cancel their own future appointments.
+    const any = await requireAnySession(req);
+    if (any instanceof NextResponse) return any;
+
+    if (any.kind !== "patient") {
+        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    if (existing.profile_id !== any.profileId) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    const parsed = statusSchema.safeParse(body?.status);
+    if (!parsed.success || parsed.data !== "CANCELLED") {
+        return NextResponse.json(
+            { error: "Patients may only cancel appointments." },
+            { status: 400 },
+        );
+    }
+
+    const apptDate = new Date(`${existing.appointment_date}T00:00:00Z`);
+    const now = new Date();
+    const todayUtc = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    if (Number.isNaN(apptDate.getTime()) || apptDate.getTime() < todayUtc.getTime()) {
+        return NextResponse.json(
+            { error: "Past appointments cannot be cancelled." },
+            { status: 400 },
+        );
+    }
+
+    if (!canTransition(existing.status, "CANCELLED")) {
+        return NextResponse.json(
+            { error: "This appointment cannot be cancelled." },
+            { status: 400 },
+        );
+    }
+
+    const { data: cancelData, error: cancelError } = await supabase
+        .from("cura_appointments")
+        .update({ status: "CANCELLED" })
+        .eq("id", id)
+        .select()
+        .single();
+
+    if (cancelError) {
+        return NextResponse.json({ error: cancelError.message }, { status: 500 });
+    }
+
+    void logAudit({
+        actor_id: any.profileId,
+        actor_type: "patient",
+        action: "UPDATE",
+        resource_type: "appointment",
+        resource_id: id,
+        metadata: { status: "CANCELLED" },
+    });
+
+    return NextResponse.json(cancelData);
 }

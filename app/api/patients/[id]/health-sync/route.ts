@@ -1,18 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
-import { requireStaffSession } from "@/lib/authz";
+import { requireStaffSession, type StaffSession } from "@/lib/authz";
 import { logAudit } from "@/lib/audit";
 
-async function ensurePatientInStaffFacility(
-    staffFacilityId: string,
+async function ensurePatientAccess(
+    session: StaffSession,
     patientId: string
 ): Promise<NextResponse | void> {
+    if (session.isAdmin || session.role === "doctor") return;
+
     const { data, error } = await supabase
         .from("cura_patient_facilities")
         .select("id")
-        .eq("facility_id", staffFacilityId)
+        .eq("facility_id", session.facilityId)
         .eq("profile_id", patientId)
-        .eq("status", "active")
         .maybeSingle();
 
     if (error) {
@@ -53,10 +54,7 @@ export async function GET(
     try {
         const { id: patientId } = await params;
 
-        const facilityCheck = await ensurePatientInStaffFacility(
-            session.facilityId,
-            patientId
-        );
+        const facilityCheck = await ensurePatientAccess(session, patientId);
         if (facilityCheck instanceof NextResponse) return facilityCheck;
 
         const days = parseDays(req.url);

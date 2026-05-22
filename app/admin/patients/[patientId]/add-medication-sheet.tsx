@@ -276,12 +276,12 @@ export default function AddMedicationSheet({
                             <div className="flex items-center justify-between">
                                 <Label
                                     htmlFor="name"
-                                    className="text-sm font-medium"
+                                    className="text-base font-medium"
                                 >
                                     Medication Name *
                                 </Label>
                                 {errors.name && (
-                                    <span className="text-xs text-destructive flex items-center gap-1">
+                                    <span className="text-base text-destructive flex items-center gap-1">
                                         <AlertCircle className="h-3 w-3" />
                                         {errors.name}
                                     </span>
@@ -307,12 +307,12 @@ export default function AddMedicationSheet({
                             <div className="flex items-center justify-between">
                                 <Label
                                     htmlFor="dosage"
-                                    className="text-sm font-medium"
+                                    className="text-base font-medium"
                                 >
                                     Dosage *
                                 </Label>
                                 {errors.dosage && (
-                                    <span className="text-xs text-destructive flex items-center gap-1">
+                                    <span className="text-base text-destructive flex items-center gap-1">
                                         <AlertCircle className="h-3 w-3" />
                                         {errors.dosage}
                                     </span>
@@ -338,7 +338,7 @@ export default function AddMedicationSheet({
                             <div className="space-y-2">
                                 <Label
                                     htmlFor="frequency"
-                                    className="text-sm font-medium"
+                                    className="text-base font-medium"
                                 >
                                     Frequency *
                                 </Label>
@@ -371,7 +371,7 @@ export default function AddMedicationSheet({
                             <div className="space-y-2">
                                 <Label
                                     htmlFor="schedule"
-                                    className="text-sm font-medium"
+                                    className="text-base font-medium"
                                 >
                                     Schedule *
                                 </Label>
@@ -405,7 +405,7 @@ export default function AddMedicationSheet({
                         {/* Dates Row */}
                         <div className="grid grid-cols-2 gap-4">
                             <div className="space-y-2">
-                                <Label className="text-sm font-medium">
+                                <Label className="text-base font-medium">
                                     Start Date *
                                 </Label>
                                 <Popover>
@@ -453,7 +453,7 @@ export default function AddMedicationSheet({
                             </div>
 
                             <div className="space-y-2">
-                                <Label className="text-sm font-medium">
+                                <Label className="text-base font-medium">
                                     End Date (Optional)
                                 </Label>
                                 <Popover>
@@ -509,7 +509,7 @@ export default function AddMedicationSheet({
                         <div className="space-y-2">
                             <Label
                                 htmlFor="prescribed_by"
-                                className="text-sm font-medium flex items-center gap-2"
+                                className="text-base font-medium flex items-center gap-2"
                             >
                                 <Stethoscope className="h-3.5 w-3.5" />
                                 Prescribed By (Optional)
@@ -532,7 +532,7 @@ export default function AddMedicationSheet({
                         <div className="space-y-2">
                             <Label
                                 htmlFor="status"
-                                className="text-sm font-medium"
+                                className="text-base font-medium"
                             >
                                 Status
                             </Label>
@@ -576,7 +576,7 @@ export default function AddMedicationSheet({
                         <div className="space-y-2">
                             <Label
                                 htmlFor="notes"
-                                className="text-sm font-medium"
+                                className="text-base font-medium"
                             >
                                 Additional Notes (Optional)
                             </Label>
@@ -594,7 +594,7 @@ export default function AddMedicationSheet({
                         {/* Submit Error */}
                         {errors.submit && (
                             <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20">
-                                <p className="text-sm text-destructive flex items-center gap-2">
+                                <p className="text-base text-destructive flex items-center gap-2">
                                     <AlertCircle className="h-4 w-4" />
                                     {errors.submit}
                                 </p>
