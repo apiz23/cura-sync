@@ -30,6 +30,7 @@ import {
 	Scissors,
 	AlertTriangle,
 	Plus,
+	ShieldCheck,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useRef } from "react";
@@ -177,6 +178,7 @@ export default function PatientDetailPage() {
 	const [healthSnapshots, setHealthSnapshots] = useState<HealthSyncSnapshot[]>([]);
 	const [healthLatest, setHealthLatest] = useState<HealthSyncSnapshot | null>(null);
 	const [healthLoading, setHealthLoading] = useState(false);
+	const [blockchainProtectionEnabled, setBlockchainProtectionEnabled] = useState(false);
 	const { user } = useAuth();
 	const router = useRouter();
 
@@ -264,8 +266,9 @@ export default function PatientDetailPage() {
 		try {
 			const res = await fetch(`/api/patients/${patientId}/records`, { cache: "no-store" });
 			if (!res.ok) throw new Error("Failed to load records");
-			const data = (await res.json()) as MedicalRecordsData;
+			const data = (await res.json()) as MedicalRecordsData & { blockchainProtectionEnabled?: boolean };
 			setMedicalRecords(data);
+			setBlockchainProtectionEnabled(data.blockchainProtectionEnabled ?? false);
 		} catch (err) {
 			console.error("Failed to fetch medical records", err);
 			setMedicalRecords({ conditions: [], allergies: [], procedures: [], encounters: [] });
@@ -632,6 +635,14 @@ export default function PatientDetailPage() {
 									{/* Medical History */}
 									<TabsContent value="medical">
 										<div className="space-y-5">
+											{blockchainProtectionEnabled && (
+												<div className="mb-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm">
+													<ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
+													<span className="font-medium text-emerald-700 dark:text-emerald-300">
+														Blockchain protection active — records saved for this patient will be anchored on-chain
+													</span>
+												</div>
+											)}
 											<div className="flex items-center justify-between gap-4">
 												<h3 className="font-semibold text-lg">Medical History</h3>
 												{canManage && (
