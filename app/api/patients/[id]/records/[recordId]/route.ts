@@ -172,6 +172,18 @@ export async function PATCH(
 	}
 
 	const updatedRow = updated as Record<string, unknown> & { id: string };
+
+	const [profileResult, facilityPlanAllowed] = await Promise.all([
+		supabaseAdmin
+			.from("cura_profiles")
+			.select("blockchain_protection_enabled")
+			.eq("id", id)
+			.maybeSingle(),
+		import("@/lib/plan-guard").then((m) => m.facilityBlockchainAllowed(session.facilityId)),
+	]);
+	const patientBlockchainEnabled =
+		(profileResult.data?.blockchain_protection_enabled ?? false) && facilityPlanAllowed;
+
 	const anchor = await anchorRecord({
 		table,
 		recordId: updatedRow.id,
@@ -179,6 +191,7 @@ export async function PATCH(
 		resourceType: recordType,
 		actor: { actor_id: session.staffId, actor_type: "staff" },
 		action: "UPDATE",
+		patientBlockchainEnabled,
 	});
 
 	return NextResponse.json({
