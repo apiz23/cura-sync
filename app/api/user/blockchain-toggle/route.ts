@@ -7,19 +7,26 @@ export async function GET(req: Request) {
         const patient = await requirePatientSession(req);
         if (patient instanceof NextResponse) return patient;
 
-        const { data: profile } = await supabaseAdmin
+        const { data: profile, error: profileError } = await supabaseAdmin
             .from("cura_profiles")
             .select("blockchain_protection_enabled")
             .eq("id", patient.profileId)
             .maybeSingle();
 
-        // Find the patient's facility plan (use their first registered facility).
-        const { data: facilityLink } = await supabaseAdmin
+        if (profileError) {
+            return NextResponse.json({ error: profileError.message }, { status: 500 });
+        }
+
+        const { data: facilityLink, error: facilityError } = await supabaseAdmin
             .from("cura_patient_facilities")
             .select("facility_id, cura_facilities(plan)")
             .eq("profile_id", patient.profileId)
             .limit(1)
             .maybeSingle();
+
+        if (facilityError) {
+            return NextResponse.json({ error: facilityError.message }, { status: 500 });
+        }
 
         const facilityPlan =
             (facilityLink?.cura_facilities as { plan?: string } | null)?.plan ?? null;
