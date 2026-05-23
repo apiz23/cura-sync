@@ -1,10 +1,13 @@
 "use client";
 
+import { useState, useEffect, useCallback } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
-import { Shield, Mail, CalendarDays, Key, LogOut, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { Shield, ShieldCheck, Lock, Mail, CalendarDays, Key, LogOut, ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Switch } from "@/components/ui/switch";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
+import { toast } from "sonner";
 
 function formatDate(value: Date | null | undefined) {
     if (!value) return "—";
@@ -44,6 +47,40 @@ function StatusRow({
 export default function SecurityPage() {
     const { user, isLoaded } = useUser();
     const { openUserProfile, signOut } = useClerk();
+
+    const [blockchainEnabled, setBlockchainEnabled] = useState(false);
+    const [facilityPlan, setFacilityPlan] = useState<string | null>(null);
+    const [toggleLoading, setToggleLoading] = useState(false);
+    const [blockchainLoading, setBlockchainLoading] = useState(true);
+
+    useEffect(() => {
+        fetch("/api/user/blockchain-toggle")
+            .then((r) => r.json())
+            .then((data: { enabled: boolean; facilityPlan: string | null }) => {
+                setBlockchainEnabled(data.enabled);
+                setFacilityPlan(data.facilityPlan);
+            })
+            .catch(() => { /* silent — not critical */ })
+            .finally(() => setBlockchainLoading(false));
+    }, []);
+
+    const handleBlockchainToggle = useCallback(async (checked: boolean) => {
+        setToggleLoading(true);
+        try {
+            const res = await fetch("/api/user/blockchain-toggle", {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ enabled: checked }),
+            });
+            if (!res.ok) throw new Error("Failed to update");
+            setBlockchainEnabled(checked);
+            toast.success(checked ? "Blockchain protection enabled" : "Blockchain protection disabled");
+        } catch {
+            toast.error("Could not update setting");
+        } finally {
+            setToggleLoading(false);
+        }
+    }, []);
 
     if (!isLoaded) {
         return (
@@ -203,6 +240,51 @@ export default function SecurityPage() {
                         >
                             Sign out
                         </Button>
+                    </div>
+                </div>
+            </section>
+
+            {/* Blockchain protection */}
+            <section className="space-y-4">
+                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
+                    Record protection
+                </h2>
+                <div className="rounded-xl border border-border bg-card p-5">
+                    <div className="flex items-start justify-between gap-4">
+                        <div className="flex items-start gap-3">
+                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+                                <ShieldCheck className="h-4 w-4" />
+                            </div>
+                            <div className="space-y-1">
+                                <p className="font-semibold text-foreground">Blockchain record protection</p>
+                                <p className="text-sm text-muted-foreground">
+                                    Your health records will be hashed and anchored on the Polygon Amoy testnet
+                                    each time your clinic adds or updates a record. Verify them on the{" "}
+                                    <a href="/user/blockchain" className="text-primary hover:underline">
+                                        Blockchain page
+                                    </a>
+                                    .
+                                </p>
+                                {facilityPlan === "basic" && (
+                                    <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                        <Lock className="h-3 w-3" />
+                                        Requires Clinic plan or above — ask your clinic to upgrade
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        <div className="shrink-0">
+                            {blockchainLoading ? (
+                                <div className="h-6 w-11 animate-pulse rounded-full bg-muted" />
+                            ) : (
+                                <Switch
+                                    checked={blockchainEnabled}
+                                    onCheckedChange={handleBlockchainToggle}
+                                    disabled={toggleLoading || facilityPlan === "basic"}
+                                    className="data-[state=checked]:bg-primary"
+                                />
+                            )}
+                        </div>
                     </div>
                 </div>
             </section>
