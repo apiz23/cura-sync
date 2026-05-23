@@ -26,6 +26,28 @@ import PageTitle from "@/components/page-title";
 
 const plans = [
     {
+        name: "Basic",
+        description: "Try CuraSync free for 30 days",
+        price: null,
+        priceLabel: "Free",
+        priceSub: "30-day trial",
+        popular: false,
+        features: [
+            "Patient and staff access management",
+            "Appointment booking and schedule management",
+            "Consultation queue and admin dashboard",
+            "Patient records and medication logging",
+            "Standard onboarding",
+        ],
+        lockedFeatures: [
+            "AI symptom analysis",
+            "Blockchain audit trail",
+            "Health sync support",
+        ],
+        cta: "Get Started",
+        ctaHref: "/partner/register",
+    },
+    {
         name: "Clinic",
         description: "Complete clinic operations for a single branch",
         price: { monthly: 299, annual: 249 },
@@ -37,21 +59,24 @@ const plans = [
             "Consultation queue and admin dashboard",
             "Patient records and medication logging",
             "AI symptom analysis",
+            "Blockchain audit trail",
             "Health sync support",
-            "Audit trail and admin logs",
+            "Audit-ready admin controls",
             "Push notifications for appointment confirmations",
             "Usage analytics dashboard",
             "Self-service clinic onboarding portal",
             "Standard onboarding and support",
         ],
-        cta: "Get Started",
-        ctaHref: "/partner/register",
+        lockedFeatures: [],
+        cta: "Book Demo",
+        ctaHref: "/contact",
     },
     {
         name: "Enterprise",
         description: "For multi-branch clinics and custom operational needs",
         price: null,
         priceLabel: "Custom",
+        priceSub: "pricing",
         popular: false,
         features: [
             "Everything in Clinic",
@@ -62,6 +87,7 @@ const plans = [
             "Integration planning support",
             "Priority support",
         ],
+        lockedFeatures: [],
         cta: "Contact Sales",
         ctaHref: "/contact",
     },
@@ -72,58 +98,63 @@ const comparisonData = [
         category: "Clinic Operations",
         icon: ClipboardList,
         features: [
-            { name: "Appointment booking", clinic: true, enterprise: true },
-            { name: "Facility schedule management", clinic: true, enterprise: true },
-            { name: "Consultation queue workflow", clinic: true, enterprise: true },
-            { name: "Multi-branch rollout", clinic: false, enterprise: true },
+            { name: "Appointment booking", basic: true, clinic: true, enterprise: true },
+            { name: "Facility schedule management", basic: true, clinic: true, enterprise: true },
+            { name: "Consultation queue workflow", basic: true, clinic: true, enterprise: true },
+            { name: "Multi-branch rollout", basic: false, clinic: false, enterprise: true },
         ],
     },
     {
         category: "Patient Care Tools",
         icon: Stethoscope,
         features: [
-            { name: "AI symptom analysis", clinic: true, enterprise: true },
-            { name: "Medication tracking and dose logs", clinic: true, enterprise: true },
-            { name: "Health records access", clinic: true, enterprise: true },
-            { name: "Health sync support", clinic: true, enterprise: true },
-            { name: "Push notifications (appointment updates)", clinic: true, enterprise: true },
+            { name: "AI symptom analysis", basic: false, clinic: true, enterprise: true },
+            { name: "Medication tracking and dose logs", basic: true, clinic: true, enterprise: true },
+            { name: "Health records access", basic: true, clinic: true, enterprise: true },
+            { name: "Health sync support", basic: false, clinic: true, enterprise: true },
+            { name: "Push notifications (appointment updates)", basic: true, clinic: true, enterprise: true },
         ],
     },
     {
         category: "Security and Admin",
         icon: Shield,
         features: [
-            { name: "Role-based access control", clinic: true, enterprise: true },
-            { name: "Audit trail", clinic: true, enterprise: true },
-            { name: "Admin audit log viewer", clinic: true, enterprise: true },
-            { name: "Usage analytics dashboard", clinic: true, enterprise: true },
-            { name: "Custom reporting support", clinic: false, enterprise: true },
+            { name: "Role-based access control", basic: true, clinic: true, enterprise: true },
+            { name: "Audit trail", basic: false, clinic: true, enterprise: true },
+            { name: "Blockchain audit trail", basic: false, clinic: true, enterprise: true },
+            { name: "Admin audit log viewer", basic: false, clinic: true, enterprise: true },
+            { name: "Usage analytics dashboard", basic: false, clinic: true, enterprise: true },
+            { name: "Custom reporting support", basic: false, clinic: false, enterprise: true },
         ],
     },
     {
         category: "SaaS Platform",
         icon: Building2,
         features: [
-            { name: "Cloud-hosted centralised backend", clinic: true, enterprise: true },
-            { name: "Web + mobile cross-platform access", clinic: true, enterprise: true },
-            { name: "Self-service clinic onboarding portal", clinic: true, enterprise: true },
-            { name: "Subscription plan management", clinic: true, enterprise: true },
-            { name: "Automatic updates and deployments", clinic: true, enterprise: true },
+            { name: "Cloud-hosted centralised backend", basic: true, clinic: true, enterprise: true },
+            { name: "Web + mobile cross-platform access", basic: true, clinic: true, enterprise: true },
+            { name: "Self-service clinic onboarding portal", basic: true, clinic: true, enterprise: true },
+            { name: "Subscription plan management", basic: false, clinic: true, enterprise: true },
+            { name: "Automatic updates and deployments", basic: true, clinic: true, enterprise: true },
         ],
     },
     {
         category: "Services",
         icon: Users,
         features: [
-            { name: "Standard onboarding", clinic: true, enterprise: true },
-            { name: "Data migration assistance", clinic: false, enterprise: true },
-            { name: "Staff training support", clinic: false, enterprise: true },
-            { name: "Priority support", clinic: false, enterprise: true },
+            { name: "Standard onboarding", basic: true, clinic: true, enterprise: true },
+            { name: "Data migration assistance", basic: false, clinic: false, enterprise: true },
+            { name: "Staff training support", basic: false, clinic: false, enterprise: true },
+            { name: "Priority support", basic: false, clinic: false, enterprise: true },
         ],
     },
 ];
 
 const faqs = [
+    {
+        question: "How long is the free trial?",
+        answer: "The Basic plan gives you 30 days to explore core clinic operations — appointments, patient records, and medications — at no cost. Upgrade to the Clinic plan at any time to unlock AI symptom analysis, blockchain audit trail, and health sync support.",
+    },
     {
         question: "Who is CuraSync for?",
         answer: "CuraSync is designed for private clinics that need a single system for appointments, patient records, medication workflows, AI-assisted symptom intake, and admin oversight.",
@@ -261,7 +292,7 @@ export default function PricingPage() {
 
                 {/* Pricing Cards — asymmetric: Clinic gets more visual weight */}
                 <div
-                    className="grid gap-6 md:grid-cols-2 lg:grid-cols-[3fr_2fr] animate-in fade-in slide-in-from-bottom-4 duration-500"
+                    className="grid gap-6 md:grid-cols-3 animate-in fade-in slide-in-from-bottom-4 duration-500"
                     style={{ animationDelay: "100ms", animationFillMode: "both" }}
                 >
                     {plans.map((plan) => (
@@ -306,20 +337,22 @@ export default function PricingPage() {
                                     ) : (
                                         <div className="flex items-baseline gap-2">
                                             <span className="text-4xl font-bold text-foreground">{plan.priceLabel}</span>
-                                            <span className="text-sm text-muted-foreground">pricing</span>
+                                            <span className="text-sm text-muted-foreground">{plan.priceSub}</span>
                                         </div>
                                     )}
                                 </div>
 
                                 <ul className="space-y-2.5">
                                     {plan.features.map((feature, i) => (
-                                        <li
-                                            key={i}
-                                            className="flex items-start gap-3"
-                                            style={{ animationDelay: `${i * 30}ms` }}
-                                        >
+                                        <li key={i} className="flex items-start gap-3">
                                             <Check className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
                                             <span className="text-sm text-foreground">{feature}</span>
+                                        </li>
+                                    ))}
+                                    {plan.lockedFeatures.map((feature, i) => (
+                                        <li key={`locked-${i}`} className="flex items-start gap-3 opacity-40">
+                                            <X className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                                            <span className="text-sm text-muted-foreground line-through">{feature}</span>
                                         </li>
                                     ))}
                                 </ul>
@@ -354,37 +387,31 @@ export default function PricingPage() {
                     </div>
 
                     <div className="overflow-hidden rounded-xl border border-border">
-                        <div className="grid grid-cols-[1fr_100px_100px] border-b border-border bg-muted/50 px-6 py-3">
-                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Feature
-                            </span>
-                            <span className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Clinic
-                            </span>
-                            <span className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">
-                                Enterprise
-                            </span>
+                        <div className="grid grid-cols-[1fr_80px_80px_100px] border-b border-border bg-muted/50 px-6 py-3">
+                            <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Feature</span>
+                            <span className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Basic</span>
+                            <span className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Clinic</span>
+                            <span className="text-center text-xs font-semibold uppercase tracking-wide text-muted-foreground">Enterprise</span>
                         </div>
 
                         {comparisonData.map((section, si) => (
                             <div key={si}>
-                                <div className="grid grid-cols-[1fr_100px_100px] border-b border-border bg-muted/20 px-6 py-3">
+                                <div className="grid grid-cols-[1fr_80px_80px_100px] border-b border-border bg-muted/20 px-6 py-3">
                                     <div className="flex items-center gap-2">
                                         <section.icon className="h-4 w-4 text-primary" />
-                                        <span className="text-sm font-semibold text-foreground">
-                                            {section.category}
-                                        </span>
+                                        <span className="text-sm font-semibold text-foreground">{section.category}</span>
                                     </div>
                                 </div>
                                 {section.features.map((feature, fi) => (
                                     <div
                                         key={fi}
                                         className={cn(
-                                            "grid grid-cols-[1fr_100px_100px] items-center border-b border-border px-6 py-3 last:border-b-0",
+                                            "grid grid-cols-[1fr_80px_80px_100px] items-center border-b border-border px-6 py-3 last:border-b-0",
                                             fi % 2 === 0 ? "bg-background" : "bg-muted/10"
                                         )}
                                     >
                                         <span className="text-sm text-foreground">{feature.name}</span>
+                                        <FeatureCell value={feature.basic} />
                                         <FeatureCell value={feature.clinic} />
                                         <FeatureCell value={feature.enterprise} />
                                     </div>
