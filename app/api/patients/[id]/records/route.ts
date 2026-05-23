@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
+import supabaseAdmin from "@/lib/supabase-admin";
 import { requireStaffSession, type StaffSession } from "@/lib/authz";
 import { logAudit } from "@/lib/audit";
 import { anchorRecord } from "@/lib/record-anchor";
@@ -57,6 +58,12 @@ export async function GET(
             .order("encounter_date", { ascending: false }),
     ]);
 
+    const { data: patientProfile } = await supabaseAdmin
+        .from("cura_profiles")
+        .select("blockchain_protection_enabled")
+        .eq("id", id)
+        .maybeSingle();
+
     void logAudit({
         actor_id: session.staffId,
         actor_type: "staff",
@@ -70,6 +77,7 @@ export async function GET(
         allergies: allergies.data ?? [],
         procedures: procedures.data ?? [],
         encounters: encounters.data ?? [],
+        blockchainProtectionEnabled: patientProfile?.blockchain_protection_enabled ?? false,
     });
 }
 
@@ -158,12 +166,25 @@ export async function POST(
 
     const createdRow = created as Record<string, unknown> & { id: string };
 
+    // Fetch patient's blockchain opt-in and facility plan eligibility.
+    const [profileResult, facilityPlanAllowed] = await Promise.all([
+        supabaseAdmin
+            .from("cura_profiles")
+            .select("blockchain_protection_enabled")
+            .eq("id", id)
+            .maybeSingle(),
+        import("@/lib/plan-guard").then((m) => m.facilityBlockchainAllowed(session.facilityId)),
+    ]);
+    const patientBlockchainEnabled =
+        (profileResult.data?.blockchain_protection_enabled ?? false) && facilityPlanAllowed;
+
     const anchor = await anchorRecord({
         table,
         recordId: createdRow.id,
         row,
         resourceType: String(record_type),
         actor: { actor_id: session.staffId, actor_type: "staff" },
+        patientBlockchainEnabled,
     });
 
     return NextResponse.json(
