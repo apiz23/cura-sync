@@ -22,6 +22,7 @@ type AnchorInput = {
 	actor: AnchorActor;
 	action?: "CREATE" | "UPDATE" | "DELETE";
 	ipfsCid?: string;
+	patientBlockchainEnabled?: boolean;
 };
 
 const HASHABLE_FIELDS: Record<string, string[]> = {
@@ -68,6 +69,20 @@ export async function anchorRecord(input: AnchorInput): Promise<AnchorResult> {
 	const action = input.action ?? "CREATE";
 
 	const contentHash = hashRecord(hashable);
+
+	// Patient opted out — log audit without tx data and return early.
+	if (input.patientBlockchainEnabled === false) {
+		void logAudit({
+			...input.actor,
+			action,
+			resource_type: input.resourceType,
+			resource_id: input.recordId,
+			content_hash: contentHash,
+			ipfs_cid: input.ipfsCid ?? null,
+			metadata: { blockchain: "patient_disabled" },
+		});
+		return { contentHash, txHash: null, blockNumber: null, skipped: true };
+	}
 
 	if (!isBlockchainConfigured()) {
 		void logAudit({
