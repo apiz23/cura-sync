@@ -7,10 +7,14 @@ import supabaseAdmin from "@/lib/supabase-admin";
  * Only 'clinic' and 'enterprise' plans include blockchain.
  */
 export async function facilityBlockchainAllowed(facilityId: string): Promise<boolean> {
-    const { data } = await supabaseAdmin
+    const { data, error } = await supabaseAdmin
         .from("cura_facilities")
         .select("plan")
         .eq("id", facilityId)
         .maybeSingle();
+    if (error) {
+        console.error(`facilityBlockchainAllowed: query failed for facility ${facilityId}:`, error.message);
+        return false;
+    }
     return data?.plan === "clinic" || data?.plan === "enterprise";
 }
