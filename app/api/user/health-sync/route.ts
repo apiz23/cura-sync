@@ -43,6 +43,15 @@ const healthSyncBodySchema = z.object({
         endTime: isoDateTimeSchema,
         count: z.number().finite().nonnegative(),
     }),
+    oxygenSaturationSamples: z
+        .array(
+            z.object({
+                time: isoDateTimeSchema,
+                percentage: z.number().finite().min(0).max(100),
+            }),
+        )
+        .optional()
+        .default([]),
 });
 
 type HealthSyncBody = z.infer<typeof healthSyncBodySchema>;
@@ -89,6 +98,30 @@ function summarize(body: HealthSyncBody) {
     };
 }
 
+function computeAverageSpo2(payload: unknown): number | null {
+    if (!payload || typeof payload !== "object") return null;
+    const raw = (payload as Record<string, unknown>).oxygenSaturationSamples;
+    if (!Array.isArray(raw) || raw.length === 0) return null;
+
+    let sum = 0;
+    let count = 0;
+    for (const sample of raw) {
+        if (
+            sample !== null &&
+            typeof sample === "object" &&
+            typeof (sample as Record<string, unknown>).percentage === "number"
+        ) {
+            const pct = (sample as Record<string, unknown>).percentage as number;
+            if (Number.isFinite(pct) && pct >= 0 && pct <= 100) {
+                sum += pct;
+                count += 1;
+            }
+        }
+    }
+
+    return count > 0 ? Math.round(sum / count) : null;
+}
+
 function toApiSnapshot(row: HealthSyncSnapshotRow) {
     return {
         id: row.id,
@@ -105,6 +138,7 @@ function toApiSnapshot(row: HealthSyncSnapshotRow) {
             totalSleepMinutes: row.total_sleep_minutes,
             averageHeartRateBpm: row.average_heart_rate_bpm,
             stepsCount: row.steps_count,
+            averageSpo2Percent: computeAverageSpo2(row.payload),
         },
         payload: row.payload,
         createdAt: row.created_at ?? null,
@@ -134,11 +168,6 @@ function parseDays(url: string) {
     return Math.min(Math.max(Math.trunc(value), 1), 30);
 }
 
-function startOfUtcDay(value: Date) {
-    const d = new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-    return d;
-}
-
 export async function OPTIONS() {
     return NextResponse.json({}, { status: 200 });
 }
@@ -149,16 +178,11 @@ export async function GET(req: Request) {
         if (patient instanceof NextResponse) return patient;
 
         const days = parseDays(req.url);
-        const limit = days ?? parseLimit(req.url);
-        const sinceIso =
-            days !== null
-                ? (() => {
-                      const now = new Date();
-                      const since = startOfUtcDay(now);
-                      since.setUTCDate(since.getUTCDate() - (days - 1));
-                      return since.toISOString();
-                  })()
-                : null;
+        // `days=7` means "latest 7 snapshot days", not "calendar days from today".
+        // A phone can upload a 7-day Health Connect batch, then the web page may be
+        // opened later. Filtering by today's date would make those valid snapshot
+        // days disappear one by one.
+        const limit = days !== null ? Math.min(days * 12, 100) : parseLimit(req.url);
 
         // We build the main query separately so we can conditionally add the `since` filter.
         const snapshotsQuery = supabase
@@ -185,9 +209,7 @@ export async function GET(req: Request) {
             .order(days !== null ? "range_start" : "synced_at", { ascending: false })
             .limit(limit);
 
-        const snapshotsResult = sinceIso
-            ? await snapshotsQuery.gte("range_start", sinceIso)
-            : await snapshotsQuery;
+        const snapshotsResult = await snapshotsQuery;
 
         const countResult = await supabase
             .from("cura_health_sync_snapshots")
