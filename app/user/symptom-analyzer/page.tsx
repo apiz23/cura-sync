@@ -29,6 +29,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import { toast } from "sonner";
 
+import type { HealthSyncSnapshot } from "@/components/patient-health-view";
 import AnimatedTags from "@/components/smoothui/animated-tags";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { Badge } from "@/components/ui/badge";
@@ -87,6 +88,15 @@ type IoTData = {
 	spo2_percent?: number;
 };
 
+type HealthSyncResponse = {
+	success: boolean;
+	data?: {
+		latest: HealthSyncSnapshot | null;
+		recent: HealthSyncSnapshot[];
+		count: number;
+	};
+};
+
 type Facility = {
 	id: string;
 	name: string;
@@ -129,6 +139,20 @@ const COMMON_SYMPTOMS = [
 	"Muscle Aches",
 	"Sneezing",
 ];
+
+function dedupeSymptoms(items: string[]): string[] {
+	const seen = new Set<string>();
+	const result: string[] = [];
+	for (const raw of items) {
+		const trimmed = raw.trim();
+		if (!trimmed) continue;
+		const key = trimmed.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		result.push(trimmed);
+	}
+	return result;
+}
 
 const ANALYSIS_STEPS = [
 	{
@@ -175,16 +199,16 @@ function urgencyConfig(urgency: AnalysisResult["urgency"]) {
 				label: "High urgency",
 				timeline: "As soon as possible",
 				filled: 3,
-				barColor: "bg-orange-500",
-				badgeClass: "bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400",
+				barColor: "bg-chart-5",
+				badgeClass: "bg-chart-5/10 text-chart-5 border-chart-5/30 dark:text-chart-5",
 			};
 		case "medium":
 			return {
 				label: "Medium urgency",
 				timeline: "Within 2 to 3 days",
 				filled: 2,
-				barColor: "bg-yellow-500",
-				badgeClass: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20 dark:text-yellow-400",
+				barColor: "bg-chart-5",
+				badgeClass: "bg-chart-5/10 text-chart-5 border-chart-5/30 dark:text-chart-5",
 			};
 		case "low":
 			return {
@@ -218,7 +242,7 @@ function sourceLabel(
 		case "knowledge_base":
 			return {
 				label: "Knowledge Base",
-				className: "bg-secondary/10 text-foreground border-secondary/30",
+				className: "bg-chart-4/10 text-chart-4 border-chart-4/30",
 			};
 		case "iot_safety":
 			return {
@@ -228,7 +252,7 @@ function sourceLabel(
 		case "rule_based_safety":
 			return {
 				label: "Rule-based Triage",
-				className: "bg-yellow-500/10 text-yellow-700 border-yellow-500/20 dark:text-yellow-400",
+				className: "bg-chart-5/10 text-chart-5 border-chart-5/30 dark:text-chart-5",
 			};
 		case "fallback":
 			return {
@@ -480,16 +504,25 @@ export default function SymptomsCheckPage() {
 		let cancelled = false;
 		void (async () => {
 			try {
-				const res = await fetch("/api/user/health-sync?days=1");
+				const res = await fetch("/api/user/health-sync?days=7", {
+					cache: "no-store",
+				});
 				if (!res.ok) return;
-				const data = await res.json().catch(() => null);
-				const latest = data?.data?.latest ?? data?.data?.recent?.[0] ?? null;
+				const data = (await res.json().catch(() => null)) as
+					| HealthSyncResponse
+					| null;
+				const recent = data?.data?.recent ?? [];
+				const latest =
+					data?.data?.latest ??
+					recent.find((snapshot) => snapshot.summary) ??
+					null;
 				if (cancelled || !latest?.summary) return;
 
 				const iot: IoTData = {};
 				const heartRate = finiteNumber(latest.summary.averageHeartRateBpm);
 				const sleepMinutes = finiteNumber(latest.summary.totalSleepMinutes);
 				const steps = finiteNumber(latest.summary.stepsCount);
+				const spo2 = finiteNumber(latest.summary.averageSpo2Percent);
 
 				if (heartRate !== undefined) {
 					iot.heart_rate_bpm = heartRate;
@@ -499,6 +532,9 @@ export default function SymptomsCheckPage() {
 				}
 				if (steps !== undefined && steps > 0) {
 					iot.steps_today = Math.trunc(steps);
+				}
+				if (spo2 !== undefined && spo2 > 0) {
+					iot.spo2_percent = spo2;
 				}
 				if (Object.keys(iot).length > 0) setIotData(iot);
 			} catch {
@@ -526,7 +562,7 @@ export default function SymptomsCheckPage() {
 	const allSymptoms = useMemo(() => {
 		const list = [...selectedSymptoms];
 		if (textInput.trim()) list.push(textInput.trim());
-		return list;
+		return dedupeSymptoms(list);
 	}, [selectedSymptoms, textInput]);
 
 	const actionLines = useMemo(() => {
@@ -617,7 +653,6 @@ export default function SymptomsCheckPage() {
 	const handleFeedback = useCallback(
 		async (wasAccurate: boolean) => {
 			if (!result || feedbackGiven) return;
-			setFeedbackGiven(true);
 			try {
 				const res = await fetch("/api/feedback", {
 					method: "POST",
@@ -628,9 +663,13 @@ export default function SymptomsCheckPage() {
 						possible_disease: result.possible_disease,
 					}),
 				});
-				if (res.ok) setFeedbackSent(true);
+				if (!res.ok) throw new Error("Feedback failed");
+				setFeedbackGiven(true);
+				setFeedbackSent(true);
 			} catch {
-				// silent — feedback failure shouldn't block flow
+				toast.error("Could not send feedback", {
+					description: "Try again in a moment.",
+				});
 			}
 		},
 		[result, feedbackGiven, allSymptoms],
@@ -731,7 +770,7 @@ export default function SymptomsCheckPage() {
 						</Badge>
 						<Badge
 							variant="outline"
-							className="rounded-md border-secondary/30 bg-secondary/10 text-foreground"
+							className="rounded-md border-chart-4/30 bg-chart-4/10 text-chart-4"
 						>
 							<FlaskRound className="mr-1 h-3 w-3" />
 							JamAIBase RAG
@@ -787,8 +826,8 @@ export default function SymptomsCheckPage() {
 			>
 				{/* ── Input card ──────────────────────────────────────── */}
 				<motion.div variants={fadeUp}>
-					<Card className="overflow-hidden border-border/60 bg-card shadow-none transition-shadow hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]">
-						<CardHeader className="border-b border-border/60 bg-muted/30">
+					<Card className="pt-0 overflow-hidden border-border/60 bg-card shadow-none transition-shadow hover:shadow-md">
+						<CardHeader className="border-b border-border/60 bg-muted/30 py-4">
 							<CardTitle className="flex items-center gap-2 text-foreground">
 								<span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
 									<Stethoscope className="h-4 w-4" />
@@ -899,7 +938,7 @@ export default function SymptomsCheckPage() {
 											variant="outline"
 											className="rounded-md border-border bg-card font-mono text-xs text-muted-foreground"
 										>
-											last 24 h
+											last 7 d
 										</Badge>
 									</div>
 									{iotSummaryItems.length ? (
@@ -915,7 +954,7 @@ export default function SymptomsCheckPage() {
 										</div>
 									) : (
 										<p className="text-sm leading-relaxed text-muted-foreground">
-											No recent health-sync data found. Symptom text can still be analyzed.
+											No health-sync data found in the last 7 days. Symptom text can still be analyzed.
 										</p>
 									)}
 								</motion.div>
@@ -1347,7 +1386,7 @@ export default function SymptomsCheckPage() {
 														damping: 22,
 														delay: i * 0.07,
 													}}
-													className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 p-4 transition-shadow hover:shadow-[0_2px_12px_rgba(0,0,0,0.06)]"
+													className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 p-4 transition-shadow hover:shadow-md"
 												>
 													<div>
 														<div className="flex flex-wrap items-center gap-1.5">

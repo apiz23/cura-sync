@@ -1,8 +1,25 @@
 "use client";
 
 import { memo, useMemo } from "react";
-import { Activity, Heart, Moon, Footprints } from "lucide-react";
-import { Bar, BarChart, CartesianGrid, XAxis } from "recharts";
+import {
+    Activity,
+    Heart,
+    Moon,
+    Footprints,
+    TrendingUp,
+    TrendingDown,
+    Minus,
+} from "lucide-react";
+import {
+    Area,
+    AreaChart,
+    Bar,
+    BarChart,
+    CartesianGrid,
+    ReferenceLine,
+    XAxis,
+    YAxis,
+} from "recharts";
 import {
     Card,
     CardContent,
@@ -32,6 +49,7 @@ export type HealthSyncSnapshot = {
         totalSleepMinutes: number;
         averageHeartRateBpm: number | null;
         stepsCount: number;
+        averageSpo2Percent: number | null;
     };
     createdAt: string | null;
     updatedAt: string | null;
@@ -51,6 +69,8 @@ type Aggregates = {
     avgSteps: number | null;
 };
 
+type Trend = "up" | "down" | "flat" | null;
+
 interface PatientHealthViewProps {
     snapshots: HealthSyncSnapshot[];
     isAdminView: boolean;
@@ -58,20 +78,18 @@ interface PatientHealthViewProps {
     latestVendor?: string | null;
 }
 
-// --- chart configs ---
 const stepsConfig = {
-    steps: { label: "Steps", color: "#6366f1" },
+    steps: { label: "Steps", color: "var(--chart-1)" },
 } satisfies ChartConfig;
 
 const hrConfig = {
-    heartRate: { label: "Avg HR (bpm)", color: "#22c55e" },
+    heartRate: { label: "Heart Rate (bpm)", color: "var(--destructive)" },
 } satisfies ChartConfig;
 
 const sleepConfig = {
-    sleepHours: { label: "Sleep (hrs)", color: "#a855f7" },
+    sleepHours: { label: "Sleep (hrs)", color: "var(--chart-4)" },
 } satisfies ChartConfig;
 
-// --- helpers ---
 function formatLocalDate(d: Date): string {
     const y = d.getFullYear();
     const m = String(d.getMonth() + 1).padStart(2, "0");
@@ -79,15 +97,21 @@ function formatLocalDate(d: Date): string {
     return `${y}-${m}-${day}`;
 }
 
-function getLast7Days(): string[] {
+function getLastNDaysEndingAt(endDate: string | null, count = 7): string[] {
     const days: string[] = [];
-    const now = new Date();
-    for (let i = 6; i >= 0; i--) {
-        const d = new Date(now);
+    const anchor = endDate ? new Date(`${endDate}T12:00:00`) : new Date();
+
+    for (let i = count - 1; i >= 0; i--) {
+        const d = new Date(anchor);
         d.setDate(d.getDate() - i);
         days.push(formatLocalDate(d));
     }
+
     return days;
+}
+
+function snapLocalDate(rangeStart: string): string {
+    return formatLocalDate(new Date(rangeStart));
 }
 
 function getDayLabel(dateStr: string): string {
@@ -96,52 +120,51 @@ function getDayLabel(dateStr: string): string {
     });
 }
 
+function getSnapshotWindowDays(snapshots: HealthSyncSnapshot[]): string[] {
+    const latestDate =
+        snapshots
+            .map((snapshot) => snapLocalDate(snapshot.rangeStart))
+            .sort()
+            .at(-1) ?? null;
+
+    return getLastNDaysEndingAt(latestDate, 7);
+}
+
 function computeAggregates(snapshots: HealthSyncSnapshot[]): Aggregates {
-    const days = getLast7Days();
+    const days = getSnapshotWindowDays(snapshots);
     const daySet = new Set(days);
-    const recent = snapshots.filter((s) => daySet.has(s.rangeStart.slice(0, 10)));
-    if (!recent.length) {
-        return { avgSleepHours: null, avgHeartRate: null, avgSteps: null };
-    }
+    const recent = snapshots.filter((s) => daySet.has(snapLocalDate(s.rangeStart)));
+    if (!recent.length) return { avgSleepHours: null, avgHeartRate: null, avgSteps: null };
+
     const withSleep = recent.filter((s) => s.summary.totalSleepMinutes > 0);
-    const withHR = recent.filter(
-        (s) => s.summary.averageHeartRateBpm !== null
-    );
+    const withHR = recent.filter((s) => s.summary.averageHeartRateBpm !== null);
     const withSteps = recent.filter((s) => s.summary.stepsCount > 0);
+
     return {
-        avgSleepHours:
-            withSleep.length
-                ? withSleep.reduce(
-                      (sum, s) => sum + s.summary.totalSleepMinutes,
-                      0
-                  ) /
-                  withSleep.length /
-                  60
-                : null,
-        avgHeartRate:
-            withHR.length
-                ? Math.round(
-                      withHR.reduce(
-                          (sum, s) => sum + (s.summary.averageHeartRateBpm ?? 0),
-                          0
-                      ) / withHR.length
-                  )
-                : null,
-        avgSteps:
-            withSteps.length
-                ? Math.round(
-                      withSteps.reduce((sum, s) => sum + s.summary.stepsCount, 0) /
-                          withSteps.length
-                  )
-                : null,
+        avgSleepHours: withSleep.length
+            ? withSleep.reduce((sum, s) => sum + s.summary.totalSleepMinutes, 0) /
+              withSleep.length /
+              60
+            : null,
+        avgHeartRate: withHR.length
+            ? Math.round(
+                  withHR.reduce((sum, s) => sum + (s.summary.averageHeartRateBpm ?? 0), 0) /
+                      withHR.length
+              )
+            : null,
+        avgSteps: withSteps.length
+            ? Math.round(
+                  withSteps.reduce((sum, s) => sum + s.summary.stepsCount, 0) / withSteps.length
+              )
+            : null,
     };
 }
 
 function buildChartData(snapshots: HealthSyncSnapshot[]): DayBucket[] {
-    const days = getLast7Days();
+    const days = getSnapshotWindowDays(snapshots);
     const byDate = new Map<string, HealthSyncSnapshot>();
     for (const snap of snapshots) {
-        const date = snap.rangeStart.slice(0, 10);
+        const date = snapLocalDate(snap.rangeStart);
         const existing = byDate.get(date);
         if (!existing || snap.summary.stepsCount > existing.summary.stepsCount) {
             byDate.set(date, snap);
@@ -162,16 +185,6 @@ function buildChartData(snapshots: HealthSyncSnapshot[]): DayBucket[] {
     });
 }
 
-function formatDateTime(value: string) {
-    return new Date(value).toLocaleString("en-US", {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-        hour: "numeric",
-        minute: "2-digit",
-    });
-}
-
 function formatRelativeDateTime(value: string) {
     const diffMs = Date.now() - new Date(value).getTime();
     const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
@@ -181,7 +194,31 @@ function formatRelativeDateTime(value: string) {
     return `${diffDays}d ago`;
 }
 
-// --- subcomponents ---
+function computeTrend(latest: number | null, avg: number | null): Trend {
+    if (latest === null || avg === null) return null;
+    if (latest > avg * 1.05) return "up";
+    if (latest < avg * 0.95) return "down";
+    return "flat";
+}
+
+function stepsColor(steps: number): string {
+    if (steps >= 8000) return "text-chart-3";
+    if (steps >= 4000) return "text-chart-5";
+    return "text-destructive";
+}
+
+function sleepColor(hours: number): string {
+    if (hours >= 7) return "text-chart-4";
+    if (hours >= 5) return "text-chart-5";
+    return "text-destructive";
+}
+
+function hrColor(bpm: number): string {
+    if (bpm >= 60 && bpm <= 100) return "text-chart-3";
+    if (bpm > 100) return "text-destructive";
+    return "text-chart-5";
+}
+
 const StatCard = memo(function StatCard({
     label,
     value,
@@ -189,6 +226,7 @@ const StatCard = memo(function StatCard({
     sub,
     color,
     icon: Icon,
+    trend,
 }: {
     label: string;
     value: string | null;
@@ -196,47 +234,45 @@ const StatCard = memo(function StatCard({
     sub?: string;
     color: string;
     icon: React.ElementType;
+    trend?: Trend;
 }) {
     return (
         <Card className="border shadow-sm">
             <CardContent className="p-5">
-                <div className="mb-3 flex items-center gap-2">
-                    <div
-                        className="flex h-8 w-8 items-center justify-center rounded-lg"
-                        style={{ background: `${color}20` }}
-                    >
-                        <Icon className="h-4 w-4" style={{ color }} />
+                <div className="mb-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        <div
+                            className="flex h-8 w-8 items-center justify-center rounded-lg"
+                            style={{ background: `color-mix(in srgb, ${color} 16%, transparent)` }}
+                        >
+                            <Icon className="h-4 w-4" style={{ color }} />
+                        </div>
+                        <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                            {label}
+                        </span>
                     </div>
-                    <span className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                        {label}
-                    </span>
+                    {trend === "up" && <TrendingUp className="h-4 w-4 text-chart-3" />}
+                    {trend === "down" && <TrendingDown className="h-4 w-4 text-destructive" />}
+                    {trend === "flat" && <Minus className="h-4 w-4 text-muted-foreground" />}
                 </div>
                 {value !== null ? (
                     <div className="flex items-baseline gap-1">
-                        <span
-                            className="text-2xl font-bold"
-                            style={{ color }}
-                        >
+                        <span className="text-2xl font-bold" style={{ color }}>
                             {value}
                         </span>
                         {unit && (
-                            <span className="text-sm text-muted-foreground">
-                                {unit}
-                            </span>
+                            <span className="text-sm text-muted-foreground">{unit}</span>
                         )}
                     </div>
                 ) : (
                     <p className="text-sm text-muted-foreground">No data</p>
                 )}
-                {sub && (
-                    <p className="mt-1 text-xs text-muted-foreground">{sub}</p>
-                )}
+                {sub && <p className="mt-1 text-xs text-muted-foreground">{sub}</p>}
             </CardContent>
         </Card>
     );
 });
 
-// --- main export ---
 export function PatientHealthView({
     snapshots,
     isAdminView,
@@ -245,11 +281,20 @@ export function PatientHealthView({
 }: PatientHealthViewProps) {
     const aggregates = useMemo(() => computeAggregates(snapshots), [snapshots]);
     const chartData = useMemo(() => buildChartData(snapshots), [snapshots]);
-    // Deduplicate by rangeStart date, keep highest-steps snapshot per day, sort newest first
+
+    const trends = useMemo(() => {
+        const latest = chartData[chartData.length - 1];
+        return {
+            steps: computeTrend(latest?.steps ?? null, aggregates.avgSteps),
+            hr: computeTrend(latest?.heartRate ?? null, aggregates.avgHeartRate),
+            sleep: computeTrend(latest?.sleepHours ?? null, aggregates.avgSleepHours),
+        };
+    }, [chartData, aggregates]);
+
     const sortedHistory = useMemo(() => {
         const byDate = new Map<string, HealthSyncSnapshot>();
         for (const snap of snapshots) {
-            const date = snap.rangeStart.slice(0, 10);
+            const date = snapLocalDate(snap.rangeStart);
             const existing = byDate.get(date);
             if (!existing || snap.summary.stepsCount > existing.summary.stepsCount) {
                 byDate.set(date, snap);
@@ -278,21 +323,20 @@ export function PatientHealthView({
 
     return (
         <div className="space-y-6">
-            {isAdminView && (
+            {latestSyncedAt && (
                 <div className="flex items-center justify-between rounded-xl border border-primary/20 bg-primary/5 px-4 py-3 text-sm">
                     <span className="text-primary">
-                        Health data synced by patient from mobile app · Read-only
+                        {isAdminView
+                            ? "Health data synced by patient from mobile app · Read-only"
+                            : "Synced from mobile app"}
                     </span>
-                    {latestSyncedAt && (
-                        <span className="text-muted-foreground">
-                            Last sync: {formatRelativeDateTime(latestSyncedAt)}
-                            {latestVendor ? ` · ${latestVendor}` : ""}
-                        </span>
-                    )}
+                    <span className="text-muted-foreground">
+                        Last sync: {formatRelativeDateTime(latestSyncedAt)}
+                        {latestVendor ? ` · ${latestVendor}` : ""}
+                    </span>
                 </div>
             )}
 
-            {/* Stat cards */}
             <div className="grid gap-4 sm:grid-cols-3">
                 <StatCard
                     label="Avg Sleep · 7 days"
@@ -302,8 +346,16 @@ export function PatientHealthView({
                             : null
                     }
                     unit="hrs"
-                    color="#a855f7"
+                    sub={
+                        aggregates.avgSleepHours !== null
+                            ? aggregates.avgSleepHours >= 7
+                                ? "Within healthy range"
+                                : "Below 7h target"
+                            : undefined
+                    }
+                    color="var(--chart-4)"
                     icon={Moon}
+                    trend={trends.sleep}
                 />
                 <StatCard
                     label="Avg Heart Rate · 7 days"
@@ -313,8 +365,16 @@ export function PatientHealthView({
                             : null
                     }
                     unit="bpm"
-                    color="#22c55e"
+                    sub={
+                        aggregates.avgHeartRate !== null
+                            ? aggregates.avgHeartRate >= 60 && aggregates.avgHeartRate <= 100
+                                ? "Normal resting range"
+                                : "Outside normal range"
+                            : undefined
+                    }
+                    color="var(--destructive)"
                     icon={Heart}
+                    trend={trends.hr}
                 />
                 <StatCard
                     label="Avg Steps · 7 days"
@@ -323,22 +383,28 @@ export function PatientHealthView({
                             ? aggregates.avgSteps.toLocaleString()
                             : null
                     }
-                    color="#f59e0b"
+                    sub={
+                        aggregates.avgSteps !== null
+                            ? aggregates.avgSteps >= 8000
+                                ? "Meeting daily goal"
+                                : `${(8000 - aggregates.avgSteps).toLocaleString()} below 8k goal`
+                            : undefined
+                    }
+                    color="var(--chart-1)"
                     icon={Footprints}
+                    trend={trends.steps}
                 />
             </div>
 
-            {/* Steps + HR charts */}
             <div className="grid gap-4 md:grid-cols-2">
+                {/* Steps */}
                 <Card className="border shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold">
-                            Daily Steps
-                        </CardTitle>
-                        <CardDescription>Last 7 days</CardDescription>
+                        <CardTitle className="text-sm font-semibold">Daily Steps</CardTitle>
+                        <CardDescription>Last 7 days · dashed line = 8k goal</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ChartContainer config={stepsConfig} className="h-40 w-full">
+                        <ChartContainer config={stepsConfig} className="h-52 w-full">
                             <BarChart accessibilityLayer data={chartData}>
                                 <CartesianGrid vertical={false} />
                                 <XAxis
@@ -347,6 +413,21 @@ export function PatientHealthView({
                                     tickMargin={8}
                                     axisLine={false}
                                     tick={{ fontSize: 11 }}
+                                />
+                                <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fontSize: 10 }}
+                                    tickFormatter={(v) =>
+                                        v >= 1000 ? `${(v / 1000).toFixed(0)}k` : String(v)
+                                    }
+                                    width={30}
+                                />
+                                <ReferenceLine
+                                    y={8000}
+                                    stroke="var(--chart-1)"
+                                    strokeDasharray="4 4"
+                                    strokeOpacity={0.45}
                                 />
                                 <ChartTooltip
                                     cursor={false}
@@ -355,23 +436,28 @@ export function PatientHealthView({
                                 <Bar
                                     dataKey="steps"
                                     fill="var(--color-steps)"
-                                    radius={4}
+                                    radius={[4, 4, 0, 0]}
                                 />
                             </BarChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
 
+                {/* Heart Rate — AreaChart */}
                 <Card className="border shadow-sm">
                     <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-semibold">
-                            Avg Heart Rate
-                        </CardTitle>
-                        <CardDescription>bpm · last 7 days</CardDescription>
+                        <CardTitle className="text-sm font-semibold">Heart Rate</CardTitle>
+                        <CardDescription>bpm · last 7 days · normal 60–100</CardDescription>
                     </CardHeader>
                     <CardContent>
-                        <ChartContainer config={hrConfig} className="h-40 w-full">
-                            <BarChart accessibilityLayer data={chartData}>
+                        <ChartContainer config={hrConfig} className="h-52 w-full">
+                            <AreaChart accessibilityLayer data={chartData}>
+                                <defs>
+                                    <linearGradient id="hrGrad" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="var(--destructive)" stopOpacity={0.28} />
+                                        <stop offset="95%" stopColor="var(--destructive)" stopOpacity={0} />
+                                    </linearGradient>
+                                </defs>
                                 <CartesianGrid vertical={false} />
                                 <XAxis
                                     dataKey="label"
@@ -380,31 +466,53 @@ export function PatientHealthView({
                                     axisLine={false}
                                     tick={{ fontSize: 11 }}
                                 />
+                                <YAxis
+                                    tickLine={false}
+                                    axisLine={false}
+                                    tick={{ fontSize: 10 }}
+                                    domain={[40, 140]}
+                                    width={30}
+                                />
+                                <ReferenceLine
+                                    y={60}
+                                    stroke="var(--chart-3)"
+                                    strokeDasharray="3 3"
+                                    strokeOpacity={0.4}
+                                />
+                                <ReferenceLine
+                                    y={100}
+                                    stroke="var(--chart-5)"
+                                    strokeDasharray="3 3"
+                                    strokeOpacity={0.4}
+                                />
                                 <ChartTooltip
                                     cursor={false}
                                     content={<ChartTooltipContent hideLabel={false} />}
                                 />
-                                <Bar
+                                <Area
+                                    type="monotone"
                                     dataKey="heartRate"
-                                    fill="var(--color-heartRate)"
-                                    radius={4}
+                                    stroke="var(--destructive)"
+                                    strokeWidth={2}
+                                    fill="url(#hrGrad)"
+                                    connectNulls={false}
+                                    dot={{ fill: "var(--destructive)", strokeWidth: 0, r: 3 }}
+                                    activeDot={{ r: 5 }}
                                 />
-                            </BarChart>
+                            </AreaChart>
                         </ChartContainer>
                     </CardContent>
                 </Card>
             </div>
 
-            {/* Sleep chart */}
+            {/* Sleep */}
             <Card className="border shadow-sm">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold">
-                        Sleep Duration
-                    </CardTitle>
-                    <CardDescription>hours · last 7 days</CardDescription>
+                    <CardTitle className="text-sm font-semibold">Sleep Duration</CardTitle>
+                    <CardDescription>hours · last 7 days · dashed line = 7h target</CardDescription>
                 </CardHeader>
                 <CardContent>
-                    <ChartContainer config={sleepConfig} className="h-40 w-full">
+                    <ChartContainer config={sleepConfig} className="h-52 w-full">
                         <BarChart accessibilityLayer data={chartData}>
                             <CartesianGrid vertical={false} />
                             <XAxis
@@ -414,6 +522,26 @@ export function PatientHealthView({
                                 axisLine={false}
                                 tick={{ fontSize: 11 }}
                             />
+                            <YAxis
+                                tickLine={false}
+                                axisLine={false}
+                                tick={{ fontSize: 10 }}
+                                domain={[0, 12]}
+                                tickFormatter={(v) => `${v}h`}
+                                width={30}
+                            />
+                            <ReferenceLine
+                                y={7}
+                                stroke="var(--chart-4)"
+                                strokeDasharray="4 4"
+                                strokeOpacity={0.5}
+                                label={{
+                                    value: "7h",
+                                    position: "insideTopRight",
+                                    fontSize: 10,
+                                    fill: "var(--chart-4)",
+                                }}
+                            />
                             <ChartTooltip
                                 cursor={false}
                                 content={<ChartTooltipContent hideLabel={false} />}
@@ -421,7 +549,7 @@ export function PatientHealthView({
                             <Bar
                                 dataKey="sleepHours"
                                 fill="var(--color-sleepHours)"
-                                radius={4}
+                                radius={[4, 4, 0, 0]}
                             />
                         </BarChart>
                     </ChartContainer>
@@ -431,9 +559,7 @@ export function PatientHealthView({
             {/* History table */}
             <Card className="border shadow-sm">
                 <CardHeader className="pb-2">
-                    <CardTitle className="text-sm font-semibold">
-                        Daily Breakdown
-                    </CardTitle>
+                    <CardTitle className="text-sm font-semibold">Daily Breakdown</CardTitle>
                     <CardDescription>One row per day · most recent first</CardDescription>
                 </CardHeader>
                 <CardContent className="p-0">
@@ -441,55 +567,56 @@ export function PatientHealthView({
                         <table className="w-full text-sm">
                             <thead>
                                 <tr className="border-b bg-muted/30 text-xs uppercase tracking-wide text-muted-foreground">
-                                    <th className="px-4 py-3 text-left font-medium">
-                                        Date
-                                    </th>
-                                    <th className="px-4 py-3 text-left font-medium">
-                                        Source
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium">
-                                        Steps
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium">
-                                        Sleep
-                                    </th>
-                                    <th className="px-4 py-3 text-right font-medium">
-                                        Avg HR
-                                    </th>
+                                    <th className="px-4 py-3 text-left font-medium">Date</th>
+                                    <th className="px-4 py-3 text-left font-medium">Source</th>
+                                    <th className="px-4 py-3 text-right font-medium">Steps</th>
+                                    <th className="px-4 py-3 text-right font-medium">Sleep</th>
+                                    <th className="px-4 py-3 text-right font-medium">Avg HR</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                {sortedHistory.map((snap) => (
-                                    <tr
-                                        key={snap.id}
-                                        className="border-b last:border-0 hover:bg-muted/20"
-                                    >
-                                        <td className="px-4 py-3 text-foreground">
-                                            {new Date(snap.rangeStart + "T12:00:00").toLocaleDateString("en-US", {
-                                                weekday: "short",
-                                                month: "short",
-                                                day: "numeric",
-                                                year: "numeric",
-                                            })}
-                                        </td>
-                                        <td className="px-4 py-3 text-muted-foreground">
-                                            {snap.source.vendor}
-                                        </td>
-                                        <td className="px-4 py-3 text-right font-mono">
-                                            {snap.summary.stepsCount.toLocaleString()}
-                                        </td>
-                                        <td className="px-4 py-3 text-right font-mono">
-                                            {snap.summary.totalSleepMinutes > 0
-                                                ? `${(snap.summary.totalSleepMinutes / 60).toFixed(1)}h`
-                                                : "—"}
-                                        </td>
-                                        <td className="px-4 py-3 text-right font-mono">
-                                            {snap.summary.averageHeartRateBpm !== null
-                                                ? `${snap.summary.averageHeartRateBpm} bpm`
-                                                : "—"}
-                                        </td>
-                                    </tr>
-                                ))}
+                                {sortedHistory.map((snap) => {
+                                    const sleepH =
+                                        snap.summary.totalSleepMinutes > 0
+                                            ? snap.summary.totalSleepMinutes / 60
+                                            : null;
+                                    const hr = snap.summary.averageHeartRateBpm;
+                                    return (
+                                        <tr
+                                            key={snap.id}
+                                            className="border-b last:border-0 hover:bg-muted/20"
+                                        >
+                                            <td className="px-4 py-3 text-foreground">
+                                                {new Date(
+                                                    snap.rangeStart
+                                                ).toLocaleDateString("en-US", {
+                                                    weekday: "short",
+                                                    month: "short",
+                                                    day: "numeric",
+                                                    year: "numeric",
+                                                })}
+                                            </td>
+                                            <td className="px-4 py-3 text-muted-foreground">
+                                                {snap.source.vendor}
+                                            </td>
+                                            <td
+                                                className={`px-4 py-3 text-right font-mono font-medium ${stepsColor(snap.summary.stepsCount)}`}
+                                            >
+                                                {snap.summary.stepsCount.toLocaleString()}
+                                            </td>
+                                            <td
+                                                className={`px-4 py-3 text-right font-mono font-medium ${sleepH !== null ? sleepColor(sleepH) : "text-muted-foreground"}`}
+                                            >
+                                                {sleepH !== null ? `${sleepH.toFixed(1)}h` : "—"}
+                                            </td>
+                                            <td
+                                                className={`px-4 py-3 text-right font-mono font-medium ${hr !== null ? hrColor(hr) : "text-muted-foreground"}`}
+                                            >
+                                                {hr !== null ? `${hr} bpm` : "—"}
+                                            </td>
+                                        </tr>
+                                    );
+                                })}
                             </tbody>
                         </table>
                     </div>
