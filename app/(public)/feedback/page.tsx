@@ -300,22 +300,49 @@ export default function PilotFeedbackPage() {
     // ── Success screen ───────────────────────────────────────────────────────
     if (submitted) {
         return (
-            <div className="public-grid-page public-dot-page px-4 pb-16 pt-20">
+            <div className="public-grid-page public-dot-page flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-24">
                 <PageTitle title="Feedback — Thank You" />
-                <div className="mx-auto max-w-2xl pt-12 text-center">
-                    <div className="inline-flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 text-primary">
-                        <CheckCircle2 className="h-8 w-8" />
+                <div className="mx-auto w-full max-w-lg text-center">
+                    {/* Icon */}
+                    <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 ring-8 ring-primary/5">
+                        <CheckCircle2 className="h-10 w-10 text-primary" />
                     </div>
-                    <h1 className="mt-6 text-3xl font-bold tracking-tight text-foreground">
+
+                    {/* Heading */}
+                    <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                         Thank you for your feedback!
                     </h1>
-                    <p className="mt-3 text-base text-muted-foreground">
-                        Your response has been recorded and will be used for academic
-                        evaluation of CuraSync.
+                    <p className="mt-4 text-base leading-relaxed text-muted-foreground">
+                        Your response has been recorded and will be used for the
+                        academic evaluation of CuraSync. We appreciate your time during
+                        the clinic pilot session.
                     </p>
-                    <div className="mt-8 flex justify-center gap-3">
+
+                    {/* Divider */}
+                    <div className="my-8 border-t" />
+
+                    {/* Summary badges */}
+                    <div className="flex flex-wrap justify-center gap-2">
+                        <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
+                            <CheckCircle2 className="h-3 w-3 text-primary" />
+                            Response recorded
+                        </Badge>
+                        <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
+                            <Star className="h-3 w-3 text-primary" />
+                            SUS rating submitted
+                        </Badge>
+                        <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
+                            <ClipboardList className="h-3 w-3 text-primary" />
+                            Academic evaluation only
+                        </Badge>
+                    </div>
+
+                    {/* Action */}
+                    <div className="mt-10">
                         <Button
                             variant="outline"
+                            size="lg"
+                            className="w-full sm:w-auto"
                             onClick={() => setSubmitted(false)}
                         >
                             Submit another response
