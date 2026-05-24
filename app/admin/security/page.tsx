@@ -246,9 +246,9 @@ export default function AdminSecurityPage() {
                                 {formatDateTime(user.account_settings?.password_changed_at)}
                             </p>
                         </div>
-                        <div className="rounded-xl border border-amber-200 bg-amber-50/60 p-4 dark:border-amber-900 dark:bg-amber-950/20">
+                        <div className="rounded-xl border border-chart-5/30 bg-chart-5/10 p-4 dark:border-chart-5/30 dark:bg-chart-5/15">
                             <div className="flex items-start gap-3">
-                                <ShieldAlert className="mt-0.5 h-5 w-5 text-amber-600" />
+                                <ShieldAlert className="mt-0.5 h-5 w-5 text-chart-5" />
                                 <div className="space-y-2">
                                     <p className="text-base font-medium">
                                         Sign out all sessions

@@ -658,9 +658,9 @@ function OperationalRow({
 }) {
     const toneClasses =
         tone === "warning"
-            ? "bg-amber-50 text-amber-800"
+            ? "bg-chart-5/10 text-chart-5"
             : tone === "success"
-              ? "bg-emerald-50 text-emerald-800"
+              ? "bg-chart-3/10 text-chart-3"
               : "bg-muted/40 text-foreground";
 
     return (

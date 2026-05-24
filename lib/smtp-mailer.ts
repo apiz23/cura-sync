@@ -1,4 +1,6 @@
 import nodemailer from "nodemailer";
+import { existsSync } from "node:fs";
+import path from "node:path";
 
 type AppointmentStatusEmailInput = {
     to: string;
@@ -86,6 +88,42 @@ function formatAppointmentTime(value: string) {
     }).format(date);
 }
 
+function getPublicSiteUrl() {
+    const explicitUrl =
+        process.env.NEXT_PUBLIC_SITE_URL?.trim() ||
+        process.env.NEXT_PUBLIC_APP_URL?.trim();
+
+    if (explicitUrl) {
+        return explicitUrl.replace(/\/+$/, "");
+    }
+
+    const vercelUrl = process.env.VERCEL_URL?.trim();
+    if (vercelUrl) {
+        return `https://${vercelUrl.replace(/\/+$/, "")}`;
+    }
+
+    return "";
+}
+
+function getLogoAttachment() {
+    const logoPath = path.join(
+        process.cwd(),
+        "public",
+        "icons",
+        "android-chrome-192x192.png"
+    );
+
+    if (!existsSync(logoPath)) {
+        return null;
+    }
+
+    return {
+        filename: "cura-sync-logo.png",
+        path: logoPath,
+        cid: "cura-sync-logo",
+    };
+}
+
 export async function sendAppointmentStatusEmail(
     input: AppointmentStatusEmailInput
 ) {
@@ -117,14 +155,22 @@ export async function sendAppointmentStatusEmail(
         ? `Hi ${patientName}, your appointment at ${facilityName} on ${appointmentDate} at ${appointmentTime} has been confirmed. Please arrive 10 minutes early.`
         : `Hi ${patientName}, your appointment at ${facilityName} on ${appointmentDate} at ${appointmentTime} has been cancelled. Please contact the facility to reschedule.`;
 
-    const accentColor = isConfirmed ? "#10b981" : "#e53e3e";
+    const accentColor = isConfirmed ? "#2563eb" : "#dc2626";
+    const accentSoft = isConfirmed ? "#eff6ff" : "#fef2f2";
+    const accentBorder = isConfirmed ? "#bfdbfe" : "#fecaca";
     const statusLabel = isConfirmed ? "Appointment Confirmed" : "Appointment Cancelled";
+    const statusPill = isConfirmed ? "Confirmed" : "Cancelled";
     const bodyNote = isConfirmed
         ? "Please arrive <strong>10 minutes early</strong> and bring any relevant documents or previous test results."
         : "To reschedule, please contact the facility directly or book through the CuraSync app.";
 
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? "";
-    const logoUrl = siteUrl ? `${siteUrl}/icons/android-chrome-192x192.png` : "";
+    const siteUrl = getPublicSiteUrl();
+    const logoAttachment = getLogoAttachment();
+    const logoSrc = logoAttachment
+        ? "cid:cura-sync-logo"
+        : siteUrl
+          ? `${siteUrl}/icons/android-chrome-192x192.png`
+          : "";
 
     const html = `<!DOCTYPE html>
 <html lang="en">
@@ -133,68 +179,82 @@ export async function sendAppointmentStatusEmail(
   <meta name="viewport" content="width=device-width,initial-scale=1.0" />
   <title>${escapeHtml(subject)}</title>
 </head>
-<body style="margin:0;padding:0;background:#f2f2f2;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="padding:48px 16px 64px;">
+<body style="margin:0;padding:0;background:#f5f7fb;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Helvetica,Arial,sans-serif;-webkit-font-smoothing:antialiased;">
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="padding:40px 16px 56px;background:#f5f7fb;">
     <tr>
       <td align="center">
-        <table width="100%" cellpadding="0" cellspacing="0" style="max-width:480px;">
+        <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
 
           <!-- Logo row -->
           <tr>
-            <td style="padding-bottom:28px;text-align:center;">
-              ${logoUrl ? `<img src="${escapeHtml(logoUrl)}" width="32" height="32" alt="" style="display:inline-block;vertical-align:middle;border-radius:7px;" />` : ""}
-              <span style="display:inline-block;vertical-align:middle;margin-left:8px;font-size:15px;font-weight:700;color:#111;letter-spacing:-0.3px;">CuraSync</span>
+            <td style="padding-bottom:22px;text-align:center;">
+              <table role="presentation" cellpadding="0" cellspacing="0" align="center">
+                <tr>
+                  <td style="vertical-align:middle;">
+                    ${
+                        logoSrc
+                            ? `<img src="${escapeHtml(logoSrc)}" width="40" height="40" alt="CuraSync" style="display:block;border:0;border-radius:10px;outline:none;text-decoration:none;" />`
+                            : `<span style="display:block;width:40px;height:40px;border-radius:10px;background:#2563eb;color:#ffffff;font-size:15px;font-weight:800;line-height:40px;text-align:center;">CS</span>`
+                    }
+                  </td>
+                  <td style="vertical-align:middle;padding-left:10px;text-align:left;">
+                    <div style="font-size:16px;font-weight:800;color:#0f172a;letter-spacing:-0.3px;line-height:1;">CuraSync</div>
+                    <div style="margin-top:4px;font-size:11px;font-weight:600;color:#64748b;letter-spacing:0.04em;text-transform:uppercase;">Healthcare notification</div>
+                  </td>
+                </tr>
+              </table>
             </td>
           </tr>
 
           <!-- Card -->
           <tr>
-            <td style="background:#fff;border-radius:10px;overflow:hidden;">
+            <td style="background:#ffffff;border:1px solid #e5e7eb;border-radius:18px;overflow:hidden;box-shadow:0 16px 40px rgba(15,23,42,0.08);">
 
               <!-- Status accent line -->
-              <table width="100%" cellpadding="0" cellspacing="0">
-                <tr><td style="height:3px;background:${accentColor};font-size:0;line-height:0;">&nbsp;</td></tr>
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+                <tr><td style="height:5px;background:${accentColor};font-size:0;line-height:0;">&nbsp;</td></tr>
               </table>
 
               <!-- Content -->
-              <table width="100%" cellpadding="0" cellspacing="0">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
 
                 <!-- Headline -->
                 <tr>
-                  <td style="padding:32px 36px 0;">
-                    <p style="margin:0 0 8px;font-size:11px;font-weight:700;letter-spacing:0.07em;text-transform:uppercase;color:${accentColor};">${escapeHtml(statusLabel)}</p>
-                    <p style="margin:0;font-size:15px;color:#333;line-height:1.6;">Hi <strong>${escapeHtml(patientName)}</strong>,</p>
+                  <td style="padding:34px 38px 0;">
+                    <span style="display:inline-block;border:1px solid ${accentBorder};border-radius:999px;background:${accentSoft};padding:6px 11px;font-size:11px;font-weight:800;letter-spacing:0.06em;text-transform:uppercase;color:${accentColor};">${escapeHtml(statusPill)}</span>
+                    <h1 style="margin:16px 0 10px;font-size:26px;line-height:1.18;font-weight:800;letter-spacing:-0.7px;color:#0f172a;">${escapeHtml(statusLabel)}</h1>
+                    <p style="margin:0;font-size:15px;color:#475569;line-height:1.65;">Hi <strong style="color:#0f172a;">${escapeHtml(patientName)}</strong>, this is an automated update for your clinic appointment.</p>
                   </td>
                 </tr>
 
                 <!-- Details block -->
                 <tr>
-                  <td style="padding:24px 36px 0;">
-                    <table width="100%" cellpadding="0" cellspacing="0" style="background:#f8f8f8;border-radius:7px;">
+                  <td style="padding:26px 38px 0;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:14px;">
                       <tr>
-                        <td style="padding:20px 22px;">
+                        <td style="padding:22px 24px;">
 
                           <!-- Facility -->
-                          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:13px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:15px;">
                             <tr>
-                              <td style="width:64px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;padding-top:2px;vertical-align:top;">Clinic</td>
-                              <td style="font-size:14px;font-weight:600;color:#111;">${escapeHtml(facilityName)}</td>
+                              <td style="width:82px;font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;padding-top:3px;vertical-align:top;">Clinic</td>
+                              <td style="font-size:15px;font-weight:700;color:#0f172a;line-height:1.35;">${escapeHtml(facilityName)}</td>
                             </tr>
                           </table>
 
                           <!-- Date -->
-                          <table width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:13px;">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="margin-bottom:15px;">
                             <tr>
-                              <td style="width:64px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;padding-top:2px;vertical-align:top;">Date</td>
-                              <td style="font-size:14px;font-weight:600;color:#111;">${escapeHtml(appointmentDate)}</td>
+                              <td style="width:82px;font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;padding-top:3px;vertical-align:top;">Date</td>
+                              <td style="font-size:15px;font-weight:700;color:#0f172a;line-height:1.35;">${escapeHtml(appointmentDate)}</td>
                             </tr>
                           </table>
 
                           <!-- Time -->
-                          <table width="100%" cellpadding="0" cellspacing="0">
+                          <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
                             <tr>
-                              <td style="width:64px;font-size:10px;font-weight:700;color:#aaa;text-transform:uppercase;letter-spacing:0.06em;padding-top:2px;vertical-align:top;">Time</td>
-                              <td style="font-size:14px;font-weight:600;color:#111;">${escapeHtml(appointmentTime)}</td>
+                              <td style="width:82px;font-size:10px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:0.08em;padding-top:3px;vertical-align:top;">Time</td>
+                              <td style="font-size:15px;font-weight:700;color:#0f172a;line-height:1.35;">${escapeHtml(appointmentTime)}</td>
                             </tr>
                           </table>
 
@@ -206,18 +266,24 @@ export async function sendAppointmentStatusEmail(
 
                 <!-- Note -->
                 <tr>
-                  <td style="padding:20px 36px 0;">
-                    <p style="margin:0;font-size:13px;color:#777;line-height:1.7;">${bodyNote}</p>
+                  <td style="padding:22px 38px 0;">
+                    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="border-left:4px solid ${accentColor};background:${accentSoft};border-radius:12px;">
+                      <tr>
+                        <td style="padding:15px 17px;">
+                          <p style="margin:0;font-size:14px;color:#334155;line-height:1.7;">${bodyNote}</p>
+                        </td>
+                      </tr>
+                    </table>
                   </td>
                 </tr>
 
                 <!-- Divider + footer -->
                 <tr>
-                  <td style="padding:28px 36px 28px;">
-                    <hr style="border:none;border-top:1px solid #ebebeb;margin:0 0 20px;" />
-                    <p style="margin:0;font-size:11px;color:#bbb;line-height:1.6;text-align:center;">
-                      Automated notification &middot; Please do not reply<br />
-                      CuraSync &mdash; Integrated Healthcare Platform
+                  <td style="padding:30px 38px 32px;">
+                    <hr style="border:none;border-top:1px solid #e5e7eb;margin:0 0 20px;" />
+                    <p style="margin:0;font-size:12px;color:#94a3b8;line-height:1.65;text-align:center;">
+                      Automated notification. Please do not reply to this email.<br />
+                      CuraSync &middot; Integrated Healthcare Platform
                     </p>
                   </td>
                 </tr>
@@ -239,5 +305,6 @@ export async function sendAppointmentStatusEmail(
         subject,
         text,
         html,
+        attachments: logoAttachment ? [logoAttachment] : undefined,
     });
 }

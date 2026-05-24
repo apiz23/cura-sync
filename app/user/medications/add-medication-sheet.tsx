@@ -474,7 +474,7 @@ export default function AddMedicationSheet({
                     >
                         {loading ? (
                             <>
-                                <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                <div className="h-4 w-4 border-2 border-card border-t-transparent rounded-full animate-spin" />
                                 Adding...
                             </>
                         ) : (

@@ -343,7 +343,7 @@ export default function PatientDetailPage() {
 
 							<div className="relative">
 								{patient.avatar_url ? (
-									<div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-white shadow-lg">
+									<div className="w-20 h-20 rounded-xl overflow-hidden border-2 border-card shadow-lg">
 										<Image
 											src={patient.avatar_url}
 											alt={patient.full_name || "Patient"}
@@ -353,7 +353,7 @@ export default function PatientDetailPage() {
 										/>
 									</div>
 								) : (
-									<div className="w-20 h-20 rounded-xl bg-linear-to-br from-primary/20 to-primary/10 border-2 border-white flex items-center justify-center">
+									<div className="w-20 h-20 rounded-xl bg-linear-to-br from-primary/20 to-primary/10 border-2 border-card flex items-center justify-center">
 										<UserCircle className="w-10 h-10 text-primary" />
 									</div>
 								)}
@@ -473,8 +473,8 @@ export default function PatientDetailPage() {
 									<div className="space-y-4">
 										{patient.blood_type && (
 											<div className="flex items-center gap-3">
-												<div className="p-2 bg-red-50 rounded-lg">
-													<Heart className="w-4 h-4 text-red-600" />
+												<div className="p-2 bg-destructive/10 rounded-lg">
+													<Heart className="w-4 h-4 text-destructive" />
 												</div>
 												<div>
 													<p className="text-base text-muted-foreground">Blood Type</p>
@@ -484,8 +484,8 @@ export default function PatientDetailPage() {
 										)}
 										{patient.height_cm && (
 											<div className="flex items-center gap-3">
-												<div className="p-2 bg-blue-50 rounded-lg">
-													<User className="w-4 h-4 text-blue-600" />
+												<div className="p-2 bg-chart-2/10 rounded-lg">
+													<User className="w-4 h-4 text-chart-2" />
 												</div>
 												<div>
 													<p className="text-base text-muted-foreground">Height</p>
@@ -495,8 +495,8 @@ export default function PatientDetailPage() {
 										)}
 										{patient.weight_kg && (
 											<div className="flex items-center gap-3">
-												<div className="p-2 bg-green-50 rounded-lg">
-													<Activity className="w-4 h-4 text-green-600" />
+												<div className="p-2 bg-chart-3/10 rounded-lg">
+													<Activity className="w-4 h-4 text-chart-3" />
 												</div>
 												<div>
 													<p className="text-base text-muted-foreground">Weight</p>
@@ -506,8 +506,8 @@ export default function PatientDetailPage() {
 										)}
 										{bmi && (
 											<div className="flex items-center gap-3">
-												<div className="p-2 bg-amber-50 rounded-lg">
-													<Clipboard className="w-4 h-4 text-amber-600" />
+												<div className="p-2 bg-chart-5/10 rounded-lg">
+													<Clipboard className="w-4 h-4 text-chart-5" />
 												</div>
 												<div>
 													<p className="text-base text-muted-foreground">BMI</p>
@@ -636,9 +636,9 @@ export default function PatientDetailPage() {
 									<TabsContent value="medical">
 										<div className="space-y-5">
 											{blockchainProtectionEnabled && (
-												<div className="mb-4 flex items-center gap-2.5 rounded-lg border border-emerald-500/30 bg-emerald-500/5 px-4 py-3 text-sm">
-													<ShieldCheck className="h-4 w-4 shrink-0 text-emerald-600 dark:text-emerald-400" />
-													<span className="font-medium text-emerald-700 dark:text-emerald-300">
+												<div className="mb-4 flex items-center gap-2.5 rounded-lg border border-chart-3/30 bg-chart-3/5 px-4 py-3 text-sm">
+													<ShieldCheck className="h-4 w-4 shrink-0 text-chart-3 dark:text-chart-3" />
+													<span className="font-medium text-chart-3 dark:text-chart-3">
 														Blockchain protection active — records saved for this patient will be anchored on-chain
 													</span>
 												</div>
@@ -1447,7 +1447,7 @@ function EditMedicalRecordSheet({
 			}}
 		>
 			<SheetTrigger asChild>{children}</SheetTrigger>
-			<SheetContent className="w-full overflow-y-auto sm:max-w-md">
+			<SheetContent className="w-full overflow-y-auto sm:max-w-md p-4">
 				<SheetHeader>
 					<SheetTitle>Edit {recordType.charAt(0).toUpperCase() + recordType.slice(1)}</SheetTitle>
 				</SheetHeader>
@@ -1813,9 +1813,9 @@ function AlertBox({
 	type?: "info" | "warning" | "danger";
 }) {
 	const colors = {
-		info: "bg-blue-50 text-blue-700 border-blue-200",
-		warning: "bg-amber-50 text-amber-700 border-amber-200",
-		danger: "bg-red-50 text-red-700 border-red-200",
+		info: "bg-chart-2/10 text-chart-2 border-chart-2/30",
+		warning: "bg-chart-5/10 text-chart-5 border-chart-5/30",
+		danger: "bg-destructive/10 text-destructive border-destructive/30",
 	};
 
 	return (

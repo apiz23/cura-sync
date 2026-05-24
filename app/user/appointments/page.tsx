@@ -119,15 +119,15 @@ function isAppointmentActive(appointment: Appointment, todayIso: string) {
 function getStatusBadgeClasses(status: string) {
   switch (status) {
     case "CONFIRMED":
-      return "border-emerald-200 bg-emerald-50 text-emerald-700";
+      return "border-chart-3/30 bg-chart-3/10 text-chart-3";
     case "CHECKED_IN":
-      return "border-sky-200 bg-sky-50 text-sky-700";
+      return "border-chart-2/30 bg-chart-2/10 text-chart-2";
     case "PENDING":
-      return "border-amber-200 bg-amber-50 text-amber-700";
+      return "border-chart-5/30 bg-chart-5/10 text-chart-5";
     case "CANCELLED":
-      return "border-rose-200 bg-rose-50 text-rose-700";
+      return "border-destructive/30 bg-destructive/10 text-destructive";
     case "COMPLETED":
-      return "border-slate-200 bg-slate-100 text-slate-700";
+      return "border-border bg-muted text-muted-foreground";
     default:
       return "border-border bg-muted text-foreground";
   }
@@ -481,10 +481,10 @@ export default function AppointmentPage() {
   if (!user) {
     return (
       <UserPageShell contentClassName="justify-center">
-        <Card className="max-w-md w-full border-none shadow-2xl">
+        <Card className="max-w-md w-full border-none shadow-lg">
           <CardContent className="p-8">
             <div className="space-y-6 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-linear-to-br from-primary/10 to-primary/5">
+              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
                 <Users className="h-10 w-10 text-primary" />
               </div>
               <div className="space-y-3">
@@ -494,7 +494,7 @@ export default function AppointmentPage() {
                   providers
                 </p>
               </div>
-              <Button className="h-12 w-full rounded-xl bg-linear-to-r from-primary to-primary/90 shadow-lg hover:from-primary/90 hover:to-primary">
+              <Button className="h-12 w-full rounded-xl bg-primary shadow-sm hover:bg-primary/90">
                 Sign In to Continue
               </Button>
             </div>
@@ -530,7 +530,7 @@ export default function AppointmentPage() {
                     {isAppointmentsLoading ? "--" : activeAppointments.length}
                   </h3>
                 </div>
-                <div className="rounded-full bg-primary/10 p-3">
+                <div className="rounded-xl bg-primary/10 p-3">
                   <CalendarClock className="h-6 w-6 text-primary" />
                 </div>
               </div>
@@ -548,7 +548,7 @@ export default function AppointmentPage() {
                     {isAppointmentsLoading ? "--" : appointmentHistory.length}
                   </h3>
                 </div>
-                <div className="rounded-full bg-muted p-3">
+                <div className="rounded-xl bg-muted p-3">
                   <History className="h-6 w-6 text-foreground" />
                 </div>
               </div>
@@ -566,7 +566,7 @@ export default function AppointmentPage() {
                     {isFacilitiesLoading ? "--" : facilities.length}
                   </h3>
                 </div>
-                <div className="rounded-full bg-primary/10 p-3">
+                <div className="rounded-xl bg-primary/10 p-3">
                   <Building className="h-6 w-6 text-primary" />
                 </div>
               </div>
@@ -669,7 +669,7 @@ export default function AppointmentPage() {
         </div>
 
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border-2 border-primary/10 transition-all hover:border-primary/20">
+          <Card className="border border-primary/20 transition-all hover:border-primary/20">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -680,14 +680,14 @@ export default function AppointmentPage() {
                     {facilities.filter((facility) => facility.is_active).length}
                   </h3>
                 </div>
-                <div className="shrink-0 rounded-full bg-primary/10 p-3">
+                <div className="shrink-0 rounded-xl bg-primary/10 p-3">
                   <Building className="h-6 w-6 text-primary" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-info/10 transition-all hover:border-info/20">
+          <Card className="border border-chart-2/20 transition-all hover:border-chart-2/30">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -698,14 +698,14 @@ export default function AppointmentPage() {
                     {scheduledFacilitiesCount}
                   </h3>
                 </div>
-                <div className="shrink-0 rounded-full bg-info/10 p-3">
-                  <Clock className="h-6 w-6 text-info" />
+                <div className="shrink-0 rounded-xl bg-chart-2/10 p-3">
+                  <Clock className="h-6 w-6 text-chart-2" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-warning/10 transition-all hover:border-warning/20">
+          <Card className="border border-chart-5/20 transition-all hover:border-chart-5/30">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -714,14 +714,14 @@ export default function AppointmentPage() {
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">{facilityTypes.length}</h3>
                 </div>
-                <div className="shrink-0 rounded-full bg-warning/10 p-3">
-                  <Filter className="h-6 w-6 text-warning" />
+                <div className="shrink-0 rounded-xl bg-chart-5/10 p-3">
+                  <Filter className="h-6 w-6 text-chart-5" />
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card className="border-2 border-secondary/10 transition-all hover:border-secondary/20">
+          <Card className="border border-chart-4/20 transition-all hover:border-chart-4/30">
             <CardContent className="p-6">
               <div className="flex items-center justify-between">
                 <div>
@@ -730,8 +730,8 @@ export default function AppointmentPage() {
                   </p>
                   <h3 className="mt-2 text-3xl font-bold">{specialtyCount}</h3>
                 </div>
-                <div className="shrink-0 rounded-full bg-secondary/10 p-3">
-                  <Calendar className="h-6 w-6 text-secondary" />
+                <div className="shrink-0 rounded-xl bg-chart-4/10 p-3">
+                  <Calendar className="h-6 w-6 text-chart-4" />
                 </div>
               </div>
             </CardContent>

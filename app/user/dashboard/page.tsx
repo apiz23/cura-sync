@@ -270,7 +270,7 @@ export default function UserDashboardPage() {
     return (
         <UserPageShell>
             {loading ? (
-                <div className="rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm sm:p-8">
+                <div className="rounded-2xl border border-border/60 bg-card/80 p-6 shadow-sm sm:p-8">
                     <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
                         <div className="space-y-3">
                             <Skeleton className="h-12 w-12 rounded-2xl" />

@@ -77,7 +77,7 @@ function Map3DController() {
             transition={{ duration: 0.3, ease: SMOOTH_EASE }}
             className="absolute bottom-4 left-14 z-10"
         >
-            <div className="flex gap-1 rounded-lg border border-[#EAEAEA] bg-white/90 p-1 shadow-[0_2px_8px_rgba(0,0,0,0.06)] backdrop-blur-md dark:border-border dark:bg-background/90">
+            <div className="flex gap-1 rounded-lg border border-border bg-card/90 p-1 shadow-sm backdrop-blur-md dark:border-border dark:bg-background/90">
                 <Button
                     size="sm"
                     variant={is3D ? "default" : "ghost"}
@@ -110,20 +110,20 @@ function Map3DController() {
 // Muted pastels for list items (minimalist-ui spec)
 function getFacilityPastel(type: string | null): { bg: string; text: string } {
     if (type?.toLowerCase().includes("hospital"))
-        return { bg: "bg-[#EDF3EC]", text: "text-[#346538]" };
+        return { bg: "bg-primary/10", text: "text-primary" };
     if (type?.toLowerCase().includes("clinic"))
-        return { bg: "bg-[#E1F3FE]", text: "text-[#1F6C9F]" };
+        return { bg: "bg-chart-2/10", text: "text-chart-2" };
     if (type?.toLowerCase().includes("specialist"))
-        return { bg: "bg-[#FDEBEC]", text: "text-[#9F2F2D]" };
-    return { bg: "bg-[#FBF3DB]", text: "text-[#956400]" };
+        return { bg: "bg-destructive/10", text: "text-destructive" };
+    return { bg: "bg-chart-5/10", text: "text-chart-5" };
 }
 
 // Bright saturated colors for map markers (visibility on map tiles)
 function getFacilityMarkerColor(type: string | null): string {
-    if (type?.toLowerCase().includes("hospital")) return "bg-emerald-500";
-    if (type?.toLowerCase().includes("clinic")) return "bg-sky-500";
-    if (type?.toLowerCase().includes("specialist")) return "bg-rose-500";
-    return "bg-amber-500";
+    if (type?.toLowerCase().includes("hospital")) return "bg-chart-3";
+    if (type?.toLowerCase().includes("clinic")) return "bg-chart-2";
+    if (type?.toLowerCase().includes("specialist")) return "bg-destructive/100";
+    return "bg-chart-5";
 }
 
 function FacilityIcon({ type, className = "size-4" }: { type: string | null; className?: string }) {
@@ -138,20 +138,20 @@ function FacilityIcon({ type, className = "size-4" }: { type: string | null; cla
 
 function LoadingSkeleton() {
     return (
-        <div className="min-h-[100dvh] bg-background px-4 pb-16 pt-20">
-            <div className="mx-auto max-w-7xl space-y-8 pt-8">
+        <div className="public-grid-page px-4 pb-16 pt-20">
+            <div className="public-page-content mx-auto max-w-7xl space-y-8 pt-8">
                 <div className="space-y-2">
                     <div className="h-8 w-48 animate-pulse rounded-md bg-muted" />
                     <div className="h-4 w-64 animate-pulse rounded-md bg-muted" />
                 </div>
                 <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
                 <div className="grid gap-6 lg:grid-cols-[2fr_1fr]">
-                    <div className="relative h-[500px] overflow-hidden rounded-xl border border-[#EAEAEA] bg-muted">
+                    <div className="relative h-[500px] overflow-hidden rounded-xl border border-border bg-muted">
                         <div className="absolute inset-0 -translate-x-full animate-[shimmer_1.6s_infinite] bg-linear-to-r from-transparent via-white/10 to-transparent" />
                     </div>
                     <div className="space-y-3">
                         {[1, 2, 3, 4].map((i) => (
-                            <div key={i} className="flex items-center gap-3 rounded-xl border border-[#EAEAEA] bg-background p-4">
+                            <div key={i} className="flex items-center gap-3 rounded-xl border border-border bg-background p-4">
                                 <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
                                 <div className="flex-1 space-y-2">
                                     <div className="h-3.5 w-3/4 rounded-md bg-muted" />
@@ -250,24 +250,12 @@ export default function FacilitiesMapPage() {
               };
 
     return (
-        <div className="relative min-h-[100dvh] overflow-hidden bg-background px-4 pb-20 pt-20">
-            {/* Square grid */}
-            <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0"
-                style={{
-                    backgroundImage:
-                        "linear-gradient(color-mix(in oklch, var(--primary) 4%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--primary) 4%, transparent) 1px, transparent 1px)",
-                    backgroundSize: "64px 64px",
-                }}
-            />
-            {/* Top fade */}
-            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-background to-transparent" />
+        <div className="public-grid-page px-4 pb-20 pt-20">
             <PageTitle title="Facilities" />
-            <div className="mx-auto max-w-7xl space-y-7 pt-8">
+            <div className="public-page-content mx-auto max-w-7xl space-y-7 pt-8">
 
                 {/* Header */}
-                <motion.div {...fadeUp(0)} className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <motion.div {...fadeUp(0)} className="public-text-panel flex flex-col gap-3 p-6 sm:flex-row sm:items-end sm:justify-between">
                     <div>
                         <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground">
                             Find a facility
@@ -307,7 +295,7 @@ export default function FacilitiesMapPage() {
                                     "flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors duration-150",
                                     active
                                         ? "border-foreground bg-foreground text-background"
-                                        : "border-[#EAEAEA] bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground dark:border-border",
+                                        : "border-border bg-background text-muted-foreground hover:border-foreground/30 hover:text-foreground dark:border-border",
                                 ].join(" ")}
                             >
                                 <Icon className="h-3.5 w-3.5" />
@@ -322,7 +310,7 @@ export default function FacilitiesMapPage() {
 
                     {/* Map */}
                     <motion.div {...fadeUp(0.14)}>
-                        <Card className="py-0 overflow-hidden border border-[#EAEAEA] shadow-[0_1px_4px_rgba(0,0,0,0.04)] rounded-xl dark:border-border">
+                        <Card className="py-0 overflow-hidden border border-border shadow-sm rounded-xl dark:border-border">
                             <div className="relative h-[500px] lg:h-[560px]">
                                 <Map center={center} zoom={14}>
                                     <Map3DController />
@@ -331,13 +319,13 @@ export default function FacilitiesMapPage() {
                                     {userLocation && (
                                         <MapMarker longitude={userLocation[0]} latitude={userLocation[1]}>
                                             <MarkerContent>
-                                                <div className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-white bg-primary/20 shadow-[0_2px_8px_rgba(0,0,0,0.12)]">
+                                                <div className="flex h-12 w-12 items-center justify-center rounded-full border-4 border-card bg-primary/20 shadow-md">
                                                     <motion.div
                                                         animate={reduced ? {} : { scale: [1, 1.15, 1] }}
                                                         transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                                                         className="flex h-6 w-6 items-center justify-center rounded-full bg-primary"
                                                     >
-                                                        <Navigation className="size-3 text-white" />
+                                                        <Navigation className="size-3 text-primary-foreground" />
                                                     </motion.div>
                                                 </div>
                                             </MarkerContent>
@@ -361,8 +349,8 @@ export default function FacilitiesMapPage() {
                                                         transition={{ delay: idx * 0.025, duration: 0.3, ease: SMOOTH_EASE }}
                                                         className="cursor-pointer transition-transform duration-200 hover:scale-110 active:scale-95"
                                                     >
-                                                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl border-2 border-white shadow-[0_2px_8px_rgba(0,0,0,0.15)] ${markerColor}`}>
-                                                            <FacilityIcon type={facility.type} className="size-4 text-white" />
+                                                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl border-2 border-card shadow-md ${markerColor}`}>
+                                                            <FacilityIcon type={facility.type} className="size-4 text-primary-foreground" />
                                                         </div>
                                                     </motion.div>
                                                 </MarkerContent>
@@ -370,10 +358,10 @@ export default function FacilitiesMapPage() {
                                                 <MarkerTooltip>{facility.name}</MarkerTooltip>
 
                                                 <MarkerPopup className="p-0 w-[360px]">
-                                                    <Card className="overflow-hidden border border-[#EAEAEA] shadow-[0_4px_16px_rgba(0,0,0,0.08)] rounded-xl dark:border-border">
+                                                    <Card className="overflow-hidden border border-border shadow-md rounded-xl dark:border-border">
                                                         <CardContent className="p-0">
                                                             {/* Popup header */}
-                                                            <div className="border-b border-[#EAEAEA] px-5 py-4 dark:border-border">
+                                                            <div className="border-b border-border px-5 py-4 dark:border-border">
                                                                 <div className="flex items-start gap-3">
                                                                     {(() => {
                                                                         const p = getFacilityPastel(facility.type);
@@ -411,7 +399,7 @@ export default function FacilitiesMapPage() {
                                                                     <Button
                                                                         variant="outline"
                                                                         size="sm"
-                                                                        className="h-9 flex-1 gap-1.5 border-[#EAEAEA] text-xs transition-colors duration-150 active:scale-[0.98] dark:border-border"
+                                                                        className="h-9 flex-1 gap-1.5 border-border text-xs transition-colors duration-150 active:scale-[0.98] dark:border-border"
                                                                         onClick={() =>
                                                                             window.open(
                                                                                 `https://www.google.com/maps/dir/?api=1&destination=${facility.latitude},${facility.longitude}`,
@@ -425,7 +413,7 @@ export default function FacilitiesMapPage() {
                                                                     <Link href={`/user/appointments?facilityId=${facility.id}`} className="flex-1">
                                                                         <Button
                                                                             size="sm"
-                                                                            className="h-9 w-full gap-1.5 bg-[#111111] text-xs text-white hover:bg-[#333333] transition-colors duration-150 active:scale-[0.98] dark:bg-primary dark:hover:bg-primary/90"
+                                                                            className="h-9 w-full gap-1.5 bg-secondary text-xs text-primary-foreground hover:bg-secondary/90 transition-colors duration-150 active:scale-[0.98] dark:bg-primary dark:hover:bg-primary/90"
                                                                         >
                                                                             <Calendar className="h-3.5 w-3.5" />
                                                                             Book appointment
@@ -457,7 +445,7 @@ export default function FacilitiesMapPage() {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, y: -8 }}
                                     transition={{ duration: 0.3, ease: SMOOTH_EASE }}
-                                    className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-[#EAEAEA] py-14 text-center dark:border-border"
+                                    className="flex flex-col items-center justify-center gap-3 rounded-xl border border-dashed border-border py-14 text-center dark:border-border"
                                 >
                                     <Search className="h-6 w-6 text-muted-foreground/30" />
                                     <div>
@@ -482,7 +470,7 @@ export default function FacilitiesMapPage() {
                                                 layout: { duration: 0.25 },
                                             }}
                                         >
-                                            <Card className="border border-[#EAEAEA] bg-background shadow-none transition-colors duration-150 hover:border-foreground/20 rounded-xl dark:border-border dark:hover:border-border/60">
+                                            <Card className="border border-border bg-background shadow-none transition-colors duration-150 hover:border-foreground/20 rounded-xl dark:border-border dark:hover:border-border/60">
                                                 <CardContent className="p-4">
                                                     <div className="flex items-start gap-3">
                                                         <div className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-lg ${p.bg}`}>
@@ -512,7 +500,7 @@ export default function FacilitiesMapPage() {
                                                         </div>
                                                     </div>
                                                     {facility.latitude && facility.longitude && (
-                                                        <div className="mt-3 flex gap-2 border-t border-[#EAEAEA] pt-3 dark:border-border">
+                                                        <div className="mt-3 flex gap-2 border-t border-border pt-3 dark:border-border">
                                                             <Button
                                                                 variant="ghost"
                                                                 size="sm"
@@ -530,7 +518,7 @@ export default function FacilitiesMapPage() {
                                                             <Link href={`/user/appointments?facilityId=${facility.id}`} className="flex-1">
                                                                 <Button
                                                                     size="sm"
-                                                                    className="h-8 w-full gap-1.5 bg-[#111111] text-xs text-white hover:bg-[#333333] transition-colors duration-150 active:scale-[0.98] dark:bg-primary dark:hover:bg-primary/90"
+                                                                    className="h-8 w-full gap-1.5 bg-secondary text-xs text-primary-foreground hover:bg-secondary/90 transition-colors duration-150 active:scale-[0.98] dark:bg-primary dark:hover:bg-primary/90"
                                                                 >
                                                                     <Calendar className="h-3.5 w-3.5" />
                                                                     Book

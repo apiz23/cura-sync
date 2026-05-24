@@ -112,16 +112,16 @@ export default function MedicationPage() {
 				dotColor: "bg-primary",
 			},
 			ACTIVE: {
-				color: "bg-info/10 text-info border-info/20",
+				color: "bg-chart-2/10 text-chart-2 border-chart-2/30",
 				icon: <Clock className="h-3.5 w-3.5" />,
 				label: "Active",
-				dotColor: "bg-info",
+				dotColor: "bg-chart-2",
 			},
 			STOPPED: {
-				color: "bg-warning/10 text-warning-foreground border-warning/20",
+				color: "bg-chart-5/10 text-chart-5 border-chart-5/30",
 				icon: <AlertCircle className="h-3.5 w-3.5" />,
 				label: "Stopped",
-				dotColor: "bg-warning",
+				dotColor: "bg-chart-5",
 			},
 			default: {
 				color: "bg-muted text-muted-foreground border-border",
@@ -187,10 +187,7 @@ export default function MedicationPage() {
 								</AvatarFallback>
 							</Avatar>
 							<div
-								className="absolute right-0 bottom-0 h-2 w-2 rounded-full ring-2 ring-background"
-								style={{
-									backgroundColor: statusConfig.dotColor,
-								}}
+								className={`absolute right-0 bottom-0 h-2 w-2 rounded-full ring-2 ring-background ${statusConfig.dotColor}`}
 							/>
 						</div>
 						<div>
@@ -236,7 +233,7 @@ export default function MedicationPage() {
 						{row.original.end_date && (
 							<div
 								className={`text-base ${
-									isExpired ? "text-amber-600 font-medium" : "text-muted-foreground"
+									isExpired ? "text-chart-5 font-medium" : "text-muted-foreground"
 								}`}
 							>
 								<span className="text-muted-foreground">End: </span>
@@ -359,7 +356,7 @@ export default function MedicationPage() {
 
 				{/* Stats Overview */}
 				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-					<Card className="border-2 border-primary/10 hover:border-primary/20 transition-all duration-300 hover:shadow-lg">
+					<Card className="border border-primary/20 hover:border-primary/20 transition-all duration-300 hover:shadow-md">
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
@@ -375,15 +372,15 @@ export default function MedicationPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-2 border-info/10 hover:border-info/20 transition-all duration-300 hover:shadow-lg">
+					<Card className="border border-chart-2/20 hover:border-chart-2/30 transition-all duration-300 hover:shadow-md">
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
 									<p className="text-base font-medium text-muted-foreground">Active</p>
 									<h3 className="text-3xl font-bold mt-2">{activeMeds.length}</h3>
 								</div>
-								<div className="p-3 rounded-full bg-info/10">
-									<Clock className="h-6 w-6 text-info" />
+								<div className="p-3 rounded-full bg-chart-2/10">
+									<Clock className="h-6 w-6 text-chart-2" />
 								</div>
 							</div>
 							<div className="mt-3 text-base text-muted-foreground">
@@ -392,7 +389,7 @@ export default function MedicationPage() {
 						</CardContent>
 					</Card>
 
-					<Card className="border-2 border-secondary/10 hover:border-secondary/20 transition-all duration-300 hover:shadow-lg">
+					<Card className="border border-chart-4/20 transition-all duration-300 hover:border-chart-4/30 hover:shadow-md">
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
@@ -401,14 +398,14 @@ export default function MedicationPage() {
 										{meds.filter((m) => m.status === "COMPLETED").length}
 									</h3>
 								</div>
-								<div className="p-3 rounded-full bg-secondary/10">
-									<Calendar className="h-6 w-6 text-secondary" />
+								<div className="p-3 rounded-full bg-chart-4/10">
+									<Calendar className="h-6 w-6 text-chart-4" />
 								</div>
 							</div>
 						</CardContent>
 					</Card>
 
-					<Card className="border-2 border-warning/10 hover:border-warning/20 transition-all duration-300 hover:shadow-lg">
+					<Card className="border border-chart-5/20 hover:border-chart-5/30 transition-all duration-300 hover:shadow-md">
 						<CardContent className="p-6">
 							<div className="flex items-center justify-between">
 								<div>
@@ -417,12 +414,12 @@ export default function MedicationPage() {
 									</p>
 									<h3 className="text-3xl font-bold mt-2">{expiredMeds.length}</h3>
 								</div>
-								<div className="p-3 rounded-full bg-warning/10">
-									<AlertCircle className="h-6 w-6 text-warning" />
+								<div className="p-3 rounded-full bg-chart-5/10">
+									<AlertCircle className="h-6 w-6 text-chart-5" />
 								</div>
 							</div>
 							{expiredMeds.length > 0 && (
-								<div className="mt-3 text-base font-medium text-warning-foreground">
+								<div className="mt-3 text-base font-medium text-chart-5">
 									{expiredMeds.length} expired
 								</div>
 							)}
@@ -469,7 +466,7 @@ export default function MedicationPage() {
 					</div>
 
 					{meds.length === 0 ? (
-						<Card className="border-2 border-dashed">
+						<Card className="border border-dashed">
 							<CardContent className="flex flex-col items-center justify-center p-12 text-center">
 								<div className="p-4 rounded-full bg-muted mb-4">
 									<Pill className="h-12 w-12 text-muted-foreground" />
@@ -545,14 +542,14 @@ export default function MedicationPage() {
 						)}
 
 						{expiredMeds.length > 0 && (
-							<div className="rounded-xl bg-linear-to-r from-amber-500/5 to-amber-500/10 border border-amber-500/20 p-5">
+							<div className="rounded-xl bg-linear-to-r from-chart-5/10 to-chart-5/15 border border-chart-5/30 p-5">
 								<div className="flex items-start gap-3">
-									<AlertCircle className="h-5 w-5 text-amber-600 mt-0.5" />
+									<AlertCircle className="h-5 w-5 text-chart-5 mt-0.5" />
 									<div>
-										<p className="font-semibold text-base mb-2 text-amber-700">
+										<p className="font-semibold text-base mb-2 text-chart-5">
 											Review Needed
 										</p>
-										<p className="text-base text-amber-600/80">
+										<p className="text-base text-chart-5/80">
 											{expiredMeds.length} medication
 											{expiredMeds.length > 1 ? "s have" : " has"} expired. Please review
 											and update their status.

@@ -72,7 +72,7 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					.filter((group) => !group.roles || group.roles.includes(role))
 					.map((group) => (
 						<SidebarGroup key={group.title}>
-							<SidebarGroupLabel className="px-2 text-base font-semibold uppercase tracking-wider text-muted-foreground">
+							<SidebarGroupLabel className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
 								{group.title}
 							</SidebarGroupLabel>
 
@@ -94,14 +94,14 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
 														tooltip={item.title}
 														className="
                                                         gap-3
-                                                        data-[active=true]:bg-primary/10
-                                                        data-[active=true]:text-primary
+                                                        data-[active=true]:bg-primary/90
+                                                        data-[active=true]:text-primary-foreground
                                                         group-data-[collapsible=icon]:justify-center
                                                     "
 													>
 														<Link href={item.url}>
 															<Icon className="size-4 shrink-0" />
-															<span className="text-base font-medium group-data-[collapsible=icon]:hidden">
+															<span className="text-sm font-medium group-data-[collapsible=icon]:hidden">
 																{item.title}
 															</span>
 														</Link>

@@ -557,11 +557,11 @@ export default function AddMedicationSheet({
                                                     className={`h-2 w-2 rounded-full ${
                                                         option.value ===
                                                         "ACTIVE"
-                                                            ? "bg-green-500"
+                                                            ? "bg-chart-3"
                                                             : option.value ===
                                                               "COMPLETED"
-                                                            ? "bg-blue-500"
-                                                            : "bg-red-500"
+                                                            ? "bg-chart-2"
+                                                            : "bg-destructive/100"
                                                     }`}
                                                 />
                                                 {option.label}
@@ -620,7 +620,7 @@ export default function AddMedicationSheet({
                             >
                                 {loading ? (
                                     <>
-                                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <div className="h-4 w-4 border-2 border-card border-t-transparent rounded-full animate-spin" />
                                         Adding...
                                     </>
                                 ) : (

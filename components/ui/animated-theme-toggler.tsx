@@ -144,7 +144,7 @@ export const ModeToggle = ({
                 "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2",
                 sizeClasses[size],
                 variantClasses[variant],
-                isDark ? "text-amber-300" : "text-indigo-600",
+                isDark ? "text-chart-5" : "text-chart-2",
                 isTransitioning && "opacity-50 cursor-not-allowed",
                 className
             )}
@@ -183,7 +183,7 @@ export const ModeToggle = ({
                     <div
                         className={cn(
                             "rounded-full border-2 border-t-transparent animate-spin",
-                            isDark ? "border-amber-300" : "border-indigo-600",
+                            isDark ? "border-chart-5" : "border-chart-2",
                             size === "sm" && "w-4 h-4",
                             size === "md" && "w-5 h-5",
                             size === "lg" && "w-6 h-6"

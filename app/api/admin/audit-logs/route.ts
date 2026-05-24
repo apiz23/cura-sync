@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import supabase from "@/lib/supabase";
+import supabaseAdmin from "@/lib/supabase-admin";
 import { requireAdminStaffSession } from "@/lib/authz";
 
 const MAX_LIMIT = 100;
@@ -27,16 +27,51 @@ export async function GET(req: NextRequest) {
     const from = searchParams.get("from");
     const to = searchParams.get("to");
 
-    let query = supabase
+    // ── Facility scope ───────────────────────────────────────────────────────
+    // cura_audit_logs has no facility_id column, so we resolve which actor IDs
+    // belong to this facility via their respective profile tables.
+    const [staffScope, appointmentScope] = await Promise.all([
+        // All staff who belong to this facility
+        supabaseAdmin
+            .from("cura_staff_profiles")
+            .select("id")
+            .eq("facility_id", session.facilityId),
+        // All patients who have ever had an appointment at this facility
+        supabaseAdmin
+            .from("cura_appointments")
+            .select("profile_id")
+            .eq("facility_id", session.facilityId),
+    ]);
+
+    const facilityStaffIds = (staffScope.data ?? []).map((s) => String(s.id));
+    const facilityPatientIds = [
+        ...new Set(
+            (appointmentScope.data ?? [])
+                .map((a) => String(a.profile_id))
+                .filter(Boolean),
+        ),
+    ];
+    const scopedActorIds = [...new Set([...facilityStaffIds, ...facilityPatientIds])];
+
+    // No actors found for this facility — return empty rather than leaking cross-facility data.
+    if (scopedActorIds.length === 0) {
+        return NextResponse.json({ data: [], total: 0, page: 1, limit, pages: 0 });
+    }
+
+    // ── Query ────────────────────────────────────────────────────────────────
+    // supabaseAdmin (service role) bypasses RLS so SELECT works.
+    // cura_audit_logs only has an INSERT policy; reads require service role.
+    let query = supabaseAdmin
         .from("cura_audit_logs")
         .select("id, actor_id, actor_type, action, resource_type, resource_id, metadata, created_at", { count: "exact" })
+        .in("actor_id", scopedActorIds)
         .order("created_at", { ascending: false })
         .range(offset, offset + limit - 1);
 
     if (actorType === "staff" || actorType === "patient") {
         query = query.eq("actor_type", actorType);
     }
-    if (action && ["CREATE", "READ", "UPDATE", "DELETE"].includes(action)) {
+    if (action && ["CREATE", "READ", "UPDATE", "DELETE", "LOGIN", "LOGOUT"].includes(action)) {
         query = query.eq("action", action);
     }
     if (resourceType) {
@@ -59,16 +94,16 @@ export async function GET(req: NextRequest) {
 
     const logs = rows ?? [];
 
-    // Resolve actor names — batch, no N+1.
+    // ── Resolve actor names (batch, no N+1) ──────────────────────────────────
     const staffIds = [...new Set(logs.filter((r) => r.actor_type === "staff").map((r) => r.actor_id))];
     const patientIds = [...new Set(logs.filter((r) => r.actor_type === "patient").map((r) => r.actor_id))];
 
     const [staffResult, patientResult] = await Promise.all([
         staffIds.length
-            ? supabase.from("cura_staff_profiles").select("id, full_name").in("id", staffIds)
+            ? supabaseAdmin.from("cura_staff_profiles").select("id, full_name").in("id", staffIds)
             : Promise.resolve({ data: [] }),
         patientIds.length
-            ? supabase.from("cura_profiles").select("id, full_name").in("id", patientIds)
+            ? supabaseAdmin.from("cura_profiles").select("id, full_name").in("id", patientIds)
             : Promise.resolve({ data: [] }),
     ]);
 

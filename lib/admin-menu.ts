@@ -4,7 +4,6 @@ import {
     ClipboardList,
     UserPlus,
     Shield,
-    Settings,
     Hospital,
     ScrollText,
 } from "lucide-react";
@@ -68,11 +67,6 @@ export const adminMenu = [
                 title: "Security",
                 url: "/admin/security",
                 icon: Shield,
-            },
-            {
-                title: "Preferences",
-                url: "/admin/settings",
-                icon: Settings,
             },
         ],
     },

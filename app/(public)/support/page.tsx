@@ -1,20 +1,7 @@
 export default function SupportPage() {
     return (
-        <div className="relative min-h-[100dvh] overflow-hidden bg-background">
-            {/* Horizontal lines */}
-            <div
-                aria-hidden="true"
-                className="pointer-events-none absolute inset-0"
-                style={{
-                    backgroundImage:
-                        "linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px)",
-                    backgroundSize: "100% 56px",
-                }}
-            />
-            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-[15vw] bg-gradient-to-r from-background to-transparent" />
-            <div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 w-[15vw] bg-gradient-to-l from-background to-transparent" />
-            <div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
-        <main className="relative max-w-3xl mx-auto px-6 py-16 space-y-8">
+        <div className="public-grid-page public-line-page">
+        <main className="public-page-content public-text-panel mx-auto my-16 max-w-3xl space-y-8 px-6 py-16">
             <h1 className="text-3xl font-bold">Support</h1>
             <p className="text-muted-foreground">
                 Need help with CuraSync? We&apos;re here for you.

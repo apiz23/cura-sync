@@ -78,7 +78,7 @@ function conditionStatusVariant(status: Condition["status"]) {
 
 function severityClass(severity: string | null) {
     if (severity === "SEVERE") return "text-destructive";
-    if (severity === "MODERATE") return "text-warning-foreground";
+    if (severity === "MODERATE") return "text-chart-5";
     return "text-muted-foreground";
 }
 

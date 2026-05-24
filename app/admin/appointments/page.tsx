@@ -229,16 +229,28 @@ export default function AppointmentsPage() {
         return filtered;
     }, [appointments, searchTerm, statusFilter, dateFilter]);
 
+    const sortedAppointments = useMemo(
+        () =>
+            [...filteredAppointments].sort((a, b) => {
+                const dateCompare = b.appointment_date.localeCompare(
+                    a.appointment_date
+                );
+                if (dateCompare !== 0) return dateCompare;
+                return a.start_time.localeCompare(b.start_time);
+            }),
+        [filteredAppointments]
+    );
+
     useEffect(() => {
         setCurrentPage(1);
     }, [searchTerm, statusFilter, dateFilter, itemsPerPage]);
 
     const totalPages = Math.max(
         1,
-        Math.ceil(filteredAppointments.length / itemsPerPage)
+        Math.ceil(sortedAppointments.length / itemsPerPage)
     );
     const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentAppointments = filteredAppointments.slice(
+    const currentAppointments = sortedAppointments.slice(
         startIndex,
         startIndex + itemsPerPage
     );
@@ -272,37 +284,49 @@ export default function AppointmentsPage() {
             case "CONFIRMED":
                 return {
                     icon: CheckCircle,
-                    className: "bg-green-50 text-green-700 border-green-200",
-                    dotClassName: "bg-green-500",
+                    className:
+                        "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+                    dotClassName: "bg-emerald-500",
                     label: "Confirmed",
                 };
             case "CHECKED_IN":
                 return {
                     icon: CalendarClock,
-                    className: "bg-blue-50 text-blue-700 border-blue-200",
-                    dotClassName: "bg-blue-500",
+                    className:
+                        "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
+                    dotClassName: "bg-sky-500",
                     label: "Checked in",
                 };
             case "CANCELLED":
                 return {
                     icon: XCircle,
-                    className: "bg-red-50 text-red-700 border-red-200",
-                    dotClassName: "bg-red-500",
+                    className: "bg-destructive/10 text-destructive border-destructive/30",
+                    dotClassName: "bg-destructive/100",
                     label: "Cancelled",
                 };
             case "PENDING":
                 return {
                     icon: Clock4,
-                    className: "bg-amber-50 text-amber-700 border-amber-200",
-                    dotClassName: "bg-amber-500",
+                    className:
+                        "border-amber-500/35 bg-amber-500/15 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/15 dark:text-amber-300",
+                    dotClassName: "bg-amber-500 dark:bg-amber-300",
                     label: "Pending",
                 };
             case "COMPLETED":
                 return {
                     icon: CheckCircle,
-                    className: "bg-blue-50 text-blue-700 border-blue-200",
-                    dotClassName: "bg-blue-500",
+                    className:
+                        "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300",
+                    dotClassName: "bg-violet-500",
                     label: "Completed",
+                };
+            default:
+                return {
+                    icon: AlertCircle,
+                    className:
+                        "border-border bg-muted text-muted-foreground",
+                    dotClassName: "bg-muted-foreground",
+                    label: status,
                 };
         }
     };
@@ -355,6 +379,8 @@ export default function AppointmentsPage() {
         },
         {
             id: "datetime",
+            accessorFn: (appointment) =>
+                `${appointment.appointment_date}T${appointment.start_time ?? "00:00"}`,
             header: ({ column }) => (
                 <TableColumnHeader column={column} title="Date & Time" />
             ),
@@ -373,6 +399,7 @@ export default function AppointmentsPage() {
         },
         {
             accessorKey: "reason_for_visit",
+            enableSorting: false,
             header: ({ column }) => (
                 <TableColumnHeader column={column} title="Reason" />
             ),
@@ -520,21 +547,21 @@ export default function AppointmentsPage() {
                             label: "Checked in",
                             value: appointments.filter((a) => a.status === "CHECKED_IN").length,
                             icon: CalendarClock,
-                            className: "bg-blue-50 text-blue-700 border-blue-200",
+                            className: "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300",
                             helper: "Arrived",
                         },
                         {
                             label: "Confirmed",
                             value: appointments.filter((a) => a.status === "CONFIRMED").length,
                             icon: CheckCircle,
-                            className: "bg-green-50 text-green-700 border-green-200",
+                            className: "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
                             helper: "Scheduled",
                         },
                         {
                             label: "Pending",
                             value: appointments.filter((a) => a.status === "PENDING").length,
                             icon: Clock4,
-                            className: "bg-amber-50 text-amber-700 border-amber-200",
+                            className: "border-amber-500/35 bg-amber-500/15 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/15 dark:text-amber-300",
                             helper: "Needs review",
                         },
                     ].map((item) => (
@@ -765,15 +792,15 @@ export default function AppointmentsPage() {
                                                 {startIndex + 1}
                                             </span>{" "}
                                             to{" "}
-                                            <span className="font-medium text-foreground">
-                                                {Math.min(
-                                                    startIndex + itemsPerPage,
-                                                    filteredAppointments.length
+                                                    <span className="font-medium text-foreground">
+                                                        {Math.min(
+                                                            startIndex + itemsPerPage,
+                                                    sortedAppointments.length
                                                 )}
                                             </span>{" "}
                                             of{" "}
                                             <span className="font-medium text-foreground">
-                                                {filteredAppointments.length}
+                                                {sortedAppointments.length}
                                             </span>{" "}
                                             results
                                         </div>

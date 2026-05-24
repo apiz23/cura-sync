@@ -97,8 +97,8 @@ const modules = [
 		description:
 			"Role-based access for four user categories. Doctors complete credential verification. Caregivers manage dependent health profiles with explicit patient consent.",
 		span: "lg:col-span-7",
-		accent: "#EDF3EC",
-		accentDark: "#1a2e1a",
+		accent: "color-mix(in srgb, var(--primary) 14%, transparent)",
+		accentDark: "color-mix(in srgb, var(--primary) 16%, transparent)",
 	},
 	{
 		icon: PiBrain,
@@ -108,8 +108,8 @@ const modules = [
 		description:
 			"BioClinicalBERT parses symptom descriptions into structured clinical entities. Multi-modal input accommodates different health literacy levels.",
 		span: "lg:col-span-5",
-		accent: "#E1F3FE",
-		accentDark: "#0a1e2e",
+		accent: "color-mix(in srgb, var(--chart-2) 14%, transparent)",
+		accentDark: "color-mix(in srgb, var(--chart-2) 16%, transparent)",
 	},
 	{
 		icon: PiCalendar,
@@ -119,8 +119,8 @@ const modules = [
 		description:
 			"Patients select from available schedule slots. Staff manage booking, check-in, and queue flow in one view with direct symptom-analysis context.",
 		span: "lg:col-span-5",
-		accent: "#FBF3DB",
-		accentDark: "#2e2410",
+		accent: "color-mix(in srgb, var(--chart-5) 16%, transparent)",
+		accentDark: "color-mix(in srgb, var(--chart-5) 18%, transparent)",
 	},
 	{
 		icon: PiClipboardText,
@@ -130,8 +130,8 @@ const modules = [
 		description:
 			"Diagnostic reports, clinical notes, prescriptions, and immunization records — stored with IPFS encryption and Polygon hash verification.",
 		span: "lg:col-span-7",
-		accent: "#FDEBEC",
-		accentDark: "#2e1010",
+		accent: "color-mix(in srgb, var(--destructive) 12%, transparent)",
+		accentDark: "color-mix(in srgb, var(--destructive) 16%, transparent)",
 	},
 	{
 		icon: PiShieldCheck,
@@ -141,8 +141,8 @@ const modules = [
 		description:
 			"Every record access and consent change is cryptographically logged on Polygon. Immutable audit trails support PDPA compliance.",
 		span: "lg:col-span-6",
-		accent: "#EDF3EC",
-		accentDark: "#1a2e1a",
+		accent: "color-mix(in srgb, var(--primary) 14%, transparent)",
+		accentDark: "color-mix(in srgb, var(--primary) 16%, transparent)",
 	},
 	{
 		icon: PiHeartbeat,
@@ -152,8 +152,8 @@ const modules = [
 		description:
 			"Wearable integration tracks clinical indicators continuously. Caregivers receive push alerts when vitals cross configured thresholds.",
 		span: "lg:col-span-6",
-		accent: "#E1F3FE",
-		accentDark: "#0a1e2e",
+		accent: "color-mix(in srgb, var(--chart-2) 14%, transparent)",
+		accentDark: "color-mix(in srgb, var(--chart-2) 16%, transparent)",
 	},
 ];
 
@@ -354,8 +354,8 @@ function BentoHoverCard({
 			onHoverEnd={() => setIsHovered(false)}
 			animate={
 				isHovered
-					? { y: -4, boxShadow: "0 20px 40px -15px rgba(0,0,0,0.08)" }
-					: { y: 0, boxShadow: "0 0px 0px 0px rgba(0,0,0,0)" }
+					? { y: -4, boxShadow: "var(--shadow-lg)" }
+					: { y: 0, boxShadow: "none" }
 			}
 			transition={{ type: "spring", stiffness: 300, damping: 25 }}
 			className={className}
@@ -428,7 +428,7 @@ export default function HomePage() {
 					className="pointer-events-none absolute inset-0"
 					style={{
 						backgroundImage:
-							"linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px)",
+							"linear-gradient(color-mix(in oklch, var(--foreground) 12%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--foreground) 12%, transparent) 1px, transparent 1px)",
 						backgroundSize: "72px 72px",
 					}}
 				/>
@@ -438,7 +438,7 @@ export default function HomePage() {
 					className="pointer-events-none absolute inset-0"
 					style={{
 						backgroundImage:
-							"repeating-linear-gradient(-45deg, transparent, transparent 40px, color-mix(in oklch, var(--primary) 3%, transparent) 40px, color-mix(in oklch, var(--primary) 3%, transparent) 41px)",
+							"repeating-linear-gradient(-45deg, transparent, transparent 40px, color-mix(in oklch, var(--primary) 10%, transparent) 40px, color-mix(in oklch, var(--primary) 10%, transparent) 41px)",
 					}}
 				/>
 				{/* Right-side gradient fade */}
@@ -449,7 +449,7 @@ export default function HomePage() {
 				{/* Watermark */}
 				<div
 					aria-hidden="true"
-					className="pointer-events-none absolute right-4 top-8 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-primary/[0.04] xl:block"
+					className="pointer-events-none absolute right-4 top-8 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-primary/12 xl:block"
 				>
 					CARE
 				</div>
@@ -476,7 +476,9 @@ export default function HomePage() {
 								<br />
 								Better coordination.
 								<br />
-								<span className="text-primary sm:text-6xl lg:text-[4.5rem] lg:leading-[1.06]">Connected care.</span>
+								<span className="text-primary sm:text-6xl lg:text-[4.5rem] lg:leading-[1.06]">
+									Connected care.
+								</span>
 							</motion.h1>
 
 							<motion.p
@@ -537,14 +539,29 @@ export default function HomePage() {
 							className="flex flex-col gap-3 lg:pl-4"
 						>
 							{/* Symptom Analysis Card */}
-							<div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
-								<div className="flex items-center gap-1.5 border-b border-border bg-muted/50 px-4 py-2.5">
-									<span className="h-2.5 w-2.5 rounded-full bg-border" />
-									<span className="h-2.5 w-2.5 rounded-full bg-border" />
-									<span className="h-2.5 w-2.5 rounded-full bg-border" />
-									<span className="ml-2 font-mono text-[11px] text-muted-foreground">
-										CuraSync · Symptom Analysis
-									</span>
+							<div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-md">
+								<div className="flex items-center justify-between border-b border-border bg-muted/50 px-4 py-2.5">
+									<div className="flex items-center gap-1.5">
+										<div className="flex gap-1.5">
+											<div className="h-2.5 w-2.5 rounded-full bg-[#ff5f56] hover:bg-[#ff5f56]/80 transition-colors cursor-pointer" />
+											<div className="h-2.5 w-2.5 rounded-full bg-[#ffbd2e] hover:bg-[#ffbd2e]/80 transition-colors cursor-pointer" />
+											<div className="h-2.5 w-2.5 rounded-full bg-[#27c93f] hover:bg-[#27c93f]/80 transition-colors cursor-pointer" />
+										</div>
+										<span className="ml-2 font-mono text-[11px] text-muted-foreground">
+											CuraSync · Symptom Analysis
+										</span>
+									</div>
+									<div className="flex items-center gap-1.5">
+										<button className="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+											─
+										</button>
+										<button className="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+											□
+										</button>
+										<button className="rounded px-1.5 py-0.5 text-xs text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors">
+											✕
+										</button>
+									</div>
 								</div>
 								<div className="p-4">
 									<p className="font-mono text-[11px] uppercase tracking-widest text-muted-foreground">
@@ -581,7 +598,7 @@ export default function HomePage() {
 											</div>
 										))}
 									</div>
-									<div className="mt-4 flex items-center gap-1.5 rounded-lg bg-[#EDF3EC] px-3 py-2 dark:bg-[#1a2e1a]">
+									<div className="mt-4 flex items-center gap-1.5 rounded-lg bg-primary/10 px-3 py-2 dark:bg-primary/10">
 										<PiCheckCircle className="h-3.5 w-3.5 shrink-0 text-primary" />
 										<p className="text-xs font-medium text-primary">
 											Consultation recommended — book an appointment
@@ -593,11 +610,26 @@ export default function HomePage() {
 							{/* Health Sync + Audit row */}
 							<div className="grid grid-cols-2 gap-3">
 								{/* Health Sync */}
-								<div className="overflow-hidden rounded-2xl border border-border bg-card shadow-lg">
-									<div className="flex items-center gap-1.5 border-b border-border bg-muted/50 px-3 py-2">
-										<span className="h-2 w-2 rounded-full bg-border" />
-										<span className="h-2 w-2 rounded-full bg-border" />
-										<span className="h-2 w-2 rounded-full bg-border" />
+								<div className="overflow-hidden rounded-2xl border border-border/80 bg-card shadow-md">
+									<div className="flex items-center justify-between border-b border-border bg-muted/50 px-3 py-2">
+										<div className="flex items-center gap-1.5">
+											<div className="flex gap-1">
+												<div className="h-2 w-2 rounded-full bg-[#ff5f56] hover:bg-[#ff5f56]/80 transition-colors cursor-pointer" />
+												<div className="h-2 w-2 rounded-full bg-[#ffbd2e] hover:bg-[#ffbd2e]/80 transition-colors cursor-pointer" />
+												<div className="h-2 w-2 rounded-full bg-[#27c93f] hover:bg-[#27c93f]/80 transition-colors cursor-pointer" />
+											</div>
+										</div>
+										<div className="flex items-center gap-1.5">
+											<button className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+												─
+											</button>
+											<button className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+												□
+											</button>
+											<button className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors">
+												✕
+											</button>
+										</div>
 									</div>
 									<div className="p-3">
 										<div className="flex items-center justify-between">
@@ -633,27 +665,49 @@ export default function HomePage() {
 								</div>
 
 								{/* Audit trail */}
-								<div className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border bg-card p-3 shadow-lg">
+								<div className="flex flex-col justify-between overflow-hidden rounded-2xl border border-border/80 bg-card shadow-md">
 									<div>
-										<p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
-											Audit trail
-										</p>
-										<div className="mt-3 space-y-2">
-											{[
-												"MED-2048 · Read by Dr. Aiman",
-												"REC-7123 · Updated",
-												"APT-9041 · Confirmed",
-											].map((entry) => (
-												<p
-													key={entry}
-													className="truncate font-mono text-[10px] text-muted-foreground"
-												>
-													{entry}
-												</p>
-											))}
+										<div className="flex items-center justify-between border-b border-border bg-muted/50 px-3 py-2">
+											<div className="flex items-center gap-1.5">
+												<div className="flex gap-1">
+													<div className="h-2 w-2 rounded-full bg-[#ff5f56] hover:bg-[#ff5f56]/80 transition-colors cursor-pointer" />
+													<div className="h-2 w-2 rounded-full bg-[#ffbd2e] hover:bg-[#ffbd2e]/80 transition-colors cursor-pointer" />
+													<div className="h-2 w-2 rounded-full bg-[#27c93f] hover:bg-[#27c93f]/80 transition-colors cursor-pointer" />
+												</div>
+											</div>
+											<div className="flex items-center gap-1.5">
+												<button className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+													─
+												</button>
+												<button className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+													□
+												</button>
+												<button className="rounded px-1 py-0.5 text-[10px] text-muted-foreground hover:bg-destructive/20 hover:text-destructive transition-colors">
+													✕
+												</button>
+											</div>
+										</div>
+										<div className="p-3">
+											<p className="font-mono text-[10px] uppercase tracking-widest text-muted-foreground">
+												Audit trail
+											</p>
+											<div className="mt-3 space-y-2">
+												{[
+													"MED-2048 · Read by Dr. Aiman",
+													"REC-7123 · Updated",
+													"APT-9041 · Confirmed",
+												].map((entry) => (
+													<p
+														key={entry}
+														className="truncate font-mono text-[10px] text-muted-foreground"
+													>
+														{entry}
+													</p>
+												))}
+											</div>
 										</div>
 									</div>
-									<div className="mt-3 flex items-center gap-1.5">
+									<div className="mx-3 mb-3 mt-1 flex items-center gap-1.5">
 										<PiShieldCheck className="h-3.5 w-3.5 text-primary" />
 										<p className="text-[10px] font-medium text-primary">
 											Polygon-verified
@@ -700,7 +754,7 @@ export default function HomePage() {
 					className="pointer-events-none absolute inset-0"
 					style={{
 						backgroundImage:
-							"radial-gradient(color-mix(in oklch, var(--primary) 14%, transparent) 1px, transparent 1px)",
+							"radial-gradient(color-mix(in oklch, var(--foreground) 18%, transparent) 1px, transparent 1px)",
 						backgroundSize: "36px 36px",
 					}}
 				/>
@@ -783,7 +837,7 @@ export default function HomePage() {
 					className="pointer-events-none absolute inset-0"
 					style={{
 						backgroundImage:
-							"linear-gradient(color-mix(in oklch, var(--primary) 4%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--primary) 4%, transparent) 1px, transparent 1px)",
+							"linear-gradient(color-mix(in oklch, var(--foreground) 12%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--foreground) 12%, transparent) 1px, transparent 1px)",
 						backgroundSize: "48px 48px",
 					}}
 				/>
@@ -823,7 +877,7 @@ export default function HomePage() {
 								<BentoHoverCard
 									key={mod.number}
 									className={cn(
-										"flex flex-col rounded-3xl border border-border bg-card p-8",
+										"flex flex-col rounded-3xl border border-border/80 bg-card/95 p-8 shadow-sm",
 										mod.span,
 									)}
 								>
@@ -843,7 +897,7 @@ export default function HomePage() {
 												</div>
 											</div>
 											<span
-												className="select-none font-mono text-5xl font-bold text-muted-foreground/10"
+												className="select-none font-mono text-5xl font-bold text-muted-foreground/20"
 												aria-hidden="true"
 											>
 												{mod.number}
@@ -874,7 +928,7 @@ export default function HomePage() {
 					className="pointer-events-none absolute inset-0"
 					style={{
 						backgroundImage:
-							"linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px)",
+							"linear-gradient(color-mix(in oklch, var(--foreground) 12%, transparent) 1px, transparent 1px)",
 						backgroundSize: "100% 64px",
 					}}
 				/>
@@ -890,7 +944,7 @@ export default function HomePage() {
 				{/* Watermark */}
 				<div
 					aria-hidden="true"
-					className="pointer-events-none absolute bottom-4 right-4 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-primary/[0.04] xl:block"
+					className="pointer-events-none absolute bottom-4 right-4 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-primary/12 xl:block"
 				>
 					SYNC
 				</div>
@@ -922,7 +976,7 @@ export default function HomePage() {
 								)}
 							>
 								<span
-									className="select-none font-mono text-[5rem] font-bold leading-none text-muted-foreground/[0.07]"
+									className="select-none font-mono text-[5rem] font-bold leading-none text-muted-foreground/15"
 									aria-hidden="true"
 								>
 									{step.number}
@@ -959,7 +1013,7 @@ export default function HomePage() {
 					className="pointer-events-none absolute inset-0"
 					style={{
 						backgroundImage:
-							"linear-gradient(color-mix(in oklch, var(--background) 7%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--background) 7%, transparent) 1px, transparent 1px)",
+							"linear-gradient(color-mix(in oklch, var(--background) 18%, transparent) 1px, transparent 1px), linear-gradient(to right, color-mix(in oklch, var(--background) 18%, transparent) 1px, transparent 1px)",
 						backgroundSize: "72px 72px",
 					}}
 				/>
@@ -969,7 +1023,7 @@ export default function HomePage() {
 					className="pointer-events-none absolute inset-0"
 					style={{
 						backgroundImage:
-							"repeating-linear-gradient(-45deg, transparent, transparent 40px, color-mix(in oklch, var(--background) 4%, transparent) 40px, color-mix(in oklch, var(--background) 4%, transparent) 41px)",
+							"repeating-linear-gradient(-45deg, transparent, transparent 40px, color-mix(in oklch, var(--background) 12%, transparent) 40px, color-mix(in oklch, var(--background) 12%, transparent) 41px)",
 					}}
 				/>
 				{/* Left gradient glow */}
@@ -980,7 +1034,7 @@ export default function HomePage() {
 				{/* Watermark */}
 				<div
 					aria-hidden="true"
-					className="pointer-events-none absolute right-4 top-6 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-background/[0.04] xl:block"
+					className="pointer-events-none absolute right-4 top-6 hidden select-none text-[10rem] font-black leading-none tracking-[-0.06em] text-background/12 xl:block"
 				>
 					HEALTH
 				</div>

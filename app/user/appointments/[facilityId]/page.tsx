@@ -636,8 +636,8 @@ export default function AppointmentBookingPage() {
                                     <MapMarker longitude={userLocation[0]} latitude={userLocation[1]}>
                                         <MarkerContent>
                                             <div className="relative">
-                                                <div className="h-8 w-8 rounded-full border-2 border-white bg-blue-500" />
-                                                <div className="absolute -inset-2 animate-ping rounded-full bg-blue-500/20" />
+                                                <div className="h-8 w-8 rounded-full border-2 border-card bg-chart-2" />
+                                                <div className="absolute -inset-2 animate-ping rounded-full bg-chart-2/20" />
                                             </div>
                                         </MarkerContent>
                                     </MapMarker>
@@ -647,8 +647,8 @@ export default function AppointmentBookingPage() {
                                     latitude={facility.coordinates[0]}
                                 >
                                     <MarkerContent>
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-white bg-primary shadow-md">
-                                            <Building className="h-5 w-5 text-white" />
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-full border-2 border-card bg-primary shadow-md">
+                                            <Building className="h-5 w-5 text-primary-foreground" />
                                         </div>
                                     </MarkerContent>
                                 </MapMarker>

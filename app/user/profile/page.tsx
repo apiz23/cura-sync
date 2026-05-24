@@ -202,10 +202,10 @@ function calculateBMI(heightCm: number | null | undefined, weightKg: number | nu
 
 function getBMICategory(bmi: number | null): { label: string; color: string; icon: any } {
     if (!bmi) return { label: "Not available", color: "text-muted-foreground", icon: Info };
-    if (bmi < 18.5) return { label: "Underweight", color: "text-blue-600", icon: Activity };
-    if (bmi < 25) return { label: "Normal weight", color: "text-green-600", icon: CheckCircle2 };
-    if (bmi < 30) return { label: "Overweight", color: "text-yellow-600", icon: AlertTriangle };
-    return { label: "Obese", color: "text-red-600", icon: XCircle };
+    if (bmi < 18.5) return { label: "Underweight", color: "text-chart-2", icon: Activity };
+    if (bmi < 25) return { label: "Normal weight", color: "text-chart-3", icon: CheckCircle2 };
+    if (bmi < 30) return { label: "Overweight", color: "text-chart-5", icon: AlertTriangle };
+    return { label: "Obese", color: "text-destructive", icon: XCircle };
 }
 
 const BLOOD_TYPES = ["A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"];
@@ -422,17 +422,17 @@ export default function ProfilePage() {
                 <div className="lg:col-span-4 space-y-6">
                     {/* Profile Overview Card */}
                     <Card className="border-border overflow-hidden">
-                        <div className="relative h-24 bg-gradient-to-r from-primary/20 via-primary/10 to-transparent" />
+                        <div className="relative h-24 bg-linear-to-r from-primary/15 via-primary/8 to-transparent" />
                         <CardContent className="p-6 relative">
                             <div className="flex flex-col items-center -mt-12">
                                 {/* Avatar with edit button */}
                                 <div className="relative mb-4">
-                                    <Avatar className="h-28 w-28 border-4 border-background shadow-xl">
+                                    <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
                                         <AvatarImage
                                             src={profile?.avatar_url || user?.imageUrl}
                                             alt={profile?.full_name}
                                         />
-                                        <AvatarFallback className="bg-gradient-to-br from-primary to-primary/70 text-primary-foreground text-2xl font-semibold">
+                                        <AvatarFallback className="bg-primary text-primary-foreground text-2xl font-semibold">
                                             {profile?.full_name?.[0]?.toUpperCase() || user?.fullName?.[0]?.toUpperCase() || "U"}
                                         </AvatarFallback>
                                     </Avatar>

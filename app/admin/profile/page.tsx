@@ -83,11 +83,11 @@ export default function ProfessionalProfilePage() {
     const getRoleColor = (role: string) => {
         switch (normalizeStaffRole(role)) {
             case "doctor":
-                return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800";
+                return "bg-chart-2/10 text-chart-2 dark:text-chart-2 border-chart-2/30 dark:border-chart-2/30";
             case "admin":
-                return "bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-200 dark:border-purple-800";
+                return "bg-chart-4/100/10 text-chart-4 dark:text-chart-4 border-chart-4/30 dark:border-chart-4/30";
             default:
-                return "bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800";
+                return "bg-chart-3/10 text-chart-3 dark:text-chart-3 border-chart-3/30 dark:border-chart-3/30";
         }
     };
 

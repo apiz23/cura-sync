@@ -45,21 +45,21 @@ function getPatientStatus(patient: Patient) {
 	if (daysSince < 30) {
 		return {
 			label: "Active",
-			classes: "bg-green-500/10 text-green-700 border-green-200",
+			classes: "bg-chart-3/10 text-chart-3 border-chart-3/30",
 		};
 	}
 
 	if (daysSince < 90) {
 		return {
 			label: "Regular",
-			classes: "bg-blue-500/10 text-blue-700 border-blue-200",
+			classes: "bg-chart-2/10 text-chart-2 border-chart-2/30",
 		};
 	}
 
 	if (daysSince < 180) {
 		return {
 			label: "Inactive",
-			classes: "bg-amber-500/10 text-amber-700 border-amber-200",
+			classes: "bg-chart-5/10 text-chart-5 border-chart-5/30",
 		};
 	}
 
@@ -188,7 +188,7 @@ export default function ViewPatientSheet({
 								{patient.allergies && (
 									<div className="space-y-1">
 										<p className="text-base text-muted-foreground flex items-center gap-2">
-											<AlertCircle className="h-4 w-4 text-amber-600" />
+											<AlertCircle className="h-4 w-4 text-chart-5" />
 											Allergies
 										</p>
 										<p className="font-medium">{patient.allergies}</p>

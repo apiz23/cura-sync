@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { auth, clerkClient } from "@clerk/nextjs/server";
 import supabase from "@/lib/supabase";
+import supabaseAdmin from "@/lib/supabase-admin";
 import { requireMobileOrBrowserUserId } from "@/lib/mobile-auth";
 import {
     getStaffSessionFromRequest,
@@ -53,18 +54,25 @@ export async function requirePatientSession(
         userId = browserAuth.userId;
     }
 
-    // Optional: ensure this Clerk user is actually a patient profile.
-    const { data, error } = await supabase
+    // Ensure this Clerk user has a patient profile row. Auto-provision on first
+    // call (handles mobile clients that never hit /api/auth/sync).
+    let { data, error } = await supabase
         .from("cura_profiles")
         .select("role")
         .eq("id", userId)
         .maybeSingle();
 
-    if (error || !data) {
+    if (error) {
         return NextResponse.json(
-            { error: "Profile not found" },
-            { status: 404 }
+            { error: "Profile lookup failed" },
+            { status: 500 }
         );
+    }
+
+    if (!data) {
+        const provisioned = await provisionPatientProfile(userId);
+        if (provisioned instanceof NextResponse) return provisioned;
+        data = provisioned;
     }
 
     const role = String(data.role ?? "").toLowerCase();
@@ -73,6 +81,62 @@ export async function requirePatientSession(
     }
 
     return { kind: "patient", profileId: userId };
+}
+
+async function provisionPatientProfile(
+    userId: string
+): Promise<{ role: string } | NextResponse> {
+    try {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId);
+        const email = clerkUser.emailAddresses[0]?.emailAddress;
+
+        if (!email) {
+            return NextResponse.json(
+                { error: "Profile incomplete: no email on Clerk account" },
+                { status: 400 }
+            );
+        }
+
+        const fullName = `${clerkUser.firstName ?? ""} ${
+            clerkUser.lastName ?? ""
+        }`.trim();
+        const role =
+            String(clerkUser.publicMetadata?.role ?? "patient").toLowerCase() ||
+            "patient";
+
+        const { data: upserted, error: upsertError } = await supabaseAdmin
+            .from("cura_profiles")
+            .upsert(
+                {
+                    id: userId,
+                    email,
+                    full_name: fullName,
+                    avatar_url: clerkUser.imageUrl,
+                    role,
+                    updated_at: new Date().toISOString(),
+                },
+                { onConflict: "id" }
+            )
+            .select("role")
+            .single();
+
+        if (upsertError || !upserted) {
+            console.error("Auto-provision failed:", upsertError);
+            return NextResponse.json(
+                { error: "Profile provisioning failed" },
+                { status: 500 }
+            );
+        }
+
+        return { role: String(upserted.role ?? role) };
+    } catch (err) {
+        console.error("Clerk user lookup failed:", err);
+        return NextResponse.json(
+            { error: "Profile provisioning failed" },
+            { status: 500 }
+        );
+    }
 }
 
 export async function requireStaffSession(

@@ -268,7 +268,7 @@ export default function AddStaffSheet({
                                 <SelectContent>
                                     <SelectItem value="doctor" className="py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-1.5 rounded-md bg-blue-100 text-blue-600 dark:bg-blue-900 dark:text-blue-400">
+                                            <div className="p-1.5 rounded-md bg-chart-2/10 text-chart-2 dark:bg-chart-2/15 dark:text-chart-2">
                                                 <Stethoscope className="w-4 h-4" />
                                             </div>
                                             <div>
@@ -283,7 +283,7 @@ export default function AddStaffSheet({
                                     </SelectItem>
                                     <SelectItem value="staff" className="py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-1.5 rounded-md bg-emerald-100 text-emerald-600 dark:bg-emerald-900 dark:text-emerald-400">
+                                            <div className="p-1.5 rounded-md bg-chart-3/10 text-chart-3 dark:bg-chart-3/15 dark:text-chart-3">
                                                 <Shield className="w-4 h-4" />
                                             </div>
                                             <div>
@@ -298,7 +298,7 @@ export default function AddStaffSheet({
                                     </SelectItem>
                                     <SelectItem value="admin" className="py-3">
                                         <div className="flex items-center gap-3">
-                                            <div className="p-1.5 rounded-md bg-purple-100 text-purple-600 dark:bg-purple-900 dark:text-purple-400">
+                                            <div className="p-1.5 rounded-md bg-chart-4/10 text-chart-4 dark:bg-chart-4/15 dark:text-chart-4">
                                                 <User className="w-4 h-4" />
                                             </div>
                                             <div>
@@ -414,8 +414,8 @@ export default function AddStaffSheet({
                                         className={cn(
                                             "font-medium",
                                             form.password.length >= 8
-                                                ? "text-emerald-600"
-                                                : "text-amber-600"
+                                                ? "text-chart-3"
+                                                : "text-chart-5"
                                         )}
                                     >
                                         {form.password.length >= 8
@@ -429,10 +429,10 @@ export default function AddStaffSheet({
                                             className={cn(
                                                 "h-full transition-all duration-300",
                                                 form.password.length >= 12
-                                                    ? "w-full bg-emerald-500"
+                                                    ? "w-full bg-chart-3"
                                                     : form.password.length >= 8
-                                                    ? "w-2/3 bg-blue-500"
-                                                    : "w-1/3 bg-amber-500"
+                                                    ? "w-2/3 bg-chart-2"
+                                                    : "w-1/3 bg-chart-5"
                                             )}
                                         />
                                     </div>

@@ -52,32 +52,32 @@ export default function MedicationDetailsSheet({
     const getStatusConfig = (status: string) => {
         const configs = {
             COMPLETED: {
-                color: "bg-emerald-500/10 text-emerald-700 border-emerald-200",
+                color: "bg-chart-3/10 text-chart-3 border-chart-3/30",
                 icon: <CheckCircle className="h-4 w-4" />,
                 label: "Completed",
                 accent: "emerald",
-                pillColor: "bg-emerald-500",
+                pillColor: "bg-chart-3",
             },
             ACTIVE: {
-                color: "bg-blue-500/10 text-blue-700 border-blue-200",
+                color: "bg-chart-2/10 text-chart-2 border-chart-2/30",
                 icon: <Clock className="h-4 w-4" />,
                 label: "Active",
                 accent: "blue",
-                pillColor: "bg-blue-500",
+                pillColor: "bg-chart-2",
             },
             STOPPED: {
-                color: "bg-amber-500/10 text-amber-700 border-amber-200",
+                color: "bg-chart-5/10 text-chart-5 border-chart-5/30",
                 icon: <AlertCircle className="h-4 w-4" />,
                 label: "Stopped",
                 accent: "amber",
-                pillColor: "bg-amber-500",
+                pillColor: "bg-chart-5",
             },
             default: {
-                color: "bg-gray-500/10 text-gray-700 border-gray-200",
+                color: "bg-muted text-muted-foreground border-border",
                 icon: <Pill className="h-4 w-4" />,
                 label: "Unknown",
                 accent: "gray",
-                pillColor: "bg-gray-500",
+                pillColor: "bg-muted0",
             },
         };
 
@@ -153,7 +153,7 @@ export default function MedicationDetailsSheet({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="w-full sm:max-w-lg h-full p-0 border-border/40 shadow-xl dark:shadow-none">
+            <SheetContent className="w-full sm:max-w-lg h-full p-0 border-border/40 shadow-lg dark:shadow-none">
                 <SheetHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border/50">
                     <div className="flex items-center justify-between p-6">
                         <div className="flex items-center gap-3">
@@ -197,7 +197,7 @@ export default function MedicationDetailsSheet({
 
                 <div className="p-6 space-y-6 overflow-y-auto">
                     {/* Status Card */}
-                    <Card className="p-5 border-border/50 bg-gradient-to-br from-card to-muted/30 rounded-2xl">
+                    <Card className="rounded-2xl border-border/50 bg-card p-5">
                         <div className="space-y-4">
                             {isActive && progress > 0 && (
                                 <div className="space-y-3">
@@ -205,7 +205,7 @@ export default function MedicationDetailsSheet({
                                         <span className="font-medium text-foreground">
                                             Course Progress
                                         </span>
-                                        <span className="font-semibold text-blue-600">
+                                        <span className="font-semibold text-chart-2">
                                             {progress}%
                                         </span>
                                     </div>
@@ -217,13 +217,13 @@ export default function MedicationDetailsSheet({
                             )}
 
                             {isExpired && medication.status === "ACTIVE" && (
-                                <div className="flex items-center gap-2 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                                    <AlertTriangle className="h-4 w-4 text-amber-600" />
+                                <div className="flex items-center gap-2 p-3 bg-chart-5/10 rounded-lg border border-chart-5/30">
+                                    <AlertTriangle className="h-4 w-4 text-chart-5" />
                                     <div>
-                                        <p className="text-base font-medium text-amber-700">
+                                        <p className="text-base font-medium text-chart-5">
                                             Course Expired
                                         </p>
-                                        <p className="text-base text-amber-600">
+                                        <p className="text-base text-chart-5">
                                             Review with your healthcare provider
                                         </p>
                                     </div>
@@ -267,14 +267,14 @@ export default function MedicationDetailsSheet({
                                     <Clock className="h-4 w-4" />
                                     <span>Schedule</span>
                                 </div>
-                                <div className="p-3 bg-blue-50 rounded-lg border border-blue-200">
-                                    <p className="font-semibold text-blue-700 text-center">
+                                <div className="p-3 bg-chart-2/10 rounded-lg border border-chart-2/30">
+                                    <p className="font-semibold text-chart-2 text-center">
                                         {medication.schedule}
                                     </p>
                                 </div>
                                 {isActive && (
-                                    <div className="flex items-center gap-2 text-base text-blue-600">
-                                        <div className="h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse" />
+                                    <div className="flex items-center gap-2 text-base text-chart-2">
+                                        <div className="h-1.5 w-1.5 rounded-full bg-chart-2 animate-pulse" />
                                         Next dose coming up
                                     </div>
                                 )}
@@ -306,7 +306,7 @@ export default function MedicationDetailsSheet({
                                         <span
                                             className={cn(
                                                 "font-medium text-base",
-                                                isExpired && "text-amber-600"
+                                                isExpired && "text-chart-5"
                                             )}
                                         >
                                             {formatDate(medication.end_date)}
@@ -356,11 +356,11 @@ export default function MedicationDetailsSheet({
                             <Button
                                 onClick={markAsTaken}
                                 disabled={isTaking}
-                                className="w-full gap-2 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700"
+                                className="w-full gap-2 bg-primary hover:bg-primary/90"
                             >
                                 {isTaking ? (
                                     <>
-                                        <div className="h-4 w-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                        <div className="h-4 w-4 border-2 border-card border-t-transparent rounded-full animate-spin" />
                                         Logging Intake...
                                     </>
                                 ) : (

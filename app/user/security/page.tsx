@@ -85,7 +85,7 @@ export default function SecurityPage() {
     if (!isLoaded) {
         return (
             <UserPageShell>
-                <Skeleton className="h-32 w-full rounded-3xl" />
+                <Skeleton className="h-32 w-full rounded-2xl" />
                 <div className="space-y-3">
                     {Array.from({ length: 4 }).map((_, i) => (
                         <Skeleton key={i} className="h-12 w-full rounded-lg" />
@@ -266,7 +266,7 @@ export default function SecurityPage() {
                                     .
                                 </p>
                                 {facilityPlan === "basic" && (
-                                    <div className="mt-2 flex items-center gap-1.5 text-xs text-amber-600 dark:text-amber-400">
+                                    <div className="mt-2 flex items-center gap-1.5 text-xs text-chart-5 dark:text-chart-5">
                                         <Lock className="h-3 w-3" />
                                         Requires Clinic plan or above — ask your clinic to upgrade
                                     </div>

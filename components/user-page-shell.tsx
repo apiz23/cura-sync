@@ -42,7 +42,7 @@ export function UserPageShell({
         >
             <div
                 className={cn(
-                    "mx-auto flex w-full flex-col gap-8 px-4 py-6 md:px-6 md:py-8",
+                    "mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-6 md:px-6 md:py-8",
                     contentClassName
                 )}
             >
@@ -67,7 +67,7 @@ export function UserPageHeader({
     return (
         <div
             className={cn(
-                "relative overflow-hidden rounded-3xl border border-border/60 bg-card/80 p-6 shadow-sm backdrop-blur sm:p-8",
+                "relative overflow-hidden rounded-2xl border border-border/60 bg-card/85 p-6 shadow-sm backdrop-blur sm:p-8",
                 className
             )}
         >

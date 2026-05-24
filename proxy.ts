@@ -13,7 +13,7 @@ export default clerkMiddleware(async (auth, req) => {
     if (isUserRoute(req) && !isSsoCallback(req)) {
         const { userId, redirectToSignIn } = await auth();
         if (!userId) {
-            return redirectToSignIn({ returnBackUrl: "/user/dashboard" });
+            return redirectToSignIn({ returnBackUrl: req.url });
         }
     }
 

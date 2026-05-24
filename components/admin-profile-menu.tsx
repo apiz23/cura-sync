@@ -141,7 +141,7 @@ export function AdminProfileMenu({ user }: AdminProfileMenuProps) {
 
                         <DropdownMenuItem
                             onClick={handleLogout}
-                            className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50"
+                            className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/10"
                         >
                             <LogOut className="mr-2 h-4 w-4" />
                             <span>Log out</span>

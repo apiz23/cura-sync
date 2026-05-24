@@ -101,8 +101,8 @@ export default function HealthTrackingPage() {
 
     const severityStyles: Record<string, string> = {
         CRITICAL: "border-destructive/40 bg-destructive/10 text-destructive",
-        WARNING: "border-amber-400/40 bg-amber-50 text-amber-800 dark:bg-amber-950/30 dark:text-amber-300",
-        INFO: "border-blue-400/40 bg-blue-50 text-blue-800 dark:bg-blue-950/30 dark:text-blue-300",
+        WARNING: "border-chart-5/40 bg-chart-5/10 text-chart-5",
+        INFO: "border-chart-2/40 bg-chart-2/10 text-chart-2",
     };
 
     return (

@@ -76,11 +76,11 @@ export default function EditMedicationSheet({
     });
 
     const statusColors = {
-        ACTIVE: "bg-green-500/10 text-green-700 border-green-200 dark:bg-green-500/20 dark:text-green-400 dark:border-green-800",
+        ACTIVE: "bg-chart-3/10 text-chart-3 border-chart-3/30 dark:bg-chart-3/20 dark:text-chart-3 dark:border-chart-3/30",
         COMPLETED:
-            "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-500/20 dark:text-blue-400 dark:border-blue-800",
+            "bg-chart-2/10 text-chart-2 border-chart-2/30 dark:bg-chart-2/20 dark:text-chart-2 dark:border-chart-2/30",
         STOPPED:
-            "bg-red-500/10 text-red-700 border-red-200 dark:bg-red-500/20 dark:text-red-400 dark:border-red-800",
+            "bg-destructive/10 text-destructive border-destructive/30 dark:bg-destructive/15 dark:text-destructive dark:border-destructive/30",
     };
 
     useEffect(() => {
@@ -239,7 +239,7 @@ export default function EditMedicationSheet({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0 border-border/40 shadow-xl dark:shadow-none">
+            <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0 border-border/40 shadow-lg dark:shadow-none">
                 <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border/50">
                     <div className="flex items-center justify-between p-6">
                         <div className="flex items-center gap-3">
@@ -266,11 +266,11 @@ export default function EditMedicationSheet({
                                     <div
                                         className={`h-2 w-2 rounded-full ${
                                             medication.status === "ACTIVE"
-                                                ? "bg-green-500"
+                                                ? "bg-chart-3"
                                                 : medication.status ===
                                                   "COMPLETED"
-                                                ? "bg-blue-500"
-                                                : "bg-red-500"
+                                                ? "bg-chart-2"
+                                                : "bg-destructive"
                                         }`}
                                     />
                                     {medication.status.charAt(0) +
@@ -295,7 +295,7 @@ export default function EditMedicationSheet({
                     {error && (
                         <Alert
                             variant="destructive"
-                            className="rounded-xl border-red-200 dark:border-red-800 bg-red-50 dark:bg-red-950/50"
+                            className="rounded-xl border-destructive/30 dark:border-destructive/30 bg-destructive/10 dark:bg-destructive/15"
                         >
                             <AlertCircle className="h-4 w-4" />
                             <AlertDescription className="font-medium">
@@ -570,7 +570,7 @@ export default function EditMedicationSheet({
                                             className="rounded-lg focus:bg-muted"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <div className="h-2 w-2 rounded-full bg-green-500" />
+                                                <div className="h-2 w-2 rounded-full bg-chart-3" />
                                                 Active
                                             </div>
                                         </SelectItem>
@@ -579,7 +579,7 @@ export default function EditMedicationSheet({
                                             className="rounded-lg focus:bg-muted"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <div className="h-2 w-2 rounded-full bg-blue-500" />
+                                                <div className="h-2 w-2 rounded-full bg-chart-2" />
                                                 Completed
                                             </div>
                                         </SelectItem>
@@ -588,7 +588,7 @@ export default function EditMedicationSheet({
                                             className="rounded-lg focus:bg-muted"
                                         >
                                             <div className="flex items-center gap-2">
-                                                <div className="h-2 w-2 rounded-full bg-red-500" />
+                                                <div className="h-2 w-2 rounded-full bg-destructive" />
                                                 Stopped
                                             </div>
                                         </SelectItem>

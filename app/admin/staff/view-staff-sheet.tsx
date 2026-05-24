@@ -71,13 +71,13 @@ export default function ViewStaffSheet({
 	const getRoleColor = (role: Staff["role"] | null) => {
 		switch (role) {
 			case "doctor":
-				return "bg-blue-500/10 text-blue-700 border-blue-200 dark:bg-blue-900/20 dark:text-blue-400";
+				return "bg-chart-2/10 text-chart-2 border-chart-2/30 dark:bg-chart-2/15/20 dark:text-chart-2";
 			case "staff":
-				return "bg-emerald-500/10 text-emerald-700 border-emerald-200 dark:bg-emerald-900/20 dark:text-emerald-400";
+				return "bg-chart-3/10 text-chart-3 border-chart-3/30 dark:bg-chart-3/15/20 dark:text-chart-3";
 			case "admin":
-				return "bg-purple-500/10 text-purple-700 border-purple-200 dark:bg-purple-900/20 dark:text-purple-400";
+				return "bg-chart-4/100/10 text-chart-4 border-chart-4/30 dark:bg-chart-4/15/20 dark:text-chart-4";
 			default:
-				return "bg-gray-500/10 text-gray-700 border-gray-200";
+				return "bg-muted text-muted-foreground border-border";
 		}
 	};
 
@@ -214,9 +214,9 @@ export default function ViewStaffSheet({
 									</div>
 									<Badge
 										variant="outline"
-										className="bg-green-50 text-green-700 border-green-200"
+										className="bg-chart-3/10 text-chart-3 border-chart-3/30"
 									>
-										<div className="h-2 w-2 rounded-full bg-green-500 mr-2" />
+										<div className="h-2 w-2 rounded-full bg-chart-3 mr-2" />
 										Active
 									</Badge>
 								</div>
@@ -322,7 +322,7 @@ export default function ViewStaffSheet({
 													{hours[0] === "Closed" ? (
 														<Badge
 															variant="outline"
-															className="bg-gray-50 text-gray-700 border-gray-200"
+															className="bg-muted text-muted-foreground border-border"
 														>
 															<XCircle className="h-3 w-3 mr-1.5" />
 															Closed
@@ -330,7 +330,7 @@ export default function ViewStaffSheet({
 													) : (
 														<Badge
 															variant="outline"
-															className="bg-green-50 text-green-700 border-green-200"
+															className="bg-chart-3/10 text-chart-3 border-chart-3/30"
 														>
 															<CheckCircle className="h-3 w-3 mr-1.5" />
 															Available

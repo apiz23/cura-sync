@@ -48,7 +48,7 @@ const FlexNavbar: React.FC<FlexNavbarProps> = ({
             xmlns="http://www.w3.org/2000/svg"
             viewBox="0 0 24 24"
             className={cn(
-                "shrink-0 w-6 h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 text-black dark:text-white"
+                "shrink-0 w-6 h-6 sm:w-6 sm:h-6 md:w-7 md:h-7 text-foreground dark:text-foreground"
             )}
         >
             <path
@@ -198,7 +198,7 @@ const FlexNavbar: React.FC<FlexNavbarProps> = ({
 
                         <div
                             className={cn(
-                                "absolute left-1/2 -translate-x-1/2 font-medium tracking-tight text-black dark:text-white"
+                                "absolute left-1/2 -translate-x-1/2 font-medium tracking-tight text-foreground dark:text-foreground"
                             )}
                             style={{ fontSize: isMobile ? "1rem" : "1.125rem" }}
                         >
@@ -296,7 +296,7 @@ const FlexNavbar: React.FC<FlexNavbarProps> = ({
                                                     );
                                                 }}
                                                 className={cn(
-                                                    "font-medium text-gray-900 dark:text-gray-50 hover:text-gray-600 dark:hover:text-gray-300 transition-colors",
+                                                    "font-medium text-foreground dark:text-foreground hover:text-muted-foreground dark:hover:text-muted-foreground transition-colors",
                                                     isMobile
                                                         ? "text-center"
                                                         : "whitespace-nowrap"
@@ -320,7 +320,7 @@ const FlexNavbar: React.FC<FlexNavbarProps> = ({
                                         >
                                             <div
                                                 className={cn(
-                                                    "relative rounded-xl overflow-hidden bg-slate-700 dark:bg-slate-800 aspect-video w-full cursor-pointer"
+                                                    "relative rounded-xl overflow-hidden bg-muted dark:bg-muted aspect-video w-full cursor-pointer"
                                                 )}
                                                 onMouseEnter={() =>
                                                     setShowMediaControls(true)
@@ -394,7 +394,7 @@ const FlexNavbar: React.FC<FlexNavbarProps> = ({
                                                                         handleMediaClick();
                                                                     }}
                                                                     className={cn(
-                                                                        "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/95 dark:bg-white/90 hover:bg-white text-black dark:text-black rounded-full font-medium flex items-center transition-colors"
+                                                                        "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-card/95 dark:bg-card/90 hover:bg-card text-foreground dark:text-foreground rounded-full font-medium flex items-center transition-colors"
                                                                     )}
                                                                     style={{
                                                                         paddingLeft:
@@ -442,7 +442,7 @@ const FlexNavbar: React.FC<FlexNavbarProps> = ({
                                                         {media.link && (
                                                             <div
                                                                 className={cn(
-                                                                    "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-white/95 dark:bg-white/90 hover:bg-white text-black dark:text-black rounded-full font-medium flex items-center transition-colors"
+                                                                    "absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 bg-card/95 dark:bg-card/90 hover:bg-card text-foreground dark:text-foreground rounded-full font-medium flex items-center transition-colors"
                                                                 )}
                                                                 style={{
                                                                     paddingLeft:
@@ -472,7 +472,7 @@ const FlexNavbar: React.FC<FlexNavbarProps> = ({
 
                                 <div
                                     className={cn(
-                                        "flex flex-col sm:flex-row justify-between items-center w-full gap-2 sm:gap-4 text-gray-400 dark:text-gray-500 text-xs sm:text-sm"
+                                        "flex flex-col sm:flex-row justify-between items-center w-full gap-2 sm:gap-4 text-muted-foreground dark:text-foreground0 text-xs sm:text-sm"
                                     )}
                                 >
                                     <div

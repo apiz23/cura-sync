@@ -24,7 +24,10 @@ export default function Footer() {
 							AI-powered healthcare coordination platform.
 						</p>
 					</div>
-					<nav aria-label="Footer navigation" className="flex flex-wrap gap-x-6 gap-y-2">
+					<nav
+						aria-label="Footer navigation"
+						className="flex flex-wrap gap-x-6 gap-y-2"
+					>
 						{navLinks.map((link) => (
 							<Link
 								key={link.href}
@@ -46,11 +49,6 @@ export default function Footer() {
 							</Link>
 						))}
 					</div>
-				</div>
-				<div className="mt-10 border-t border-border pt-6">
-					<p className="font-mono text-xs text-muted-foreground">
-						© {new Date().getFullYear()} CuraSync · Final year project · DI230052
-					</p>
 				</div>
 			</div>
 		</footer>

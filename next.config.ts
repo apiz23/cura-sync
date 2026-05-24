@@ -23,12 +23,17 @@ const nextConfig: NextConfig = {
     },
 
     async headers() {
+        const allowedOrigin =
+            process.env.NEXT_PUBLIC_APP_URL ??
+            process.env.NEXT_PUBLIC_SITE_URL ??
+            "https://cura-sync-app.vercel.app";
         return [
             {
                 source: "/api/:path*",
                 headers: [
                     { key: "Access-Control-Allow-Credentials", value: "true" },
-                    { key: "Access-Control-Allow-Origin", value: "*" },
+                    { key: "Access-Control-Allow-Origin", value: allowedOrigin },
+                    { key: "Vary", value: "Origin" },
                     {
                         key: "Access-Control-Allow-Methods",
                         value: "GET,DELETE,PATCH,POST,PUT,OPTIONS",

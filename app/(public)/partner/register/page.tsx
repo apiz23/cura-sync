@@ -216,9 +216,9 @@ export default function RegisterClinicPage() {
 
 	if (!mounted) {
 		return (
-			<div className="min-h-[100dvh] bg-background px-4 pb-12 pt-20">
+			<div className="public-grid-page px-4 pb-12 pt-20">
 				<PageTitle title="Register Health Center" />
-				<div className="mx-auto max-w-4xl pt-12">
+				<div className="public-page-content mx-auto max-w-4xl pt-12">
 					<div className="space-y-3 mb-8">
 						<div className="h-4 w-24 animate-pulse rounded-md bg-muted" />
 						<div className="h-9 w-80 animate-pulse rounded-md bg-muted" />
@@ -235,27 +235,12 @@ export default function RegisterClinicPage() {
 	}
 
 	return (
-		<div className="relative min-h-[100dvh] overflow-hidden bg-background px-4 pb-12 pt-20">
-			{/* Dot grid */}
-			<div
-				aria-hidden="true"
-				className="pointer-events-none absolute inset-0"
-				style={{
-					backgroundImage:
-						"radial-gradient(color-mix(in oklch, var(--primary) 10%, transparent) 1px, transparent 1px)",
-					backgroundSize: "40px 40px",
-				}}
-			/>
-			{/* Right gradient accent */}
-			<div aria-hidden="true" className="pointer-events-none absolute inset-y-0 right-0 hidden w-[35vw] bg-gradient-to-l from-primary/[0.04] to-transparent lg:block" />
-			{/* Edge fades */}
-			<div aria-hidden="true" className="pointer-events-none absolute inset-y-0 left-0 w-[15vw] bg-gradient-to-r from-background to-transparent" />
-			<div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
+		<div className="public-grid-page public-dot-page px-4 pb-12 pt-20">
 			<PageTitle title="Register Health Center" />
 
-			<div className="mx-auto max-w-4xl pt-12 pb-12">
+			<div className="public-page-content mx-auto max-w-4xl pt-12 pb-12">
 				{/* Header — left-aligned, not centered */}
-				<div className="mb-10 flex flex-col gap-6 sm:flex-row sm:items-start sm:justify-between">
+				<div className="public-text-panel mb-10 flex flex-col gap-6 p-6 sm:flex-row sm:items-start sm:justify-between">
 					<div className="space-y-3">
 						<div className="flex items-center gap-2">
 							<BrandLogo className="h-8 w-8 shrink-0" imageClassName="p-0.5" />
@@ -593,7 +578,7 @@ export default function RegisterClinicPage() {
 											>
 												{loading ? (
 													<>
-														<div className="h-4 w-4 rounded-full border-2 border-white border-t-transparent animate-spin" />
+														<div className="h-4 w-4 rounded-full border-2 border-card border-t-transparent animate-spin" />
 														Registering...
 													</>
 												) : (

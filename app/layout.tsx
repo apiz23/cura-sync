@@ -2,26 +2,24 @@ import type { Metadata } from "next";
 import { ClerkProvider } from "@clerk/nextjs";
 import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
-import { JetBrains_Mono, Merriweather, Outfit } from "next/font/google";
+import { Geist, Geist_Mono, Noto_Serif_Georgian } from "next/font/google";
 import "./globals.css";
 
-const sans = Outfit({
+const sans = Geist({
 	subsets: ["latin"],
-	weight: ["400", "500", "600", "700", "800", "900"],
 	variable: "--font-sans",
 	display: "swap",
 });
 
-const serif = Merriweather({
+const serif = Noto_Serif_Georgian({
 	subsets: ["latin"],
-	weight: ["400", "700", "900"],
+	weight: ["400", "500", "600", "700"],
 	variable: "--font-serif",
 	display: "swap",
 });
 
-const mono = JetBrains_Mono({
+const mono = Geist_Mono({
 	subsets: ["latin"],
-	weight: ["400", "500"],
 	variable: "--font-mono",
 	display: "swap",
 });

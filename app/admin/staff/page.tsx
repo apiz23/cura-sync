@@ -132,27 +132,27 @@ export default function StaffPage() {
         switch (role) {
             case "doctor":
                 return {
-                    bg: "bg-blue-100 dark:bg-blue-900",
-                    text: "text-blue-800 dark:text-blue-200",
-                    dot: "bg-blue-500",
+                    bg: "bg-chart-2/10 dark:bg-chart-2/15",
+                    text: "text-chart-2 dark:text-chart-2",
+                    dot: "bg-chart-2",
                 };
             case "staff":
                 return {
-                    bg: "bg-emerald-100 dark:bg-emerald-900",
-                    text: "text-emerald-800 dark:text-emerald-200",
-                    dot: "bg-emerald-500",
+                    bg: "bg-chart-3/10 dark:bg-chart-3/15",
+                    text: "text-chart-3 dark:text-chart-3",
+                    dot: "bg-chart-3",
                 };
             case "admin":
                 return {
-                    bg: "bg-purple-100 dark:bg-purple-900",
-                    text: "text-purple-800 dark:text-purple-200",
-                    dot: "bg-purple-500",
+                    bg: "bg-chart-4/10 dark:bg-chart-4/15",
+                    text: "text-chart-4 dark:text-chart-4",
+                    dot: "bg-chart-4/100",
                 };
             default:
                 return {
-                    bg: "bg-gray-100 dark:bg-gray-800",
-                    text: "text-gray-700 dark:text-gray-300",
-                    dot: "bg-gray-500",
+                    bg: "bg-muted dark:bg-muted",
+                    text: "text-muted-foreground dark:text-muted-foreground",
+                    dot: "bg-muted0",
                 };
         }
     };
@@ -311,27 +311,27 @@ export default function StaffPage() {
 
             {/* Stats Card */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <Card className="bg-linear-to-br from-blue-50 to-blue-100 dark:from-blue-950/30 dark:to-blue-900/20">
+                <Card className="bg-linear-to-br from-chart-2/10 to-chart-2/15 dark:from-chart-2/10 dark:to-chart-2/15">
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-base font-medium text-blue-600 dark:text-blue-400">
+                                <p className="text-base font-medium text-chart-2 dark:text-chart-2">
                                     Total Staff
                                 </p>
                                 <p className="text-3xl font-bold mt-2">
                                     {staff.length}
                                 </p>
                             </div>
-                            <Users className="w-10 h-10 text-blue-500" />
+                            <Users className="w-10 h-10 text-chart-2" />
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-linear-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/30 dark:to-emerald-900/20">
+                <Card className="bg-linear-to-br from-chart-3/10 to-chart-3/15 dark:from-chart-3/10 dark:to-chart-3/15">
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-base font-medium text-emerald-600 dark:text-emerald-400">
+                                <p className="text-base font-medium text-chart-3 dark:text-chart-3">
                                     Medical Staff
                                 </p>
                                 <p className="text-3xl font-bold mt-2">
@@ -344,16 +344,16 @@ export default function StaffPage() {
                                     }
                                 </p>
                             </div>
-                            <Stethoscope className="w-10 h-10 text-emerald-500" />
+                            <Stethoscope className="w-10 h-10 text-chart-3" />
                         </div>
                     </CardContent>
                 </Card>
 
-                <Card className="bg-linear-to-br from-purple-50 to-purple-100 dark:from-purple-950/30 dark:to-purple-900/20">
+                <Card className="bg-linear-to-br from-chart-4/10 to-chart-4/15 dark:from-chart-4/10 dark:to-chart-4/15">
                     <CardContent className="pt-6">
                         <div className="flex items-center justify-between">
                             <div>
-                                <p className="text-base font-medium text-purple-600 dark:text-purple-400">
+                                <p className="text-base font-medium text-chart-4 dark:text-chart-4">
                                     Administrators
                                 </p>
                                 <p className="text-3xl font-bold mt-2">
@@ -363,7 +363,7 @@ export default function StaffPage() {
                                     }
                                 </p>
                             </div>
-                            <UserCog className="w-10 h-10 text-purple-500" />
+                            <UserCog className="w-10 h-10 text-chart-4" />
                         </div>
                     </CardContent>
                 </Card>

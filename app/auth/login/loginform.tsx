@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSignIn, useUser } from "@clerk/nextjs";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { cn } from "@/lib/utils";
@@ -30,6 +30,15 @@ export function LoginForm({
 	const { isLoaded: isSignInLoaded, signIn } = useSignIn();
 	const { isLoaded: userLoaded, isSignedIn } = useUser();
 	const router = useRouter();
+	const searchParams = useSearchParams();
+
+	const nextPath = useMemo(() => {
+		const raw = searchParams.get("next");
+		if (!raw) return "/user/dashboard";
+		// allow only same-origin relative paths
+		if (!raw.startsWith("/") || raw.startsWith("//")) return "/user/dashboard";
+		return raw;
+	}, [searchParams]);
 
 	const [error, setError] = useState("");
 	const [loadingStrategy, setLoadingStrategy] = useState<string | null>(null);
@@ -42,9 +51,9 @@ export function LoginForm({
 	useEffect(() => {
 		if (!hasMounted || !userLoaded) return;
 		if (isSignedIn) {
-			router.replace("/user/dashboard");
+			router.replace(nextPath);
 		}
-	}, [hasMounted, userLoaded, isSignedIn, router]);
+	}, [hasMounted, userLoaded, isSignedIn, router, nextPath]);
 
 	const handleSocialAuth = async (
 		strategy: "oauth_google" | "oauth_facebook",
@@ -62,7 +71,7 @@ export function LoginForm({
 			await signIn.authenticateWithRedirect({
 				strategy: strategy,
 				redirectUrl: "/user/sso-callback",
-				redirectUrlComplete: "/user/dashboard",
+				redirectUrlComplete: nextPath,
 			});
 		} catch (err: unknown) {
 			let message = `Failed to connect with ${providerName}`;

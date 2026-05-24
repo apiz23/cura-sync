@@ -40,10 +40,6 @@ function parseLimit(url: string) {
     return Math.min(Math.max(Math.trunc(value), 1), 20);
 }
 
-function startOfUtcDay(value: Date) {
-    return new Date(Date.UTC(value.getUTCFullYear(), value.getUTCMonth(), value.getUTCDate()));
-}
-
 export async function GET(
     req: NextRequest,
     { params }: { params: Promise<{ id: string }> }
@@ -58,16 +54,10 @@ export async function GET(
         if (facilityCheck instanceof NextResponse) return facilityCheck;
 
         const days = parseDays(req.url);
-        const limit = days ?? parseLimit(req.url);
-        const sinceIso =
-            days !== null
-                ? (() => {
-                      const now = new Date();
-                      const since = startOfUtcDay(now);
-                      since.setUTCDate(since.getUTCDate() - (days - 1));
-                      return since.toISOString();
-                  })()
-                : null;
+        // `days=7` means the latest 7 available snapshot days. Do not filter
+        // against today's calendar date, because uploaded wearable batches may
+        // contain a complete historical 7-day range.
+        const limit = days !== null ? Math.min(days * 12, 100) : parseLimit(req.url);
 
         const snapshotsQuery = supabase
             .from("cura_health_sync_snapshots")
@@ -93,9 +83,7 @@ export async function GET(
             .order(days !== null ? "range_start" : "synced_at", { ascending: false })
             .limit(limit);
 
-        const snapshotsResult = sinceIso
-            ? await snapshotsQuery.gte("range_start", sinceIso)
-            : await snapshotsQuery;
+        const snapshotsResult = await snapshotsQuery;
 
         const countResult = await supabase
             .from("cura_health_sync_snapshots")

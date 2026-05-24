@@ -19,15 +19,23 @@ import {
 	PiX,
 } from "react-icons/pi";
 import Image from "next/image";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { motion, AnimatePresence, type Variants } from "framer-motion";
 import Link from "next/link";
 import { toast } from "sonner";
 import { AnalysisResult } from "@/app/types";
 import AnimatedTags from "@/components/smoothui/animated-tags";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+	Select,
+	SelectContent,
+	SelectItem,
+	SelectTrigger,
+	SelectValue,
+} from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
 
@@ -49,6 +57,26 @@ const COMMON_SYMPTOMS = [
 	"Loss of Smell",
 	"Abdominal Pain",
 ];
+
+const MAX_TEXT_LEN = 1000;
+const MIN_AGE = 1;
+const MAX_AGE = 120;
+const ANALYZE_TIMEOUT_MS = 30_000;
+const NEXT_PARAM = "/symptom-analyzer";
+
+function dedupeSymptoms(items: string[]): string[] {
+	const seen = new Set<string>();
+	const result: string[] = [];
+	for (const raw of items) {
+		const trimmed = raw.trim();
+		if (!trimmed) continue;
+		const key = trimmed.toLowerCase();
+		if (seen.has(key)) continue;
+		seen.add(key);
+		result.push(trimmed);
+	}
+	return result;
+}
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -90,17 +118,17 @@ function urgencyConfig(urgency: AnalysisResult["urgency"]) {
 			return {
 				label: "High urgency",
 				filled: 3,
-				barColor: "bg-orange-500",
+				barColor: "bg-chart-5",
 				badgeClass:
-					"bg-orange-500/10 text-orange-600 border-orange-500/20 dark:text-orange-400",
+					"bg-chart-5/10 text-chart-5 border-chart-5/30 dark:text-chart-5",
 			};
 		case "medium":
 			return {
 				label: "Medium urgency",
 				filled: 2,
-				barColor: "bg-yellow-500",
+				barColor: "bg-chart-5",
 				badgeClass:
-					"bg-yellow-500/10 text-yellow-700 border-yellow-500/20 dark:text-yellow-400",
+					"bg-chart-5/10 text-chart-5 border-chart-5/30 dark:text-chart-5",
 			};
 		case "low":
 			return {
@@ -261,26 +289,32 @@ export default function AnalyzePage() {
 	const [userLocation, setUserLocation] = useState<Coordinates | null>(null);
 	const [feedbackGiven, setFeedbackGiven] = useState(false);
 	const [feedbackSent, setFeedbackSent] = useState(false);
+	const [ageError, setAgeError] = useState<string | null>(null);
 	const analyzeAbortRef = useRef<AbortController | null>(null);
+	const facilitiesLoadedRef = useRef(false);
+	const geolocationAskedRef = useRef(false);
 
-	useEffect(() => {
-		let cancelled = false;
-		const loadFacilities = async () => {
-			try {
-				const res = await fetch("/api/facilities");
-				if (!res.ok) return;
-				const data = (await res.json()) as Facility[];
-				if (!cancelled) setFacilities(Array.isArray(data) ? data : []);
-			} catch (e) {
-				console.error("Facility fetch error:", e);
+	const loadFacilities = useCallback(async () => {
+		if (facilitiesLoadedRef.current) return;
+		facilitiesLoadedRef.current = true;
+		try {
+			const res = await fetch("/api/facilities");
+			if (!res.ok) {
+				facilitiesLoadedRef.current = false;
+				return;
 			}
-		};
-		void loadFacilities();
-		return () => { cancelled = true; };
+			const data = (await res.json()) as Facility[];
+			setFacilities(Array.isArray(data) ? data : []);
+		} catch (e) {
+			console.error("Facility fetch error:", e);
+			facilitiesLoadedRef.current = false;
+		}
 	}, []);
 
-	useEffect(() => {
+	const requestGeolocation = useCallback(() => {
+		if (geolocationAskedRef.current) return;
 		if (typeof window === "undefined" || !("geolocation" in navigator)) return;
+		geolocationAskedRef.current = true;
 		navigator.geolocation.getCurrentPosition(
 			(pos) =>
 				setUserLocation({
@@ -295,7 +329,7 @@ export default function AnalyzePage() {
 	const allSymptoms = useMemo(() => {
 		const list = [...selectedSymptoms];
 		if (textInput.trim()) list.push(textInput.trim());
-		return list;
+		return dedupeSymptoms(list);
 	}, [selectedSymptoms, textInput]);
 
 	const actionLines = useMemo(() => {
@@ -307,14 +341,34 @@ export default function AnalyzePage() {
 	}, [result]);
 
 	const patientContext = useMemo(() => {
-		const age = Number.parseInt(ageInput, 10);
 		const ctx: PatientContext = {};
-		if (Number.isFinite(age) && age > 0) ctx.age = age;
+		const ageRaw = ageInput.trim();
+		if (ageRaw) {
+			const age = Number.parseInt(ageRaw, 10);
+			if (Number.isFinite(age) && age >= MIN_AGE && age <= MAX_AGE) {
+				ctx.age = age;
+			}
+		}
 		if (genderInput.trim()) ctx.gender = genderInput.trim();
 		if (conditionsInput.trim()) ctx.chronic_conditions = conditionsInput.trim();
 		if (allergiesInput.trim()) ctx.allergies = allergiesInput.trim();
 		return Object.keys(ctx).length > 0 ? ctx : null;
 	}, [ageInput, allergiesInput, conditionsInput, genderInput]);
+
+	const handleAgeChange = useCallback((value: string) => {
+		setAgeInput(value);
+		const trimmed = value.trim();
+		if (!trimmed) {
+			setAgeError(null);
+			return;
+		}
+		const age = Number.parseInt(trimmed, 10);
+		if (!Number.isFinite(age) || age < MIN_AGE || age > MAX_AGE) {
+			setAgeError(`Enter age between ${MIN_AGE}–${MAX_AGE}.`);
+		} else {
+			setAgeError(null);
+		}
+	}, []);
 
 	const patientContextItems = useMemo(() => {
 		if (!patientContext) return [];
@@ -354,6 +408,7 @@ export default function AnalyzePage() {
 		setGenderInput("");
 		setConditionsInput("");
 		setAllergiesInput("");
+		setAgeError(null);
 		setResult(null);
 		setError(null);
 		setFeedbackGiven(false);
@@ -363,9 +418,8 @@ export default function AnalyzePage() {
 	const handleFeedback = useCallback(
 		async (wasAccurate: boolean) => {
 			if (!result || feedbackGiven) return;
-			setFeedbackGiven(true);
 			try {
-				await fetch("/api/public/feedback", {
+				const res = await fetch("/api/public/feedback", {
 					method: "POST",
 					headers: { "Content-Type": "application/json" },
 					body: JSON.stringify({
@@ -374,25 +428,38 @@ export default function AnalyzePage() {
 						possible_disease: result.possible_disease,
 					}),
 				});
+				if (!res.ok) throw new Error("Feedback failed");
+				setFeedbackGiven(true);
 				setFeedbackSent(true);
 			} catch {
-				// silent
+				toast.error("Could not send feedback", {
+					description: "Try again in a moment.",
+				});
 			}
 		},
 		[result, feedbackGiven, allSymptoms],
 	);
 
-	const handleAnalyze = async () => {
+	const handleAnalyze = useCallback(async () => {
 		if (allSymptoms.length === 0) {
 			toast.warning("No symptoms selected", {
 				description: "Select or describe your symptoms first.",
 			});
 			return;
 		}
+		if (ageError) {
+			toast.warning("Invalid age", { description: ageError });
+			return;
+		}
 
 		analyzeAbortRef.current?.abort();
 		const controller = new AbortController();
 		analyzeAbortRef.current = controller;
+		let timedOut = false;
+		const timeoutId = window.setTimeout(() => {
+			timedOut = true;
+			controller.abort();
+		}, ANALYZE_TIMEOUT_MS);
 
 		setLoading(true);
 		setError(null);
@@ -415,32 +482,37 @@ export default function AnalyzePage() {
 			})
 			.then((data: AnalysisResult) => {
 				setResult(data);
+				void loadFacilities();
+				requestGeolocation();
 				return data;
 			});
 
 		toast.promise(analyzePromise, {
 			loading: "Analyzing your symptoms...",
 			success: "Analysis complete",
-			error: (err) => err.message,
+			error: (err: Error) => err.message,
 		});
 
 		try {
 			await analyzePromise;
 		} catch (err) {
 			if (err instanceof Error && err.name === "AbortError") {
-				// User cancelled — silent
+				if (timedOut) {
+					setError("Analysis timed out. Please try again.");
+				}
 				return;
 			}
 			setError(
 				err instanceof Error ? err.message : "Something went wrong. Please try again.",
 			);
 		} finally {
+			window.clearTimeout(timeoutId);
 			if (analyzeAbortRef.current === controller) {
 				analyzeAbortRef.current = null;
 			}
 			setLoading(false);
 		}
-	};
+	}, [allSymptoms, ageError, patientContext, loadFacilities, requestGeolocation]);
 
 	const cancelAnalyze = useCallback(() => {
 		analyzeAbortRef.current?.abort();
@@ -452,36 +524,15 @@ export default function AnalyzePage() {
 	const sourceBadge = result ? sourceLabel(result.source) : null;
 
 	return (
-		<div className="relative min-h-[100dvh] overflow-hidden bg-background">
-			{/* Horizontal rules */}
-			<div
-				aria-hidden="true"
-				className="pointer-events-none absolute inset-0"
-				style={{
-					backgroundImage:
-						"linear-gradient(color-mix(in oklch, var(--primary) 5%, transparent) 1px, transparent 1px)",
-					backgroundSize: "100% 72px",
-				}}
-			/>
-			{/* Center radial glow */}
-			<div
-				aria-hidden="true"
-				className="pointer-events-none absolute inset-0"
-				style={{
-					background:
-						"radial-gradient(ellipse 70% 50% at 50% 0%, color-mix(in oklch, var(--primary) 6%, transparent) 0%, transparent 70%)",
-				}}
-			/>
-			{/* Top fade */}
-			<div aria-hidden="true" className="pointer-events-none absolute inset-x-0 top-0 h-24 bg-gradient-to-b from-background to-transparent" />
-			<div className="mx-auto max-w-[1400px] px-6 pb-20 pt-10 lg:px-10">
+		<div className="public-grid-page public-line-page">
+			<div className="public-page-content mx-auto max-w-[1400px] px-6 pb-20 pt-10 lg:px-10">
 
 				{/* ── Page header — left-aligned, not centered ─────────────── */}
 				<motion.div
 					variants={stagger}
 					initial="hidden"
 					animate="visible"
-					className="mb-12 flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between"
+					className="public-text-panel mb-12 flex flex-col gap-6 p-6 lg:flex-row lg:items-end lg:justify-between"
 				>
 					<div>
 						<motion.div variants={fadeUp} className="mb-4 flex items-center gap-2">
@@ -537,14 +588,19 @@ export default function AnalyzePage() {
 					initial={{ opacity: 0, y: 8 }}
 					animate={{ opacity: 1, y: 0 }}
 					transition={{ type: "spring", stiffness: 80, damping: 20, delay: 0.15 }}
-					className="mb-6 flex items-start gap-3 rounded-2xl border border-destructive/20 bg-destructive/5 px-5 py-4"
+					className="mb-6"
 				>
-					<PiWarning className="mt-0.5 h-4 w-4 shrink-0 text-destructive" />
-					<p className="text-sm leading-relaxed text-foreground">
-						<span className="font-semibold text-destructive">Emergency: </span>
-						If you have chest pain, severe breathing difficulty, severe bleeding, or
-						loss of consciousness — seek urgent medical care now.
-					</p>
+					<Alert
+						variant="destructive"
+						className="rounded-2xl border-destructive/20 bg-destructive/5"
+					>
+						<PiWarning />
+						<AlertDescription className="text-foreground">
+							<span className="font-semibold text-destructive">Emergency: </span>
+							If you have chest pain, severe breathing difficulty, severe
+							bleeding, or loss of consciousness — seek urgent medical care now.
+						</AlertDescription>
+					</Alert>
 				</motion.div>
 
 				<AnimatePresence mode="wait">
@@ -646,7 +702,8 @@ export default function AnalyzePage() {
 
 								{/* Left — recognized symptoms + actions */}
 								<div className="space-y-4">
-									{result.normalized_symptoms?.length ? (
+									{Array.isArray(result.normalized_symptoms) &&
+									result.normalized_symptoms.length > 0 ? (
 										<motion.div
 											variants={fadeUp}
 											className="rounded-2xl border border-border bg-card p-6"
@@ -833,7 +890,7 @@ export default function AnalyzePage() {
 														Open map
 													</a>
 													<Link
-														href="/sign-in"
+														href={`/sign-in?next=${encodeURIComponent(NEXT_PARAM)}`}
 														className="flex-1 rounded-lg bg-primary py-1.5 text-center text-xs font-semibold text-primary-foreground transition-colors hover:bg-primary/90"
 													>
 														Book
@@ -904,12 +961,32 @@ export default function AnalyzePage() {
 
 								{/* Free-text */}
 								<div className="space-y-2">
-									<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
-										Additional details
-									</label>
+									<div className="flex items-center justify-between gap-3">
+										<label
+											htmlFor="symptom-details"
+											className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground"
+										>
+											Additional details
+										</label>
+										<span
+											className={cn(
+												"font-mono text-[11px]",
+												textInput.length >= MAX_TEXT_LEN
+													? "text-destructive"
+													: "text-muted-foreground",
+											)}
+											aria-live="polite"
+										>
+											{textInput.length}/{MAX_TEXT_LEN}
+										</span>
+									</div>
 									<Textarea
+										id="symptom-details"
 										value={textInput}
-										onChange={(e) => setTextInput(e.target.value)}
+										onChange={(e) =>
+											setTextInput(e.target.value.slice(0, MAX_TEXT_LEN))
+										}
+										maxLength={MAX_TEXT_LEN}
 										placeholder="Describe duration, severity, or any other context..."
 										rows={4}
 										className="min-h-[110px] resize-none rounded-xl border-border bg-muted/20 focus-visible:ring-1 focus-visible:ring-primary"
@@ -926,42 +1003,76 @@ export default function AnalyzePage() {
 											Anonymous — not stored. Improves analysis accuracy.
 										</p>
 									</div>
-									<div className="grid grid-cols-2 gap-3">
+									<div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
 										<div className="space-y-1.5">
-											<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+											<label
+												htmlFor="patient-age"
+												className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground"
+											>
 												Age
 											</label>
 											<Input
+												id="patient-age"
 												type="number"
-												min="0"
+												min={MIN_AGE}
+												max={MAX_AGE}
 												inputMode="numeric"
 												value={ageInput}
-												onChange={(e) => setAgeInput(e.target.value)}
+												onChange={(e) => handleAgeChange(e.target.value)}
+												aria-invalid={ageError ? true : undefined}
+												aria-describedby={ageError ? "patient-age-error" : undefined}
 												placeholder="34"
 												className="rounded-xl border-border bg-background"
 											/>
+											{ageError && (
+												<p
+													id="patient-age-error"
+													role="alert"
+													className="text-[11px] font-medium text-destructive"
+												>
+													{ageError}
+												</p>
+											)}
 										</div>
 										<div className="space-y-1.5">
-											<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+											<label
+												htmlFor="patient-gender"
+												className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground"
+											>
 												Sex / Gender
 											</label>
-											<select
-												value={genderInput}
-												onChange={(e) => setGenderInput(e.target.value)}
-												className="flex h-10 w-full rounded-xl border border-border bg-background px-3 py-2 text-sm text-foreground outline-none focus:ring-1 focus:ring-ring"
+											<Select
+												value={genderInput || "unspecified"}
+												onValueChange={(v) =>
+													setGenderInput(v === "unspecified" ? "" : v)
+												}
 											>
-												<option value="">Prefer not to say</option>
-												<option value="Female">Female</option>
-												<option value="Male">Male</option>
-												<option value="Intersex">Intersex</option>
-												<option value="Other">Other</option>
-											</select>
+												<SelectTrigger
+													id="patient-gender"
+													className="h-10 w-full rounded-xl border-border bg-background"
+												>
+													<SelectValue placeholder="Prefer not to say" />
+												</SelectTrigger>
+												<SelectContent>
+													<SelectItem value="unspecified">
+														Prefer not to say
+													</SelectItem>
+													<SelectItem value="Female">Female</SelectItem>
+													<SelectItem value="Male">Male</SelectItem>
+													<SelectItem value="Intersex">Intersex</SelectItem>
+													<SelectItem value="Other">Other</SelectItem>
+												</SelectContent>
+											</Select>
 										</div>
 										<div className="space-y-1.5">
-											<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+											<label
+												htmlFor="patient-conditions"
+												className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground"
+											>
 												Known conditions
 											</label>
 											<Input
+												id="patient-conditions"
 												value={conditionsInput}
 												onChange={(e) => setConditionsInput(e.target.value)}
 												placeholder="asthma, diabetes..."
@@ -969,10 +1080,14 @@ export default function AnalyzePage() {
 											/>
 										</div>
 										<div className="space-y-1.5">
-											<label className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground">
+											<label
+												htmlFor="patient-allergies"
+												className="font-mono text-[11px] font-medium uppercase tracking-widest text-muted-foreground"
+											>
 												Allergies
 											</label>
 											<Input
+												id="patient-allergies"
 												value={allergiesInput}
 												onChange={(e) => setAllergiesInput(e.target.value)}
 												placeholder="penicillin, peanuts..."
@@ -1037,10 +1152,24 @@ export default function AnalyzePage() {
 											initial={{ opacity: 0, y: 6 }}
 											animate={{ opacity: 1, y: 0 }}
 											exit={{ opacity: 0, y: 6 }}
-											className="flex items-center gap-2 rounded-xl border border-destructive/25 bg-destructive/8 px-4 py-3 text-sm text-destructive"
 										>
-											<PiWarningCircle className="h-4 w-4 shrink-0" />
-											{error}
+											<Alert variant="destructive" className="rounded-xl">
+												<PiWarningCircle />
+												<AlertDescription className="flex flex-wrap items-center justify-between gap-3">
+													<span>{error}</span>
+													<Button
+														type="button"
+														size="sm"
+														variant="outline"
+														onClick={() => void handleAnalyze()}
+														disabled={loading}
+														className="h-8 gap-1.5 rounded-lg border-destructive/40 text-destructive hover:bg-destructive/10 hover:text-destructive"
+													>
+														<PiArrowCounterClockwise className="h-3.5 w-3.5" />
+														Retry
+													</Button>
+												</AlertDescription>
+											</Alert>
 										</motion.div>
 									)}
 								</AnimatePresence>

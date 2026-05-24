@@ -55,7 +55,7 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 			<SidebarContent className="overflow-x-hidden">
 				{userMenu.map((group) => (
 					<SidebarGroup key={group.title}>
-						<SidebarGroupLabel className="px-2 text-base font-semibold uppercase tracking-wider text-muted-foreground">
+						<SidebarGroupLabel className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
 							{group.title}
 						</SidebarGroupLabel>
 
@@ -73,8 +73,8 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 												tooltip={item.title}
 												className="
                                                     gap-3
-                                                    data-[active=true]:bg-primary/10
-                                                    data-[active=true]:text-primary
+                                                    data-[active=true]:bg-primary/90
+                                                    data-[active=true]:text-primary-foreground
                                                     group-data-[collapsible=icon]:justify-center
                                                 "
 											>

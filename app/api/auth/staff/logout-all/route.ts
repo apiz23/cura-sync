@@ -2,12 +2,21 @@ import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
 import { requireStaffSession } from "@/lib/authz";
 import { STAFF_SESSION_COOKIE } from "@/lib/staff-session";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(req: Request) {
     const session = await requireStaffSession(req);
     if (session instanceof NextResponse) return session;
 
     const now = new Date().toISOString();
+
+    void logAudit({
+        actor_id: session.staffId,
+        actor_type: "staff",
+        action: "LOGOUT",
+        resource_type: "session",
+        metadata: { role: session.role, all_sessions: true },
+    });
 
     const { error } = await supabase.from("cura_staff_account_settings").upsert(
         {

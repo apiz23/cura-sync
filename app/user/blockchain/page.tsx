@@ -64,7 +64,7 @@ const RESOURCE_TO_TYPE: Record<string, string> = {
 
 function actionVariant(action: string) {
 	if (action === "CREATE") return "bg-primary/10 text-primary border-primary/20";
-	if (action === "UPDATE") return "bg-warning/20 text-warning-foreground border-warning/30";
+	if (action === "UPDATE") return "bg-chart-5/10 text-chart-5 border-chart-5/30";
 	if (action === "DELETE") return "bg-destructive/10 text-destructive border-destructive/20";
 	return "bg-muted text-muted-foreground border-border";
 }
@@ -199,7 +199,7 @@ export default function BlockchainPage() {
 							</Badge>
 							<Badge
 								variant="outline"
-								className="gap-1.5 border-emerald-500/20 bg-emerald-500/5 px-3 py-1.5 text-emerald-600 dark:text-emerald-400"
+								className="gap-1.5 border-chart-3/30 bg-chart-3/5 px-3 py-1.5 text-chart-3 dark:text-chart-3"
 							>
 								<ShieldCheck className="h-3 w-3" />
 								{anchored.length} on-chain
@@ -333,7 +333,7 @@ export default function BlockchainPage() {
 													href={`https://amoy.polygonscan.com/tx/${entry.tx_hash}`}
 													target="_blank"
 													rel="noreferrer"
-													className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/5 px-3 py-1 font-mono text-base font-medium text-emerald-700 transition-colors hover:bg-emerald-500/10 dark:text-emerald-300"
+													className="inline-flex items-center gap-1.5 rounded-full border border-chart-3/30 bg-chart-3/5 px-3 py-1 font-mono text-base font-medium text-chart-3 transition-colors hover:bg-chart-3/10 dark:text-chart-3"
 												>
 													<ShieldCheck className="h-3 w-3" />
 													{shortHex(entry.tx_hash)}
@@ -382,7 +382,7 @@ export default function BlockchainPage() {
 											className={cn(
 												"overflow-hidden border-t",
 												result.verified && result.hashesMatch
-													? "border-emerald-500/20 bg-emerald-500/5"
+													? "border-chart-3/30 bg-chart-3/5"
 													: "border-destructive/20 bg-destructive/5",
 											)}
 										>
@@ -390,8 +390,8 @@ export default function BlockchainPage() {
 												<div className="flex items-center gap-2 font-semibold">
 													{result.verified && result.hashesMatch ? (
 														<>
-															<CheckCircle2 className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-															<span className="text-emerald-700 dark:text-emerald-300">
+															<CheckCircle2 className="h-4 w-4 text-chart-3 dark:text-chart-3" />
+															<span className="text-chart-3 dark:text-chart-3">
 																Verified on Polygon Amoy
 															</span>
 														</>

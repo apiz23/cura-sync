@@ -42,6 +42,16 @@ const defaultStyles = {
   light: "https://basemaps.cartocdn.com/gl/positron-gl-style/style.json",
 };
 
+function resolveCssColor(color: string): string {
+  if (typeof window === "undefined" || !color.startsWith("var(")) return color;
+
+  const variableName = color.slice(4, -1).trim();
+  return (
+    getComputedStyle(document.documentElement).getPropertyValue(variableName).trim() ||
+    color
+  );
+}
+
 type MapStyleOption = string | MapLibreGL.StyleSpecification;
 
 type MapProps = {
@@ -320,7 +330,7 @@ function MarkerContent({ children, className }: MarkerContentProps) {
 
 function DefaultMarkerIcon() {
   return (
-    <div className="relative h-4 w-4 rounded-full border-2 border-white bg-blue-500 shadow-lg" />
+    <div className="relative h-4 w-4 rounded-full border-2 border-card bg-chart-2 shadow-lg" />
   );
 }
 
@@ -838,7 +848,7 @@ type MapRouteProps = {
   id?: string;
   /** Array of [longitude, latitude] coordinate pairs defining the route */
   coordinates: [number, number][];
-  /** Line color as CSS color value (default: "#4285F4") */
+  /** Line color as CSS color value (default: theme chart color) */
   color?: string;
   /** Line width in pixels (default: 3) */
   width?: number;
@@ -859,7 +869,7 @@ type MapRouteProps = {
 function MapRoute({
   id,
   coordinates,
-  color = "#4285F4",
+  color = "var(--chart-2)",
   width = 3,
   opacity = 0.8,
   dashArray,
@@ -872,6 +882,7 @@ function MapRoute({
   const autoId = useId();
   const sourceId = id ?? `route-source-${autoId}`;
   const layerId = id ?? `route-layer-${autoId}`;
+  const resolvedColor = useMemo(() => resolveCssColor(color), [color]);
 
   // Add source and layer on mount
   useEffect(() => {
@@ -892,7 +903,7 @@ function MapRoute({
       source: sourceId,
       layout: { "line-join": "round", "line-cap": "round" },
       paint: {
-        "line-color": color,
+        "line-color": resolvedColor,
         "line-width": width,
         "line-opacity": opacity,
         ...(dashArray && { "line-dasharray": dashArray }),
@@ -927,13 +938,13 @@ function MapRoute({
   useEffect(() => {
     if (!isLoaded || !map || !map.getLayer(layerId)) return;
 
-    map.setPaintProperty(layerId, "line-color", color);
+    map.setPaintProperty(layerId, "line-color", resolvedColor);
     map.setPaintProperty(layerId, "line-width", width);
     map.setPaintProperty(layerId, "line-opacity", opacity);
     if (dashArray) {
       map.setPaintProperty(layerId, "line-dasharray", dashArray);
     }
-  }, [isLoaded, map, layerId, color, width, opacity, dashArray]);
+  }, [isLoaded, map, layerId, resolvedColor, width, opacity, dashArray]);
 
   // Handle click and hover events
   useEffect(() => {
@@ -982,11 +993,11 @@ type MapClusterLayerProps<
   clusterMaxZoom?: number;
   /** Radius of each cluster when clustering points in pixels (default: 50) */
   clusterRadius?: number;
-  /** Colors for cluster circles: [small, medium, large] based on point count (default: ["#51bbd6", "#f1f075", "#f28cb1"]) */
+  /** Colors for cluster circles: [small, medium, large] based on point count (default: theme chart colors) */
   clusterColors?: [string, string, string];
   /** Point count thresholds for color/size steps: [medium, large] (default: [100, 750]) */
   clusterThresholds?: [number, number];
-  /** Color for unclustered individual points (default: "#3b82f6") */
+  /** Color for unclustered individual points (default: theme chart color) */
   pointColor?: string;
   /** Callback when an unclustered point is clicked */
   onPointClick?: (
@@ -1007,9 +1018,9 @@ function MapClusterLayer<
   data,
   clusterMaxZoom = 14,
   clusterRadius = 50,
-  clusterColors = ["#51bbd6", "#f1f075", "#f28cb1"],
+  clusterColors = ["var(--chart-2)", "var(--chart-5)", "var(--destructive)"],
   clusterThresholds = [100, 750],
-  pointColor = "#3b82f6",
+  pointColor = "var(--chart-2)",
   onPointClick,
   onClusterClick,
 }: MapClusterLayerProps<P>) {
@@ -1019,11 +1030,19 @@ function MapClusterLayer<
   const clusterLayerId = `clusters-${id}`;
   const clusterCountLayerId = `cluster-count-${id}`;
   const unclusteredLayerId = `unclustered-point-${id}`;
+  const resolvedClusterColors = useMemo(
+    () => clusterColors.map(resolveCssColor) as [string, string, string],
+    [clusterColors]
+  );
+  const resolvedPointColor = useMemo(
+    () => resolveCssColor(pointColor),
+    [pointColor]
+  );
 
   const stylePropsRef = useRef({
-    clusterColors,
+    clusterColors: resolvedClusterColors,
     clusterThresholds,
-    pointColor,
+    pointColor: resolvedPointColor,
   });
 
   // Add source and layers on mount
@@ -1049,11 +1068,11 @@ function MapClusterLayer<
         "circle-color": [
           "step",
           ["get", "point_count"],
-          clusterColors[0],
+          resolvedClusterColors[0],
           clusterThresholds[0],
-          clusterColors[1],
+          resolvedClusterColors[1],
           clusterThresholds[1],
-          clusterColors[2],
+          resolvedClusterColors[2],
         ],
         "circle-radius": [
           "step",
@@ -1078,7 +1097,7 @@ function MapClusterLayer<
         "text-size": 12,
       },
       paint: {
-        "text-color": "#fff",
+        "text-color": "rgb(255, 255, 255)",
       },
     });
 
@@ -1089,7 +1108,7 @@ function MapClusterLayer<
       source: sourceId,
       filter: ["!", ["has", "point_count"]],
       paint: {
-        "circle-color": pointColor,
+        "circle-color": resolvedPointColor,
         "circle-radius": 6,
       },
     });
@@ -1125,7 +1144,7 @@ function MapClusterLayer<
 
     const prev = stylePropsRef.current;
     const colorsChanged =
-      prev.clusterColors !== clusterColors ||
+      prev.clusterColors !== resolvedClusterColors ||
       prev.clusterThresholds !== clusterThresholds;
 
     // Update cluster layer colors and sizes
@@ -1133,11 +1152,11 @@ function MapClusterLayer<
       map.setPaintProperty(clusterLayerId, "circle-color", [
         "step",
         ["get", "point_count"],
-        clusterColors[0],
+        resolvedClusterColors[0],
         clusterThresholds[0],
-        clusterColors[1],
+        resolvedClusterColors[1],
         clusterThresholds[1],
-        clusterColors[2],
+        resolvedClusterColors[2],
       ]);
       map.setPaintProperty(clusterLayerId, "circle-radius", [
         "step",
@@ -1151,19 +1170,23 @@ function MapClusterLayer<
     }
 
     // Update unclustered point layer color
-    if (map.getLayer(unclusteredLayerId) && prev.pointColor !== pointColor) {
-      map.setPaintProperty(unclusteredLayerId, "circle-color", pointColor);
+    if (map.getLayer(unclusteredLayerId) && prev.pointColor !== resolvedPointColor) {
+      map.setPaintProperty(unclusteredLayerId, "circle-color", resolvedPointColor);
     }
 
-    stylePropsRef.current = { clusterColors, clusterThresholds, pointColor };
+    stylePropsRef.current = {
+      clusterColors: resolvedClusterColors,
+      clusterThresholds,
+      pointColor: resolvedPointColor,
+    };
   }, [
     isLoaded,
     map,
     clusterLayerId,
     unclusteredLayerId,
-    clusterColors,
+    resolvedClusterColors,
     clusterThresholds,
-    pointColor,
+    resolvedPointColor,
   ]);
 
   // Handle click events

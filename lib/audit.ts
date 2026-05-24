@@ -1,7 +1,7 @@
 import supabaseAdmin from "@/lib/supabase-admin";
 import type { AnySession } from "@/lib/authz";
 
-type AuditAction = "CREATE" | "READ" | "UPDATE" | "DELETE";
+type AuditAction = "CREATE" | "READ" | "UPDATE" | "DELETE" | "LOGIN" | "LOGOUT";
 
 interface AuditEntry {
     actor_id: string;

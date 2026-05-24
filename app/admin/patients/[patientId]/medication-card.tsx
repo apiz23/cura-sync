@@ -46,13 +46,13 @@ export default function MedicationCard({
     const getStatusColor = (status: string) => {
         switch (status) {
             case "COMPLETED":
-                return "bg-green-500/10 text-green-700 dark:text-green-400 border-green-200 dark:border-green-800";
+                return "bg-chart-3/10 text-chart-3 dark:text-chart-3 border-chart-3/30 dark:border-chart-3/30";
             case "ACTIVE":
-                return "bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-200 dark:border-blue-800";
+                return "bg-chart-2/10 text-chart-2 dark:text-chart-2 border-chart-2/30 dark:border-chart-2/30";
             case "STOPPED":
-                return "bg-amber-500/10 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800";
+                return "bg-chart-5/10 text-chart-5 dark:text-chart-5 border-chart-5/30 dark:border-chart-5/30";
             default:
-                return "bg-gray-500/10 text-gray-700 dark:text-gray-400 border-gray-200 dark:border-gray-800";
+                return "bg-muted text-muted-foreground dark:text-muted-foreground border-border dark:border-border";
         }
     };
 
@@ -195,8 +195,8 @@ export default function MedicationCard({
                                             <div
                                                 className={`text-base font-medium px-2 py-1 rounded-full ${
                                                     timeRemaining === "Expired"
-                                                        ? "bg-amber-500/10 text-amber-700"
-                                                        : "bg-green-500/10 text-green-700"
+                                                        ? "bg-chart-5/10 text-chart-5"
+                                                        : "bg-chart-3/10 text-chart-3"
                                                 }`}
                                             >
                                                 {timeRemaining}
@@ -285,8 +285,8 @@ export default function MedicationCard({
                             <div className="space-y-4 p-4 bg-linear-to-br from-muted/10 to-muted/5 rounded-xl border border-border/30">
                                 <div className="flex items-center justify-between">
                                     <div className="flex items-center gap-3">
-                                        <div className="p-1.5 bg-blue-500/10 rounded-lg">
-                                            <CalendarDays className="h-4 w-4 text-blue-600" />
+                                        <div className="p-1.5 bg-chart-2/10 rounded-lg">
+                                            <CalendarDays className="h-4 w-4 text-chart-2" />
                                         </div>
                                         <div>
                                             <p className="text-base font-medium text-muted-foreground">
@@ -307,15 +307,15 @@ export default function MedicationCard({
                                             <div
                                                 className={`p-1.5 rounded-lg ${
                                                     isExpired
-                                                        ? "bg-amber-500/10"
-                                                        : "bg-green-500/10"
+                                                        ? "bg-chart-5/10"
+                                                        : "bg-chart-3/10"
                                                 }`}
                                             >
                                                 <CalendarDays
                                                     className={`h-4 w-4 ${
                                                         isExpired
-                                                            ? "text-amber-600"
-                                                            : "text-green-600"
+                                                            ? "text-chart-5"
+                                                            : "text-chart-3"
                                                     }`}
                                                 />
                                             </div>
@@ -326,7 +326,7 @@ export default function MedicationCard({
                                                 <p
                                                     className={`text-base font-semibold ${
                                                         isExpired
-                                                            ? "text-amber-600"
+                                                            ? "text-chart-5"
                                                             : ""
                                                     }`}
                                                 >
@@ -340,8 +340,8 @@ export default function MedicationCard({
                                             <div
                                                 className={`text-base font-medium px-2 py-1 rounded-full ${
                                                     isExpired
-                                                        ? "bg-amber-500/10 text-amber-700"
-                                                        : "bg-green-500/10 text-green-700"
+                                                        ? "bg-chart-5/10 text-chart-5"
+                                                        : "bg-chart-3/10 text-chart-3"
                                                 }`}
                                             >
                                                 {timeRemaining}
@@ -352,14 +352,14 @@ export default function MedicationCard({
                                     isActive && (
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-3">
-                                                <div className="p-1.5 bg-green-500/10 rounded-lg">
-                                                    <CheckCircle className="h-4 w-4 text-green-600" />
+                                                <div className="p-1.5 bg-chart-3/10 rounded-lg">
+                                                    <CheckCircle className="h-4 w-4 text-chart-3" />
                                                 </div>
                                                 <div>
                                                     <p className="text-base font-medium text-muted-foreground">
                                                         Duration
                                                     </p>
-                                                    <p className="text-base font-semibold text-green-600">
+                                                    <p className="text-base font-semibold text-chart-3">
                                                         Ongoing
                                                     </p>
                                                 </div>
@@ -401,13 +401,13 @@ export default function MedicationCard({
 
                             {/* Status Indicators */}
                             {isActive && isExpired && (
-                                <div className="flex items-center gap-3 p-3 bg-amber-500/10 rounded-xl border border-amber-200/50">
-                                    <AlertCircle className="h-4 w-4 text-amber-600" />
+                                <div className="flex items-center gap-3 p-3 bg-chart-5/10 rounded-xl border border-chart-5/30/50">
+                                    <AlertCircle className="h-4 w-4 text-chart-5" />
                                     <div>
-                                        <p className="text-base font-medium text-amber-600">
+                                        <p className="text-base font-medium text-chart-5">
                                             Expired
                                         </p>
-                                        <p className="text-base text-amber-600/80">
+                                        <p className="text-base text-chart-5/80">
                                             This medication needs review
                                         </p>
                                     </div>

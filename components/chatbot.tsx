@@ -6,6 +6,7 @@ import {
     MessageAvatar,
     MessageContent,
 } from "@/components/prompt-kit/message";
+import AgentAvatar from "@/components/smoothui/agent-avatar";
 import {
     PromptInput,
     PromptInputAction,
@@ -13,7 +14,7 @@ import {
     PromptInputTextarea,
 } from "@/components/prompt-kit/prompt-input";
 import { Button } from "@/components/ui/button";
-import { AlertCircle, ArrowUp, Bot, Square } from "lucide-react";
+import { AlertCircle, ArrowUp, Square } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface ChatMessage {
@@ -27,6 +28,16 @@ const INITIAL_MESSAGE: ChatMessage = {
     content: "Hello! How can I help you today?",
     timestamp: null,
 };
+
+function CuraAiAvatar({ size = 36 }: { size?: number }) {
+    return (
+        <AgentAvatar
+            seed="Harper"
+            size={size}
+            className="border border-border bg-card shadow-xs"
+        />
+    );
+}
 
 export default function Chatbot() {
     const [messages, setMessages] = useState<ChatMessage[]>([INITIAL_MESSAGE]);
@@ -123,9 +134,7 @@ export default function Chatbot() {
                         <div className="flex flex-col items-center justify-center py-8 text-center animate-in fade-in duration-300">
                             <div className="relative mb-6">
                                 <div className="flex size-20 items-center justify-center rounded-full border border-border bg-card shadow-sm">
-                                    <div className="flex size-16 items-center justify-center rounded-full bg-primary/10">
-                                        <Bot className="size-8 text-primary" />
-                                    </div>
+                                    <CuraAiAvatar size={64} />
                                 </div>
                                 <div className="absolute -right-1 -top-1 size-4 rounded-full border-2 border-background bg-secondary" />
                             </div>
@@ -157,25 +166,18 @@ export default function Chatbot() {
                                             "flex-row-reverse"
                                     )}
                                 >
-                                    <MessageAvatar
-                                        src={
-                                            msg.from === "user"
-                                                ? "/avatars/user.png"
-                                                : "/avatars/ai.png"
-                                        }
-                                        alt={
-                                            msg.from === "user" ? "User" : "AI"
-                                        }
-                                        fallback={
-                                            msg.from === "user" ? "U" : "AI"
-                                        }
-                                        className={cn(
-                                            "mt-1 size-9 border shadow-xs transition-transform duration-200 group-hover:scale-105",
-                                            msg.from === "user"
-                                                ? "border-primary/20 bg-primary/10 text-primary"
-                                                : "border-border bg-card text-secondary"
-                                        )}
-                                    />
+                                    {msg.from === "assistant" ? (
+                                        <div className="mt-1 transition-transform duration-200 group-hover:scale-105">
+                                            <CuraAiAvatar />
+                                        </div>
+                                    ) : (
+                                        <MessageAvatar
+                                            src="/avatars/user.png"
+                                            alt="User"
+                                            fallback="U"
+                                            className="mt-1 size-9 border border-primary/20 bg-primary/10 text-primary shadow-xs transition-transform duration-200 group-hover:scale-105"
+                                        />
+                                    )}
 
                                     <div className="flex-1 space-y-3">
                                         <div
@@ -230,12 +232,9 @@ export default function Chatbot() {
                         <div className="flex justify-start animate-in fade-in duration-200">
                             <div className="relative max-w-[75%]">
                                 <Message className="items-start">
-                                    <MessageAvatar
-                                        src="/avatars/ai.png"
-                                        alt="AI"
-                                        fallback="AI"
-                                        className="mt-1 size-9 border border-border bg-card text-secondary shadow-xs"
-                                    />
+                                    <div className="mt-1">
+                                        <CuraAiAvatar />
+                                    </div>
                                     <div className="flex-1 space-y-3">
                                         <div className="rounded-xl border border-border bg-card p-4 shadow-sm">
                                             <div className="space-y-2">

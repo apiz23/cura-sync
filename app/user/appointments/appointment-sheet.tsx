@@ -359,10 +359,10 @@ export default function AppointmentModal({
                                                     className={cn(
                                                         "w-1.5 h-1.5 rounded-full",
                                                         isBooked
-                                                            ? "bg-red-400"
+                                                            ? "bg-destructive"
                                                             : isSelected
                                                             ? "bg-primary"
-                                                            : "bg-green-500"
+                                                            : "bg-chart-3"
                                                     )}
                                                 />
                                                 <span className="text-base text-muted-foreground">

@@ -85,17 +85,17 @@ export function AppointmentSheet({
     const getStatusColor = (status: string) => {
         switch (status) {
             case "CONFIRMED":
-                return "bg-green-500/10 text-green-700 border-green-200";
+                return "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
             case "CHECKED_IN":
-                return "bg-blue-500/10 text-blue-700 border-blue-200";
+                return "border-sky-500/30 bg-sky-500/10 text-sky-700 dark:text-sky-300";
             case "CANCELLED":
-                return "bg-red-500/10 text-red-700 border-red-200";
+                return "border-destructive/30 bg-destructive/10 text-destructive";
             case "PENDING":
-                return "bg-amber-500/10 text-amber-700 border-amber-200";
+                return "border-amber-500/35 bg-amber-500/15 text-amber-800 dark:border-amber-400/40 dark:bg-amber-400/15 dark:text-amber-300";
             case "COMPLETED":
-                return "bg-blue-500/10 text-blue-700 border-blue-200";
+                return "border-violet-500/30 bg-violet-500/10 text-violet-700 dark:text-violet-300";
             default:
-                return "bg-gray-500/10 text-gray-700 border-gray-200";
+                return "bg-muted text-muted-foreground border-border";
         }
     };
 

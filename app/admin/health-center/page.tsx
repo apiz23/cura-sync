@@ -156,7 +156,7 @@ export default function EditFacilityPage() {
 
             toast.success("Facility updated successfully", {
                 description: "Changes have been saved",
-                icon: <CheckCircle className="w-5 h-5 text-green-500" />,
+                icon: <CheckCircle className="w-5 h-5 text-chart-3" />,
             });
 
             fetchFacilityData();
@@ -303,7 +303,7 @@ export default function EditFacilityPage() {
                                     >
                                         {facility.is_active ? (
                                             <>
-                                                <div className="w-2 h-2 rounded-full bg-green-500 animate-pulse" />
+                                                <div className="w-2 h-2 rounded-full bg-chart-3 animate-pulse" />
                                                 Active
                                             </>
                                         ) : (
@@ -465,7 +465,7 @@ export default function EditFacilityPage() {
                                             <span
                                                 className={
                                                     facility.is_active
-                                                        ? "text-green-600 font-medium"
+                                                        ? "text-chart-3 font-medium"
                                                         : "text-muted-foreground"
                                                 }
                                             >
@@ -530,8 +530,8 @@ export default function EditFacilityPage() {
                                                 )}
                                             >
                                                 <MarkerContent>
-                                                    <div className="size-10 rounded-full bg-primary border-4 border-white shadow-xl flex items-center justify-center">
-                                                        <Building2 className="w-5 h-5 text-white" />
+                                                    <div className="size-10 rounded-full bg-primary border-4 border-card shadow-xl flex items-center justify-center">
+                                                        <Building2 className="w-5 h-5 text-primary-foreground" />
                                                     </div>
                                                 </MarkerContent>
                                                 <MarkerTooltip>
@@ -712,8 +712,8 @@ export default function EditFacilityPage() {
                                                     )}
                                                 >
                                                     <MarkerContent>
-                                                        <div className="size-8 rounded-full bg-primary border-3 border-white shadow-lg flex items-center justify-center">
-                                                            <Building2 className="w-4 h-4 text-white" />
+                                                        <div className="size-8 rounded-full bg-primary border-3 border-card shadow-lg flex items-center justify-center">
+                                                            <Building2 className="w-4 h-4 text-primary-foreground" />
                                                         </div>
                                                     </MarkerContent>
                                                     <MarkerTooltip>
@@ -916,7 +916,7 @@ export default function EditFacilityPage() {
                                                 {/* Break Time */}
                                                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 pt-1 border-t border-dashed border-border/60">
                                                     <div className="flex items-center gap-2 md:col-span-1">
-                                                        <Clock className="h-4 w-4 text-amber-500" />
+                                                        <Clock className="h-4 w-4 text-chart-5" />
                                                         <span className="text-base font-medium text-muted-foreground">Break Time</span>
                                                         <span className="text-base text-muted-foreground">(optional)</span>
                                                     </div>
@@ -956,7 +956,7 @@ export default function EditFacilityPage() {
                                                     </div>
                                                     <div className="flex items-end pb-1">
                                                         {schedule.break_start && schedule.break_end && (
-                                                            <span className="text-base text-amber-600 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 px-2 py-1 rounded-md">
+                                                            <span className="text-base text-chart-5 bg-chart-5/10 dark:bg-chart-5/15 border border-chart-5/30 dark:border-chart-5/30 px-2 py-1 rounded-md">
                                                                 {schedule.break_start.slice(0, 5)} – {schedule.break_end.slice(0, 5)} blocked
                                                             </span>
                                                         )}

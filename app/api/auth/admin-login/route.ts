@@ -3,6 +3,7 @@ import supabase from "@/lib/supabase";
 import bcrypt from "bcryptjs";
 import { STAFF_SESSION_COOKIE, signStaffSession } from "@/lib/staff-session";
 import { normalizeStaffRole } from "@/lib/staff-role";
+import { logAudit } from "@/lib/audit";
 
 export async function POST(req: Request) {
     try {
@@ -93,6 +94,14 @@ export async function POST(req: Request) {
             secure: process.env.NODE_ENV === "production",
             path: "/",
             maxAge: 60 * 60 * 24 * 7,
+        });
+
+        void logAudit({
+            actor_id: user.id,
+            actor_type: "staff",
+            action: "LOGIN",
+            resource_type: "session",
+            metadata: { role: normalizedRole, facility_id: user.facility_id },
         });
 
         return res;
