@@ -6,6 +6,7 @@ import { z } from "zod";
 import {
     CheckCircle2,
     ClipboardList,
+    Globe2,
     Loader2,
     Send,
     Star,
@@ -22,8 +23,6 @@ import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { cn } from "@/lib/utils";
-
-// ── Zod schema (mirrors server schema) ───────────────────────────────────────
 
 const ROLES = [
     "Doctor",
@@ -49,6 +48,37 @@ const TESTED_PARTS = [
 
 const SUITABLE = ["Yes", "Maybe", "No"] as const;
 
+type Language = "en" | "ms";
+type LocalizedText = Record<Language, string>;
+
+const ROLE_LABELS: Record<(typeof ROLES)[number], LocalizedText> = {
+    Doctor: { en: "Doctor", ms: "Doktor" },
+    "Staff / Receptionist": { en: "Staff / Receptionist", ms: "Staf / Penyambut tetamu" },
+    Patient: { en: "Patient", ms: "Pesakit" },
+    Caregiver: { en: "Caregiver", ms: "Penjaga" },
+    Other: { en: "Other", ms: "Lain-lain" },
+};
+
+const TESTED_PART_LABELS: Record<(typeof TESTED_PARTS)[number], LocalizedText> = {
+    "Login / account access": { en: "Login / account access", ms: "Log masuk / akses akaun" },
+    "Appointment booking": { en: "Appointment booking", ms: "Tempahan janji temu" },
+    "Appointment check-in": { en: "Appointment check-in", ms: "Daftar masuk janji temu" },
+    "Doctor consultation workflow": { en: "Doctor consultation workflow", ms: "Aliran konsultasi doktor" },
+    "Medical record viewing": { en: "Medical record viewing", ms: "Melihat rekod perubatan" },
+    "Medical record update": { en: "Medical record update", ms: "Mengemas kini rekod perubatan" },
+    "Medication viewing": { en: "Medication viewing", ms: "Melihat ubat-ubatan" },
+    "AI symptom analyzer": { en: "AI symptom analyzer", ms: "Penganalisis simptom AI" },
+    "Health tracking / wearable sync": { en: "Health tracking / wearable sync", ms: "Penjejakan kesihatan / segerak wearable" },
+    "Audit trail": { en: "Audit trail", ms: "Jejak audit" },
+    Other: { en: "Other", ms: "Lain-lain" },
+};
+
+const SUITABLE_LABELS: Record<(typeof SUITABLE)[number], LocalizedText> = {
+    Yes: { en: "Yes", ms: "Ya" },
+    Maybe: { en: "Maybe", ms: "Mungkin" },
+    No: { en: "No", ms: "Tidak" },
+};
+
 const susRating = z.number().int().min(1).max(5);
 
 const schema = z.object({
@@ -57,24 +87,22 @@ const schema = z.object({
     used_during_session: z.boolean({
         error: "Please indicate whether you used CuraSync.",
     }),
-    // Keep as plain array — no .default(); defaultValues in useForm provides []
     tested_parts: z.array(z.string()),
 
-    sus_q4:  susRating,
-    sus_q5:  susRating,
-    sus_q6:  susRating,
-    sus_q7:  susRating,
-    sus_q8:  susRating,
-    sus_q9:  susRating,
+    sus_q4: susRating,
+    sus_q5: susRating,
+    sus_q6: susRating,
+    sus_q7: susRating,
+    sus_q8: susRating,
+    sus_q9: susRating,
     sus_q10: susRating,
     sus_q11: susRating,
     sus_q12: susRating,
     sus_q13: susRating,
 
-    // Optional free-text — no .default(); empty string defaults come from useForm
-    liked_most:             z.string().max(2000).optional(),
-    confusing_parts:        z.string().max(2000).optional(),
-    errors_faced:           z.string().max(2000).optional(),
+    liked_most: z.string().max(2000).optional(),
+    confusing_parts: z.string().max(2000).optional(),
+    errors_faced: z.string().max(2000).optional(),
     suggested_improvements: z.string().max(2000).optional(),
 
     suitable_for_clinic: z.enum(SUITABLE, {
@@ -84,22 +112,187 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
-// ── SUS question labels ───────────────────────────────────────────────────────
-
-const SUS_QUESTIONS: { key: keyof FormValues; text: string; qNum: number }[] = [
-    { key: "sus_q4",  qNum: 4,  text: "I think that I would like to use CuraSync frequently." },
-    { key: "sus_q5",  qNum: 5,  text: "I found CuraSync unnecessarily complex." },
-    { key: "sus_q6",  qNum: 6,  text: "I thought CuraSync was easy to use." },
-    { key: "sus_q7",  qNum: 7,  text: "I think that I would need help from a technical person to use CuraSync." },
-    { key: "sus_q8",  qNum: 8,  text: "I found the functions in CuraSync were well integrated." },
-    { key: "sus_q9",  qNum: 9,  text: "I thought there was too much inconsistency in CuraSync." },
-    { key: "sus_q10", qNum: 10, text: "I would imagine that most people would learn to use CuraSync very quickly." },
-    { key: "sus_q11", qNum: 11, text: "I found CuraSync very cumbersome to use." },
-    { key: "sus_q12", qNum: 12, text: "I felt confident using CuraSync." },
-    { key: "sus_q13", qNum: 13, text: "I needed to learn a lot of things before I could use CuraSync." },
+const SUS_QUESTIONS: { key: keyof FormValues; text: LocalizedText; qNum: number }[] = [
+    {
+        key: "sus_q4",
+        qNum: 4,
+        text: {
+            en: "I would use CuraSync regularly if it was available.",
+            ms: "Saya akan menggunakan CuraSync dengan kerap jika ia tersedia.",
+        },
+    },
+    {
+        key: "sus_q5",
+        qNum: 5,
+        text: {
+            en: "CuraSync felt more complicated than it needed to be.",
+            ms: "CuraSync terasa lebih rumit daripada yang sepatutnya.",
+        },
+    },
+    {
+        key: "sus_q6",
+        qNum: 6,
+        text: {
+            en: "CuraSync was easy for me to use.",
+            ms: "CuraSync mudah untuk saya gunakan.",
+        },
+    },
+    {
+        key: "sus_q7",
+        qNum: 7,
+        text: {
+            en: "I would need help from a technical person to use CuraSync.",
+            ms: "Saya memerlukan bantuan orang teknikal untuk menggunakan CuraSync.",
+        },
+    },
+    {
+        key: "sus_q8",
+        qNum: 8,
+        text: {
+            en: "The main features worked well together.",
+            ms: "Ciri-ciri utama berfungsi dengan baik bersama-sama.",
+        },
+    },
+    {
+        key: "sus_q9",
+        qNum: 9,
+        text: {
+            en: "Some parts of CuraSync felt inconsistent or did not match.",
+            ms: "Beberapa bahagian CuraSync terasa tidak konsisten atau tidak sepadan.",
+        },
+    },
+    {
+        key: "sus_q10",
+        qNum: 10,
+        text: {
+            en: "Most people would learn to use CuraSync quickly.",
+            ms: "Kebanyakan orang boleh belajar menggunakan CuraSync dengan cepat.",
+        },
+    },
+    {
+        key: "sus_q11",
+        qNum: 11,
+        text: {
+            en: "CuraSync felt slow, awkward, or hard to move through.",
+            ms: "CuraSync terasa lambat, tidak lancar, atau sukar digunakan.",
+        },
+    },
+    {
+        key: "sus_q12",
+        qNum: 12,
+        text: {
+            en: "I felt confident while using CuraSync.",
+            ms: "Saya berasa yakin semasa menggunakan CuraSync.",
+        },
+    },
+    {
+        key: "sus_q13",
+        qNum: 13,
+        text: {
+            en: "I had to learn too many things before I could use CuraSync.",
+            ms: "Saya perlu belajar terlalu banyak perkara sebelum boleh menggunakan CuraSync.",
+        },
+    },
 ];
 
-// ── Sub-components ────────────────────────────────────────────────────────────
+const COPY = {
+    en: {
+        languageButton: "BM",
+        languageLabel: "Switch to Malay",
+        pageTitle: "Pilot Testing Feedback",
+        successTitle: "Feedback - Thank You",
+        pilotLabel: "CuraSync - Clinic Pilot",
+        heading: "Usability Feedback Form",
+        intro:
+            "Please answer based on your experience testing CuraSync during the clinic pilot session. Your feedback will only be used for academic evaluation.",
+        academicBadge: "Academic evaluation",
+        questionCountBadge: "18 questions - about 3 min",
+        emailLabel: "Email address",
+        section1: "Participant Information",
+        roleQuestion: "1. What was your role during the test?",
+        usedQuestion: "2. Did you try CuraSync during the testing session?",
+        testedQuestion: "3. Which parts of CuraSync did you try?",
+        selectAll: "(Select all that apply)",
+        yes: "Yes",
+        no: "No",
+        section2: "Ease of Use Rating",
+        section2Subtitle: "Choose a number from 1 to 5 for each statement.",
+        disagree: "Strongly disagree",
+        agree: "Strongly agree",
+        allSusRequired: "Please rate all 10 statements above.",
+        section3: "Additional Feedback",
+        likedMost: "14. What did you like most about CuraSync?",
+        likedMostPlaceholder: "Share anything that worked well or felt useful...",
+        confusingParts: "15. What was confusing or difficult to use?",
+        confusingPartsPlaceholder: "Tell us which step, screen, or feature was unclear...",
+        errorsFaced: "16. Did you face any error, delay, or problem?",
+        errorsFacedPlaceholder: "Describe any errors, crashes, slow loading, or failed actions...",
+        suggestedImprovements: "17. What should we improve or add?",
+        suggestedImprovementsPlaceholder: "Share any feature, change, or idea that would help...",
+        suitableQuestion: "18. Overall, is CuraSync suitable for clinic use?",
+        submit: "Submit feedback",
+        submitting: "Submitting...",
+        validationSummary: "Please complete all required fields before submitting.",
+        toastLoading: "Submitting your feedback...",
+        toastSuccess: "Feedback submitted. Thank you!",
+        toastError: "Submission failed.",
+        successHeading: "Thank you for your feedback!",
+        successMessage:
+            "Your response has been recorded and will be used for the academic evaluation of CuraSync. We appreciate your time during the clinic pilot session.",
+        responseRecorded: "Response recorded",
+        susSubmitted: "Ease-of-use rating submitted",
+        academicOnly: "Academic evaluation only",
+        anotherResponse: "Submit another response",
+    },
+    ms: {
+        languageButton: "EN",
+        languageLabel: "Tukar ke Bahasa Inggeris",
+        pageTitle: "Maklum Balas Ujian Perintis",
+        successTitle: "Maklum Balas - Terima Kasih",
+        pilotLabel: "CuraSync - Ujian Perintis Klinik",
+        heading: "Borang Maklum Balas Kebolehgunaan",
+        intro:
+            "Sila jawab berdasarkan pengalaman anda mencuba CuraSync semasa sesi ujian perintis klinik. Maklum balas ini hanya digunakan untuk penilaian akademik.",
+        academicBadge: "Penilaian akademik",
+        questionCountBadge: "18 soalan - kira-kira 3 minit",
+        emailLabel: "Alamat e-mel",
+        section1: "Maklumat Peserta",
+        roleQuestion: "1. Apakah peranan anda semasa ujian ini?",
+        usedQuestion: "2. Adakah anda mencuba CuraSync semasa sesi ujian?",
+        testedQuestion: "3. Bahagian CuraSync yang mana anda cuba?",
+        selectAll: "(Pilih semua yang berkaitan)",
+        yes: "Ya",
+        no: "Tidak",
+        section2: "Penilaian Kemudahan Penggunaan",
+        section2Subtitle: "Pilih nombor 1 hingga 5 untuk setiap pernyataan.",
+        disagree: "Sangat tidak setuju",
+        agree: "Sangat setuju",
+        allSusRequired: "Sila beri penilaian untuk semua 10 pernyataan di atas.",
+        section3: "Maklum Balas Tambahan",
+        likedMost: "14. Apakah yang paling anda suka tentang CuraSync?",
+        likedMostPlaceholder: "Kongsikan perkara yang berfungsi dengan baik atau berguna...",
+        confusingParts: "15. Apakah yang mengelirukan atau sukar digunakan?",
+        confusingPartsPlaceholder: "Beritahu langkah, skrin, atau ciri yang tidak jelas...",
+        errorsFaced: "16. Adakah anda mengalami ralat, kelewatan, atau masalah?",
+        errorsFacedPlaceholder: "Terangkan ralat, crash, loading lambat, atau tindakan yang gagal...",
+        suggestedImprovements: "17. Apa yang patut kami tambah baik atau tambah?",
+        suggestedImprovementsPlaceholder: "Kongsikan ciri, perubahan, atau idea yang boleh membantu...",
+        suitableQuestion: "18. Secara keseluruhan, adakah CuraSync sesuai digunakan di klinik?",
+        submit: "Hantar maklum balas",
+        submitting: "Sedang dihantar...",
+        validationSummary: "Sila lengkapkan semua ruangan wajib sebelum menghantar.",
+        toastLoading: "Sedang menghantar maklum balas...",
+        toastSuccess: "Maklum balas telah dihantar. Terima kasih!",
+        toastError: "Penghantaran gagal.",
+        successHeading: "Terima kasih atas maklum balas anda!",
+        successMessage:
+            "Jawapan anda telah direkodkan dan akan digunakan untuk penilaian akademik CuraSync. Kami menghargai masa anda semasa sesi ujian perintis klinik.",
+        responseRecorded: "Jawapan direkodkan",
+        susSubmitted: "Penilaian kemudahan penggunaan dihantar",
+        academicOnly: "Untuk penilaian akademik sahaja",
+        anotherResponse: "Hantar jawapan lain",
+    },
+} satisfies Record<Language, Record<string, string>>;
 
 function SectionHeader({
     number,
@@ -167,7 +360,7 @@ function CheckOption({
             type="button"
             onClick={onToggle}
             className={cn(
-                "flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-sm font-medium transition-all duration-150 active:scale-[0.98] text-left",
+                "flex items-center gap-2.5 rounded-xl border px-4 py-2.5 text-left text-sm font-medium transition-all duration-150 active:scale-[0.98]",
                 checked
                     ? "border-primary bg-primary/10 text-primary"
                     : "border-border bg-muted/30 text-muted-foreground hover:border-primary/40 hover:bg-muted/60 hover:text-foreground",
@@ -194,12 +387,16 @@ function SusRatingRow({
     value,
     onChange,
     error,
+    disagreeLabel,
+    agreeLabel,
 }: {
     qNum: number;
     text: string;
     value: number | undefined;
     onChange: (v: number) => void;
     error?: string;
+    disagreeLabel: string;
+    agreeLabel: string;
 }) {
     return (
         <div className="space-y-3 rounded-xl border bg-muted/20 p-4">
@@ -209,7 +406,7 @@ function SusRatingRow({
             </p>
             <div className="flex flex-wrap items-center gap-2 sm:flex-nowrap">
                 <span className="w-32 shrink-0 text-xs text-muted-foreground">
-                    Strongly Disagree
+                    {disagreeLabel}
                 </span>
                 <div className="flex gap-2">
                     {[1, 2, 3, 4, 5].map((n) => (
@@ -217,6 +414,7 @@ function SusRatingRow({
                             key={n}
                             type="button"
                             onClick={() => onChange(n)}
+                            aria-label={`${n} - ${text}`}
                             className={cn(
                                 "h-10 w-10 rounded-lg border text-sm font-semibold transition-all duration-150 active:scale-95",
                                 value === n
@@ -229,7 +427,7 @@ function SusRatingRow({
                     ))}
                 </div>
                 <span className="w-24 shrink-0 text-right text-xs text-muted-foreground">
-                    Strongly Agree
+                    {agreeLabel}
                 </span>
             </div>
             {error && <p className="text-xs text-destructive">{error}</p>}
@@ -242,10 +440,10 @@ function FieldError({ message }: { message?: string }) {
     return <p className="text-xs text-destructive">{message}</p>;
 }
 
-// ── Main page ─────────────────────────────────────────────────────────────────
-
 export default function PilotFeedbackPage() {
     const [submitted, setSubmitted] = useState(false);
+    const [language, setLanguage] = useState<Language>("en");
+    const copy = COPY[language];
 
     const {
         register,
@@ -269,10 +467,9 @@ export default function PilotFeedbackPage() {
     const testedParts = watch("tested_parts") ?? [];
 
     const toggleTestedPart = (part: string) => {
-        const current = testedParts;
-        const next = current.includes(part)
-            ? current.filter((p) => p !== part)
-            : [...current, part];
+        const next = testedParts.includes(part)
+            ? testedParts.filter((p) => p !== part)
+            : [...testedParts, part];
         setValue("tested_parts", next, { shouldValidate: true });
     };
 
@@ -283,61 +480,53 @@ export default function PilotFeedbackPage() {
             body: JSON.stringify(data),
         }).then(async (res) => {
             const json = await res.json().catch(() => null);
-            if (!res.ok) throw new Error(json?.error ?? "Failed to submit feedback.");
+            if (!res.ok) throw new Error(json?.error ?? copy.toastError);
             return json;
         });
 
         toast.promise(sendPromise, {
-            loading: "Submitting your feedback…",
-            success: "Feedback submitted — thank you!",
-            error: (err) => (err instanceof Error ? err.message : "Submission failed."),
+            loading: copy.toastLoading,
+            success: copy.toastSuccess,
+            error: (err) => (err instanceof Error ? err.message : copy.toastError),
         });
 
         await sendPromise;
         setSubmitted(true);
     };
 
-    // ── Success screen ───────────────────────────────────────────────────────
     if (submitted) {
         return (
             <div className="public-grid-page public-dot-page flex min-h-[calc(100vh-4rem)] flex-col items-center justify-center px-4 py-24">
-                <PageTitle title="Feedback — Thank You" />
+                <PageTitle title={copy.successTitle} />
                 <div className="mx-auto w-full max-w-lg text-center">
-                    {/* Icon */}
                     <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10 ring-8 ring-primary/5">
                         <CheckCircle2 className="h-10 w-10 text-primary" />
                     </div>
 
-                    {/* Heading */}
                     <h1 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                        Thank you for your feedback!
+                        {copy.successHeading}
                     </h1>
                     <p className="mt-4 text-base leading-relaxed text-muted-foreground">
-                        Your response has been recorded and will be used for the
-                        academic evaluation of CuraSync. We appreciate your time during
-                        the clinic pilot session.
+                        {copy.successMessage}
                     </p>
 
-                    {/* Divider */}
                     <div className="my-8 border-t" />
 
-                    {/* Summary badges */}
                     <div className="flex flex-wrap justify-center gap-2">
                         <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
                             <CheckCircle2 className="h-3 w-3 text-primary" />
-                            Response recorded
+                            {copy.responseRecorded}
                         </Badge>
                         <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
                             <Star className="h-3 w-3 text-primary" />
-                            SUS rating submitted
+                            {copy.susSubmitted}
                         </Badge>
                         <Badge variant="outline" className="gap-1.5 px-3 py-1.5 text-xs">
                             <ClipboardList className="h-3 w-3 text-primary" />
-                            Academic evaluation only
+                            {copy.academicOnly}
                         </Badge>
                     </div>
 
-                    {/* Action */}
                     <div className="mt-10">
                         <Button
                             variant="outline"
@@ -345,7 +534,7 @@ export default function PilotFeedbackPage() {
                             className="w-full sm:w-auto"
                             onClick={() => setSubmitted(false)}
                         >
-                            Submit another response
+                            {copy.anotherResponse}
                         </Button>
                     </div>
                 </div>
@@ -353,51 +542,56 @@ export default function PilotFeedbackPage() {
         );
     }
 
-    // ── Form ─────────────────────────────────────────────────────────────────
     return (
-        <div className="public-grid-page public-dot-page px-4 pb-16 pt-20">
-            <PageTitle title="Pilot Testing Feedback" />
+        <div className="public-grid-page public-dot-page px-4 pb-16">
+            <PageTitle title={copy.pageTitle} />
             <div className="mx-auto max-w-3xl space-y-6 pt-8">
-
-                {/* Hero header */}
-                <div className="public-text-panel space-y-3 p-6">
-                    <div className="flex items-center gap-3">
-                        <BrandLogo className="h-12 w-12 shrink-0" imageClassName="p-1" />
-                        <div>
-                            <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
-                                CuraSync — Clinic Pilot
-                            </p>
-                            <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground">
-                                Usability Feedback Form
-                            </h1>
+                <div className="public-text-panel space-y-4 p-6">
+                    <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                        <div className="flex items-center gap-3">
+                            <BrandLogo className="h-12 w-12 shrink-0" imageClassName="p-1" />
+                            <div>
+                                <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-muted-foreground">
+                                    {copy.pilotLabel}
+                                </p>
+                                <h1 className="text-3xl font-bold leading-tight tracking-tight text-foreground">
+                                    {copy.heading}
+                                </h1>
+                            </div>
                         </div>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            className="w-full shrink-0 gap-2 sm:w-auto"
+                            onClick={() => setLanguage((current) => (current === "en" ? "ms" : "en"))}
+                            aria-label={copy.languageLabel}
+                        >
+                            <Globe2 className="h-4 w-4" />
+                            {copy.languageButton}
+                        </Button>
                     </div>
-                    <p className="pl-[60px] text-sm leading-relaxed text-muted-foreground">
-                        This form is used to collect feedback after testing the CuraSync
-                        healthcare platform during the clinic pilot session. Please answer
-                        based on your experience using the system. Your response will be
-                        used for academic evaluation only.
+                    <p className="text-sm leading-relaxed text-muted-foreground sm:pl-[60px]">
+                        {copy.intro}
                     </p>
-                    <div className="flex flex-wrap gap-2 pl-[60px]">
+                    <div className="flex flex-wrap gap-2 sm:pl-[60px]">
                         <Badge variant="outline" className="gap-1.5">
                             <Star className="h-3 w-3" />
-                            Academic evaluation
+                            {copy.academicBadge}
                         </Badge>
                         <Badge variant="outline" className="gap-1.5">
                             <ClipboardList className="h-3 w-3" />
-                            18 questions · ~3 min
+                            {copy.questionCountBadge}
                         </Badge>
                     </div>
                 </div>
 
                 <form onSubmit={handleSubmit(onSubmit)} noValidate className="space-y-6">
-
-                    {/* ── Email ─────────────────────────────────────────── */}
                     <Card className="border">
                         <CardContent className="space-y-3 p-6">
                             <div className="space-y-1.5">
                                 <Label htmlFor="email" className="text-sm font-medium">
-                                    Email address <span className="text-destructive">*</span>
+                                    {copy.emailLabel} <span className="text-destructive">*</span>
                                 </Label>
                                 <Input
                                     id="email"
@@ -411,33 +605,27 @@ export default function PilotFeedbackPage() {
                         </CardContent>
                     </Card>
 
-                    {/* ── Section 1: Participant Information ─────────────── */}
                     <Card className="border">
                         <CardContent className="space-y-6 p-6">
-                            <SectionHeader
-                                number="1"
-                                title="Participant Information"
-                            />
+                            <SectionHeader number="1" title={copy.section1} />
                             <Separator />
 
-                            {/* Q1 — Role */}
                             <div className="space-y-3">
                                 <Label className="text-sm font-medium">
-                                    1. What is your role during the testing session?{" "}
-                                    <span className="text-destructive">*</span>
+                                    {copy.roleQuestion} <span className="text-destructive">*</span>
                                 </Label>
                                 <Controller
                                     name="role"
                                     control={control}
                                     render={({ field }) => (
                                         <div className="flex flex-wrap gap-2">
-                                            {ROLES.map((r) => (
+                                            {ROLES.map((role) => (
                                                 <ChoiceButton
-                                                    key={r}
-                                                    selected={field.value === r}
-                                                    onClick={() => field.onChange(r)}
+                                                    key={role}
+                                                    selected={field.value === role}
+                                                    onClick={() => field.onChange(role)}
                                                 >
-                                                    {r}
+                                                    {ROLE_LABELS[role][language]}
                                                 </ChoiceButton>
                                             ))}
                                         </div>
@@ -446,11 +634,9 @@ export default function PilotFeedbackPage() {
                                 <FieldError message={errors.role?.message} />
                             </div>
 
-                            {/* Q2 — Used during session */}
                             <div className="space-y-3">
                                 <Label className="text-sm font-medium">
-                                    2. Did you use CuraSync during the testing session?{" "}
-                                    <span className="text-destructive">*</span>
+                                    {copy.usedQuestion} <span className="text-destructive">*</span>
                                 </Label>
                                 <Controller
                                     name="used_during_session"
@@ -461,13 +647,13 @@ export default function PilotFeedbackPage() {
                                                 selected={field.value === true}
                                                 onClick={() => field.onChange(true)}
                                             >
-                                                Yes
+                                                {copy.yes}
                                             </ChoiceButton>
                                             <ChoiceButton
                                                 selected={field.value === false}
                                                 onClick={() => field.onChange(false)}
                                             >
-                                                No
+                                                {copy.no}
                                             </ChoiceButton>
                                         </div>
                                     )}
@@ -475,19 +661,18 @@ export default function PilotFeedbackPage() {
                                 <FieldError message={errors.used_during_session?.message} />
                             </div>
 
-                            {/* Q3 — Tested parts */}
                             <div className="space-y-3">
                                 <Label className="text-sm font-medium">
-                                    3. Which part(s) of CuraSync did you test?{" "}
+                                    {copy.testedQuestion}{" "}
                                     <span className="text-xs font-normal text-muted-foreground">
-                                        (Select all that apply)
+                                        {copy.selectAll}
                                     </span>
                                 </Label>
                                 <div className="flex flex-wrap gap-2">
                                     {TESTED_PARTS.map((part) => (
                                         <CheckOption
                                             key={part}
-                                            label={part}
+                                            label={TESTED_PART_LABELS[part][language]}
                                             checked={testedParts.includes(part)}
                                             onToggle={() => toggleTestedPart(part)}
                                         />
@@ -497,13 +682,12 @@ export default function PilotFeedbackPage() {
                         </CardContent>
                     </Card>
 
-                    {/* ── Section 2: System Usability Scale ──────────────── */}
                     <Card className="border">
                         <CardContent className="space-y-6 p-6">
                             <SectionHeader
                                 number="2"
-                                title="System Usability Scale (SUS)"
-                                subtitle="For each statement, select one answer from 1 (Strongly Disagree) to 5 (Strongly Agree)."
+                                title={copy.section2}
+                                subtitle={copy.section2Subtitle}
                             />
                             <Separator />
 
@@ -516,9 +700,11 @@ export default function PilotFeedbackPage() {
                                         render={({ field }) => (
                                             <SusRatingRow
                                                 qNum={qNum}
-                                                text={text}
+                                                text={text[language]}
                                                 value={field.value as number | undefined}
                                                 onChange={field.onChange}
+                                                disagreeLabel={copy.disagree}
+                                                agreeLabel={copy.agree}
                                                 error={
                                                     (errors[key] as { message?: string } | undefined)?.message
                                                 }
@@ -528,85 +714,74 @@ export default function PilotFeedbackPage() {
                                 ))}
                             </div>
 
-                            {/* Show a top-level error if any SUS fields are missing */}
                             {SUS_QUESTIONS.some(({ key }) => errors[key]) && (
                                 <p className="text-xs text-destructive">
-                                    Please rate all 10 usability statements above.
+                                    {copy.allSusRequired}
                                 </p>
                             )}
                         </CardContent>
                     </Card>
 
-                    {/* ── Section 3: Additional Feedback ─────────────────── */}
                     <Card className="border">
                         <CardContent className="space-y-6 p-6">
-                            <SectionHeader
-                                number="3"
-                                title="Additional Feedback"
-                            />
+                            <SectionHeader number="3" title={copy.section3} />
                             <Separator />
 
-                            {/* Q14 */}
                             <div className="space-y-2">
                                 <Label htmlFor="liked_most" className="text-sm font-medium">
-                                    14. What did you like most about CuraSync?
+                                    {copy.likedMost}
                                 </Label>
                                 <Textarea
                                     id="liked_most"
                                     rows={3}
-                                    placeholder="Share what impressed or delighted you…"
+                                    placeholder={copy.likedMostPlaceholder}
                                     className="resize-none"
                                     {...register("liked_most")}
                                 />
                             </div>
 
-                            {/* Q15 */}
                             <div className="space-y-2">
                                 <Label htmlFor="confusing_parts" className="text-sm font-medium">
-                                    15. What part of CuraSync was confusing or difficult to use?
+                                    {copy.confusingParts}
                                 </Label>
                                 <Textarea
                                     id="confusing_parts"
                                     rows={3}
-                                    placeholder="Describe any confusing steps or screens…"
+                                    placeholder={copy.confusingPartsPlaceholder}
                                     className="resize-none"
                                     {...register("confusing_parts")}
                                 />
                             </div>
 
-                            {/* Q16 */}
                             <div className="space-y-2">
                                 <Label htmlFor="errors_faced" className="text-sm font-medium">
-                                    16. Did you face any error, delay, or problem while using the system?
+                                    {copy.errorsFaced}
                                 </Label>
                                 <Textarea
                                     id="errors_faced"
                                     rows={3}
-                                    placeholder="Describe any errors, crashes, or slow responses…"
+                                    placeholder={copy.errorsFacedPlaceholder}
                                     className="resize-none"
                                     {...register("errors_faced")}
                                 />
                             </div>
 
-                            {/* Q17 */}
                             <div className="space-y-2">
                                 <Label htmlFor="suggested_improvements" className="text-sm font-medium">
-                                    17. What feature would you suggest improving or adding?
+                                    {copy.suggestedImprovements}
                                 </Label>
                                 <Textarea
                                     id="suggested_improvements"
                                     rows={3}
-                                    placeholder="Any features you wish existed or worked differently…"
+                                    placeholder={copy.suggestedImprovementsPlaceholder}
                                     className="resize-none"
                                     {...register("suggested_improvements")}
                                 />
                             </div>
 
-                            {/* Q18 */}
                             <div className="space-y-3">
                                 <Label className="text-sm font-medium">
-                                    18. Overall, do you think CuraSync is suitable for clinic use?{" "}
-                                    <span className="text-destructive">*</span>
+                                    {copy.suitableQuestion} <span className="text-destructive">*</span>
                                 </Label>
                                 <Controller
                                     name="suitable_for_clinic"
@@ -620,7 +795,7 @@ export default function PilotFeedbackPage() {
                                                     onClick={() => field.onChange(opt)}
                                                     className="min-w-[72px] justify-center"
                                                 >
-                                                    {opt}
+                                                    {SUITABLE_LABELS[opt][language]}
                                                 </ChoiceButton>
                                             ))}
                                         </div>
@@ -631,7 +806,6 @@ export default function PilotFeedbackPage() {
                         </CardContent>
                     </Card>
 
-                    {/* ── Submit ─────────────────────────────────────────── */}
                     <Button
                         type="submit"
                         size="lg"
@@ -641,20 +815,19 @@ export default function PilotFeedbackPage() {
                         {isSubmitting ? (
                             <>
                                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                                Submitting…
+                                {copy.submitting}
                             </>
                         ) : (
                             <>
                                 <Send className="mr-2 h-4 w-4" />
-                                Submit feedback
+                                {copy.submit}
                             </>
                         )}
                     </Button>
 
-                    {/* Show top-level validation summary if user tries to submit with errors */}
                     {Object.keys(errors).length > 0 && (
                         <p className="text-center text-sm text-destructive">
-                            Please complete all required fields before submitting.
+                            {copy.validationSummary}
                         </p>
                     )}
                 </form>
