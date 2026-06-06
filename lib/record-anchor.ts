@@ -57,11 +57,6 @@ export type AnchorResult = {
 	error?: string;
 };
 
-/**
- * Hash a record + register it on Polygon Amoy + write audit log w/ proof.
- * Never throws — failures are logged into audit metadata so the original
- * Supabase insert never gets rolled back.
- */
 export async function anchorRecord(input: AnchorInput): Promise<AnchorResult> {
 	const fields = HASHABLE_FIELDS[input.table] ?? Object.keys(input.row);
 	const hashable = pickHashableFields(input.row, fields);

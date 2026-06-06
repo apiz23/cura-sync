@@ -344,9 +344,6 @@ export async function POST(req: Request) {
             );
         }
 
-        // Ensure the patient is linked to the facility. If not, create the
-        // active facility registration during booking so the user journey
-        // does not depend on prior manual admin registration.
         const { data: registration, error: regError } = await supabase
             .from("cura_patient_facilities")
             .select("id")

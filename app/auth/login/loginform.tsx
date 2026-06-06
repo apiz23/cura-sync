@@ -70,7 +70,7 @@ export function LoginForm({
 			});
 			await signIn.authenticateWithRedirect({
 				strategy: strategy,
-				redirectUrl: "/user/sso-callback",
+				redirectUrl: `${window.location.origin}/user/sso-callback`,
 				redirectUrlComplete: nextPath,
 			});
 		} catch (err: unknown) {

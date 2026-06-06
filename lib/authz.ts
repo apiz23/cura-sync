@@ -54,8 +54,6 @@ export async function requirePatientSession(
         userId = browserAuth.userId;
     }
 
-    // Ensure this Clerk user has a patient profile row. Auto-provision on first
-    // call (handles mobile clients that never hit /api/auth/sync).
     let { data, error } = await supabase
         .from("cura_profiles")
         .select("role")
@@ -70,6 +68,16 @@ export async function requirePatientSession(
     }
 
     if (!data) {
+        // Profile not found by Clerk ID — check if same email exists (e.g. dev→prod Clerk migration)
+        const emailMatch = await findProfileByClerkEmail(userId);
+        if (emailMatch) {
+            const role = String(emailMatch.role ?? "").toLowerCase();
+            if (role !== "patient") {
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+            }
+            return { kind: "patient", profileId: emailMatch.id };
+        }
+
         const provisioned = await provisionPatientProfile(userId);
         if (provisioned instanceof NextResponse) return provisioned;
         data = provisioned;
@@ -81,6 +89,29 @@ export async function requirePatientSession(
     }
 
     return { kind: "patient", profileId: userId };
+}
+
+async function findProfileByClerkEmail(
+    userId: string
+): Promise<{ id: string; role: string } | null> {
+    try {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(userId);
+        const email = clerkUser.emailAddresses[0]?.emailAddress;
+        if (!email) return null;
+
+        const { data } = await supabaseAdmin
+            .from("cura_profiles")
+            .select("id, role")
+            .eq("email", email)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+
+        return data ?? null;
+    } catch {
+        return null;
+    }
 }
 
 async function provisionPatientProfile(

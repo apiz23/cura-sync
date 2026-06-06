@@ -142,9 +142,6 @@ export async function PATCH(
         return NextResponse.json({ error: "Appointment not found" }, { status: 404 });
     }
 
-    // Staff JWT takes priority over Clerk session. A staff member may have a residual
-    // Clerk session in their browser — checking staff first prevents them being
-    // misclassified as a patient by requireAnySession.
     const staffSession = await requireStaffSession(req);
     if (!(staffSession instanceof NextResponse)) {
         const session = staffSession;
@@ -160,10 +157,6 @@ export async function PATCH(
     const nextStatus = parsedStatus.data;
     const role = String(session.role ?? "").toLowerCase();
 
-    // Tight role-based permissions (realistic clinic workflow):
-    // - staff: confirm/cancel/check-in only
-    // - doctor: complete only (after check-in)
-    // - admin: override (any status, any transition)
     if (!session.isAdmin) {
         if (
             role === "staff" &&
