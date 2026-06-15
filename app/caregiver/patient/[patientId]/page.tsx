@@ -59,10 +59,12 @@ export default function CaregiverPatientPage() {
     const [healthError, setHealthError] = useState<string | null>(null);
 
     const [appointments, setAppointments] = useState<Appointment[]>([]);
+    const [hasFetchedAppts, setHasFetchedAppts] = useState(false);
     const [apptLoading, setApptLoading] = useState(false);
     const [apptError, setApptError] = useState<string | null>(null);
 
     const [medications, setMedications] = useState<Medication[]>([]);
+    const [hasFetchedMeds, setHasFetchedMeds] = useState(false);
     const [medsLoading, setMedsLoading] = useState(false);
     const [medsError, setMedsError] = useState<string | null>(null);
 
@@ -72,7 +74,7 @@ export default function CaregiverPatientPage() {
         if (role !== "caregiver") { setAuthorized(false); return; }
 
         fetch("/api/caregiver/patients")
-            .then((r) => r.json())
+            .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then((body: { data: LinkedPatient[] }) => {
                 const match = (body.data ?? []).find((l) => l.patient.id === patientId);
                 if (!match) { setAuthorized(false); return; }
@@ -85,7 +87,7 @@ export default function CaregiverPatientPage() {
     useEffect(() => {
         if (authorized !== true) return;
         fetch(`/api/caregiver/patients/${patientId}/health-sync?days=7`)
-            .then((r) => r.json())
+            .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then((json) => {
                 setSnapshots(json?.data?.recent ?? []);
                 setLatest(json?.data?.latest ?? null);
@@ -95,24 +97,26 @@ export default function CaregiverPatientPage() {
     }, [authorized, patientId]);
 
     useEffect(() => {
-        if (authorized !== true || activeTab !== "appointments" || appointments.length > 0) return;
+        if (authorized !== true || activeTab !== "appointments" || hasFetchedAppts) return;
+        setHasFetchedAppts(true);
         setApptLoading(true);
         fetch(`/api/caregiver/patients/${patientId}/appointments`)
-            .then((r) => r.json())
+            .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then((json) => setAppointments(json?.data ?? []))
             .catch((err: unknown) => setApptError(err instanceof Error ? err.message : "Failed"))
             .finally(() => setApptLoading(false));
-    }, [authorized, patientId, activeTab, appointments.length]);
+    }, [authorized, patientId, activeTab, hasFetchedAppts]);
 
     useEffect(() => {
-        if (authorized !== true || activeTab !== "medications" || medications.length > 0) return;
+        if (authorized !== true || activeTab !== "medications" || hasFetchedMeds) return;
+        setHasFetchedMeds(true);
         setMedsLoading(true);
         fetch(`/api/caregiver/patients/${patientId}/medications`)
-            .then((r) => r.json())
+            .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
             .then((json) => setMedications(json?.data ?? json ?? []))
             .catch((err: unknown) => setMedsError(err instanceof Error ? err.message : "Failed"))
             .finally(() => setMedsLoading(false));
-    }, [authorized, patientId, activeTab, medications.length]);
+    }, [authorized, patientId, activeTab, hasFetchedMeds]);
 
     if (!isLoaded || authorized === null) {
         return (
@@ -151,7 +155,7 @@ export default function CaregiverPatientPage() {
             <div className="border-b border-border bg-card">
                 <div className="mx-auto max-w-[960px] px-4 py-4 md:px-6">
                     <div className="flex items-center gap-3">
-                        <Button variant="ghost" size="icon" onClick={() => router.push("/caregiver/dashboard")} className="rounded-full">
+                        <Button variant="ghost" size="icon" onClick={() => router.push("/caregiver/dashboard")} className="rounded-full" aria-label="Back to dashboard">
                             <ArrowLeft className="h-4 w-4" />
                         </Button>
                         <span className="font-semibold text-foreground">{patientName ?? "Patient"}</span>
