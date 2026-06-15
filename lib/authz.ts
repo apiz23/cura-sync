@@ -307,17 +307,29 @@ export async function requireCaregiverSession(
         userId = browserAuth.userId;
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
         .from("cura_profiles")
         .select("role")
         .eq("id", userId)
         .maybeSingle();
 
-    if (error || !data) {
+    if (error) {
+        return NextResponse.json({ error: "Profile lookup failed" }, { status: 500 });
+    }
+
+    if (!data) {
+        const emailMatch = await findProfileByClerkEmail(userId);
+        if (emailMatch) {
+            const role = String(emailMatch.role ?? "").toLowerCase();
+            if (role !== "caregiver") {
+                return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+            }
+            return { kind: "caregiver", profileId: emailMatch.id };
+        }
         return NextResponse.json({ error: "Profile not found" }, { status: 404 });
     }
 
-    if (data.role !== "caregiver") {
+    if (String(data.role ?? "").toLowerCase() !== "caregiver") {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
