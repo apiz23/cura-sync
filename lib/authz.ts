@@ -285,3 +285,41 @@ function setCachedStaffSessionVersion(
 function clearCachedStaffSessionVersion(staffId: string): void {
     staffSessionVersionCache.delete(staffId);
 }
+
+export type CaregiverSession = {
+    kind: "caregiver";
+    profileId: string;
+};
+
+export async function requireCaregiverSession(
+    req?: Request
+): Promise<CaregiverSession | NextResponse> {
+    let userId: string;
+    if (req) {
+        const mobileOrBrowserUserId = await requireMobileOrBrowserUserId(req);
+        if (mobileOrBrowserUserId instanceof NextResponse) return mobileOrBrowserUserId;
+        userId = mobileOrBrowserUserId;
+    } else {
+        const browserAuth = await auth();
+        if (!browserAuth.userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        userId = browserAuth.userId;
+    }
+
+    const { data, error } = await supabase
+        .from("cura_profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+
+    if (error || !data) {
+        return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
+
+    if (data.role !== "caregiver") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
+
+    return { kind: "caregiver", profileId: userId };
+}
