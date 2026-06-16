@@ -65,6 +65,7 @@ import { toast } from "sonner";
 import { z } from "zod";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { FieldError } from "@/components/ui/field";
+import { CaregiverInviteCard } from "@/components/caregiver-invite-card";
 
 interface PatientProfile {
     profile_id: string;
@@ -895,6 +896,12 @@ export default function ProfilePage() {
                     </Card>
                 </div>
             </div>
+
+            {((user?.publicMetadata?.role as string | undefined) === "patient" || !(user?.publicMetadata?.role)) ? (
+                <div className="mt-6">
+                    <CaregiverInviteCard />
+                </div>
+            ) : null}
         </UserPageShell>
     );
 }
