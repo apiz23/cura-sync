@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         .from("cura_caregiver_links")
         .select("id")
         .eq("caregiver_profile_id", caregiverId)
-        .eq("patient", patientId)
+        .eq("patient_profile_id", patientId)
         .eq("status", "ACTIVE")
         .maybeSingle();
 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         .from("cura_caregiver_links")
         .insert({
             caregiver_profile_id: caregiverId,
-            patient: patientId,
+            patient_profile_id: patientId,
             relationship: relationship || null,
             status: "ACTIVE",
         });
@@ -68,10 +68,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Mark invite as used.
-    await supabaseAdmin
+    const { error: markError } = await supabaseAdmin
         .from("cura_caregiver_invite_codes")
         .update({ used_at: new Date().toISOString(), used_by: caregiverId })
         .eq("id", invite.id);
+    if (markError) {
+        console.error("Failed to mark invite as used:", markError);
+    }
 
     // Fetch patient name for the success message.
     const { data: patient } = await supabaseAdmin
