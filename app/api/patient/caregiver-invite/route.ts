@@ -14,11 +14,15 @@ export async function POST(req: NextRequest) {
     const expiresAt = new Date(Date.now() + 15 * 60 * 1000).toISOString();
 
     // Delete any existing unused codes for this patient so only one is active at a time.
-    await supabaseAdmin
+    const { error: deleteError } = await supabaseAdmin
         .from("cura_caregiver_invite_codes")
         .delete()
         .eq("patient_id", patientId)
         .is("used_at", null);
+
+    if (deleteError) {
+        return NextResponse.json({ error: "Failed to generate code" }, { status: 500 });
+    }
 
     const code = generateCode();
 
@@ -30,5 +34,5 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: "Failed to generate code" }, { status: 500 });
     }
 
-    return NextResponse.json({ data: { code, expiresAt } });
+    return NextResponse.json({ data: { code, expiresAt } }, { status: 201 });
 }
