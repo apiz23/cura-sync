@@ -1155,7 +1155,7 @@ export default function SymptomsCheckPage() {
 											className="w-full rounded-lg border border-border/60 bg-muted/10 p-3 text-left transition-colors hover:bg-muted/20"
 										>
 											<div className="flex items-center justify-between gap-2">
-												<p className="truncate text-sm font-medium text-foreground">
+												<p className="min-w-0 truncate text-sm font-medium text-foreground">
 													{item.possible_disease || "Analysis"}
 												</p>
 												<span
