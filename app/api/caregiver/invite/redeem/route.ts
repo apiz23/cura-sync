@@ -1,10 +1,18 @@
 import { NextRequest, NextResponse } from "next/server";
-import { requireCaregiverSession } from "@/lib/authz";
+import { clerkClient } from "@clerk/nextjs/server";
+import { requireAnySession } from "@/lib/authz";
 import supabaseAdmin from "@/lib/supabase-admin";
 
 export async function POST(req: NextRequest) {
-    const session = await requireCaregiverSession(req);
+    // Redeeming a code is how a user BECOMES a caregiver — it must not require
+    // being one already. requireAnySession accepts any authenticated Clerk
+    // user (patient or existing caregiver) and rejects only staff/admin/doctor
+    // sessions, which use a separate auth system entirely.
+    const session = await requireAnySession(req);
     if (session instanceof NextResponse) return session;
+    if (session.kind !== "patient") {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+    }
 
     const caregiverId = session.profileId;
 
@@ -74,6 +82,36 @@ export async function POST(req: NextRequest) {
         .eq("id", invite.id);
     if (markError) {
         console.error("Failed to mark invite as used:", markError);
+    }
+
+    // Promote to "caregiver" if this is their first link — the auth gate above
+    // only required *any* signed-in account, so a first-time redeemer is still
+    // role "patient" at this point. Update both Supabase (source of truth for
+    // server-side role checks) and Clerk's publicMetadata (source of truth for
+    // the mobile app's tab visibility) so the Care tab appears immediately.
+    const { data: profile } = await supabaseAdmin
+        .from("cura_profiles")
+        .select("role")
+        .eq("id", caregiverId)
+        .maybeSingle();
+
+    if (String(profile?.role ?? "").toLowerCase() !== "caregiver") {
+        const { error: roleError } = await supabaseAdmin
+            .from("cura_profiles")
+            .update({ role: "caregiver", updated_at: new Date().toISOString() })
+            .eq("id", caregiverId);
+        if (roleError) {
+            console.error("Failed to promote profile role to caregiver:", roleError);
+        }
+
+        try {
+            const client = await clerkClient();
+            await client.users.updateUserMetadata(caregiverId, {
+                publicMetadata: { role: "caregiver" },
+            });
+        } catch (err) {
+            console.error("Failed to update Clerk publicMetadata role:", err);
+        }
     }
 
     // Fetch patient name for the success message.
