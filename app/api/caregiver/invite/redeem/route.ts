@@ -45,7 +45,7 @@ export async function POST(req: NextRequest) {
         .from("cura_caregiver_links")
         .select("id")
         .eq("caregiver_profile_id", caregiverId)
-        .eq("patient_profile_id", patientId)
+        .eq("patient", patientId)
         .eq("status", "ACTIVE")
         .maybeSingle();
 
@@ -58,7 +58,7 @@ export async function POST(req: NextRequest) {
         .from("cura_caregiver_links")
         .insert({
             caregiver_profile_id: caregiverId,
-            patient_profile_id: patientId,
+            patient: patientId,
             relationship: relationship || null,
             status: "ACTIVE",
         });
