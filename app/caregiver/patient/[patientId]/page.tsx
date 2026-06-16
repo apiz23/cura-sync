@@ -113,7 +113,7 @@ export default function CaregiverPatientPage() {
         setMedsLoading(true);
         fetch(`/api/caregiver/patients/${patientId}/medications`)
             .then((r) => { if (!r.ok) throw new Error(`HTTP ${r.status}`); return r.json(); })
-            .then((json) => setMedications(json?.data ?? json ?? []))
+            .then((json) => setMedications(json?.data ?? []))
             .catch((err: unknown) => setMedsError(err instanceof Error ? err.message : "Failed"))
             .finally(() => setMedsLoading(false));
     }, [authorized, patientId, activeTab, hasFetchedMeds]);
@@ -166,6 +166,8 @@ export default function CaregiverPatientPage() {
                         {tabs.map((tab) => (
                             <button
                                 key={tab.id}
+                                role="tab"
+                                aria-selected={activeTab === tab.id}
                                 onClick={() => setActiveTab(tab.id)}
                                 className={`flex items-center gap-2 px-4 py-3 text-sm font-medium border-b-2 transition-colors ${
                                     activeTab === tab.id
