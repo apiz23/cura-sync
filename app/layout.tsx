@@ -4,6 +4,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { Toaster } from "@/components/ui/sonner";
 import { Geist, Geist_Mono, Noto_Serif_Georgian } from "next/font/google";
 import "./globals.css";
+import { Analytics } from "@vercel/analytics/next";
 
 const sans = Geist({
 	subsets: ["latin"],
@@ -90,6 +91,7 @@ export default function RootLayout({
 				suppressHydrationWarning
 			>
 				<body className="bg-background text-foreground font-sans antialiased">
+					<Analytics />
 					<ThemeProvider
 						attribute="class"
 						defaultTheme="dark"
