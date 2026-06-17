@@ -12,6 +12,18 @@ export async function GET(req: Request) {
     const fromParam = url.searchParams.get("from");
     const toParam = url.searchParams.get("to");
 
+    const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+    if (fromParam !== null && !DATE_RE.test(fromParam)) {
+        return NextResponse.json({ error: "Invalid date format. Use YYYY-MM-DD." }, { status: 400 });
+    }
+    if (toParam !== null && !DATE_RE.test(toParam)) {
+        return NextResponse.json({ error: "Invalid date format. Use YYYY-MM-DD." }, { status: 400 });
+    }
+    if (fromParam !== null && toParam !== null && fromParam > toParam) {
+        return NextResponse.json({ error: "from must be before or equal to to" }, { status: 400 });
+    }
+
     let since: string;
     let until: string;
 
@@ -109,6 +121,8 @@ export async function GET(req: Request) {
         totalAppointmentsInRange: appts.length,
         statusBreakdown,
         staffByRole,
+        // These fields always reflect the current and previous calendar month, regardless of the
+        // from/to range. They will be 0 when the queried range excludes those months.
         totalAppointmentsThisMonth: byMonth[thisMonthKey] ?? 0,
         totalAppointmentsLastMonth: byMonth[lastMonthKey] ?? 0,
     });
