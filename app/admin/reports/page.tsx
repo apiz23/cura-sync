@@ -40,11 +40,11 @@ type AnalyticsData = {
 };
 
 const STATUS_COLORS: Record<string, string> = {
-    PENDING: "hsl(var(--chart-4))",
-    CONFIRMED: "hsl(var(--chart-2))",
-    CHECKED_IN: "hsl(var(--chart-1))",
-    COMPLETED: "hsl(var(--chart-3))",
-    CANCELLED: "hsl(var(--destructive))",
+    PENDING: "var(--chart-4)",
+    CONFIRMED: "var(--chart-2)",
+    CHECKED_IN: "var(--chart-1)",
+    COMPLETED: "var(--chart-3)",
+    CANCELLED: "var(--destructive)",
 };
 
 function getDefaultFrom(): string {
@@ -118,12 +118,12 @@ export default function ReportsPage() {
         ? Object.entries(data.statusBreakdown).map(([status, count]) => ({
               name: status,
               value: count,
-              fill: STATUS_COLORS[status] ?? "hsl(var(--muted-foreground))",
+              fill: STATUS_COLORS[status] ?? "var(--muted-foreground)",
           }))
         : [];
 
     const barChartConfig: ChartConfig = {
-        count: { label: "Appointments", color: "hsl(var(--primary))" },
+        count: { label: "Appointments", color: "var(--primary)" },
     };
 
     const statusChartConfig: ChartConfig = Object.fromEntries(
@@ -262,7 +262,7 @@ export default function ReportsPage() {
                                     <ChartTooltip content={<ChartTooltipContent />} />
                                     <Bar
                                         dataKey="count"
-                                        fill="hsl(var(--primary))"
+                                        fill="var(--primary)"
                                         radius={[4, 4, 0, 0]}
                                     />
                                 </BarChart>
