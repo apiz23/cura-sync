@@ -1,7 +1,7 @@
 ﻿"use client";
 
 import { useCallback, useEffect, useState } from "react";
-import { ScrollText, X, RefreshCw } from "lucide-react";
+import { ScrollText, X, RefreshCw, Download } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -72,6 +72,7 @@ export default function AuditTrailPage() {
 	const [pages, setPages] = useState(1);
 	const [page, setPage] = useState(1);
 	const [loading, setLoading] = useState(true);
+	const [exporting, setExporting] = useState(false);
 
 	const [actorType, setActorType] = useState(ALL);
 	const [action, setAction] = useState(ALL);
@@ -120,6 +121,29 @@ export default function AuditTrailPage() {
 		setTo("");
 	}
 
+	async function handleExport() {
+		setExporting(true);
+		try {
+			const params = new URLSearchParams({ export: "true" });
+			if (actorType !== ALL) params.set("actor_type", actorType);
+			if (action !== ALL) params.set("action", action);
+			if (resourceType !== ALL) params.set("resource_type", resourceType);
+			if (from) params.set("from", from);
+			if (to) params.set("to", to);
+
+			const res = await fetch(`/api/admin/audit-logs?${params.toString()}`, {
+				cache: "no-store",
+			});
+			if (!res.ok) throw new Error("Export failed");
+			const json: AuditResponse = await res.json();
+			exportAuditLogsToCSV(json.data);
+		} catch {
+			// silently ignore export errors
+		} finally {
+			setExporting(false);
+		}
+	}
+
 	const hasFilters =
 		actorType !== ALL || action !== ALL || resourceType !== ALL || from || to;
 
@@ -137,7 +161,17 @@ export default function AuditTrailPage() {
 						</p>
 					</div>
 				</div>
-				<div className="flex justify-end mt-4">
+				<div className="flex justify-end gap-2 mt-4">
+					<Button
+						variant="outline"
+						size="sm"
+						onClick={() => void handleExport()}
+						disabled={exporting}
+						className="gap-1.5"
+					>
+						<Download className={`h-4 w-4 ${exporting ? "animate-pulse" : ""}`} />
+						{exporting ? "Exporting…" : "Export CSV"}
+					</Button>
 					<Button
 						variant="outline"
 						size="sm"
@@ -400,6 +434,47 @@ export default function AuditTrailPage() {
 			</Card>
 		</div>
 	);
+}
+
+function exportAuditLogsToCSV(logs: AuditLog[]) {
+	function escapeField(value: string): string {
+		if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+			return `"${value.replace(/"/g, '""')}"`;
+		}
+		return value;
+	}
+
+	const headers = ["No", "Time", "Actor Name", "Actor Type", "Action", "Resource Type", "Resource ID", "Metadata"];
+
+	const rows = logs.map((log, index) =>
+		[
+			String(index + 1),
+			new Date(log.created_at).toLocaleString("en-US", {
+				month: "short", day: "numeric", year: "numeric",
+				hour: "numeric", minute: "2-digit",
+			}),
+			log.actor_name ?? "",
+			log.actor_type,
+			log.action,
+			log.resource_type,
+			log.resource_id ?? "",
+			log.metadata ? Object.entries(log.metadata).slice(0, 3).map(([k, v]) => `${k}:${String(v)}`).join("; ") : "",
+		]
+			.map(escapeField)
+			.join(",")
+	);
+
+	const csv = [headers.join(","), ...rows].join("\r\n");
+	const BOM = "﻿";
+	const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+	const url = URL.createObjectURL(blob);
+	const link = document.createElement("a");
+	link.href = url;
+	link.download = `audit-logs-${new Date().toISOString().slice(0, 10)}.csv`;
+	document.body.appendChild(link);
+	link.click();
+	document.body.removeChild(link);
+	URL.revokeObjectURL(url);
 }
 
 function formatRelative(iso: string) {
