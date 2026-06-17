@@ -4,6 +4,7 @@ import { requireAdminStaffSession } from "@/lib/authz";
 
 const MAX_LIMIT = 100;
 const DEFAULT_LIMIT = 25;
+const EXPORT_LIMIT = 5000;
 
 function parseIntParam(value: string | null, fallback: number): number {
     if (!value) return fallback;
@@ -17,6 +18,7 @@ export async function GET(req: NextRequest) {
 
     const { searchParams } = new URL(req.url);
 
+    const isExport = searchParams.get("export") === "true";
     const page = Math.max(1, parseIntParam(searchParams.get("page"), 1));
     const limit = Math.min(MAX_LIMIT, Math.max(1, parseIntParam(searchParams.get("limit"), DEFAULT_LIMIT)));
     const offset = (page - 1) * limit;
@@ -65,8 +67,7 @@ export async function GET(req: NextRequest) {
         .from("cura_audit_logs")
         .select("id, actor_id, actor_type, action, resource_type, resource_id, metadata, created_at", { count: "exact" })
         .in("actor_id", scopedActorIds)
-        .order("created_at", { ascending: false })
-        .range(offset, offset + limit - 1);
+        .order("created_at", { ascending: false });
 
     if (actorType === "staff" || actorType === "patient") {
         query = query.eq("actor_type", actorType);
@@ -84,6 +85,13 @@ export async function GET(req: NextRequest) {
         const toDate = new Date(to);
         toDate.setUTCHours(23, 59, 59, 999);
         query = query.lte("created_at", toDate.toISOString());
+    }
+
+    // Apply pagination or export limit
+    if (isExport) {
+        query = query.limit(EXPORT_LIMIT);
+    } else {
+        query = query.range(offset, offset + limit - 1);
     }
 
     const { data: rows, error, count } = await query;
@@ -126,6 +134,16 @@ export async function GET(req: NextRequest) {
     }));
 
     const total = count ?? logs.length;
+
+    if (isExport) {
+        return NextResponse.json({
+            data,
+            total,
+            page: 1,
+            limit: EXPORT_LIMIT,
+            pages: 1,
+        });
+    }
 
     return NextResponse.json({
         data,
