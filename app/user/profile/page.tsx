@@ -66,6 +66,13 @@ import { z } from "zod";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { FieldError } from "@/components/ui/field";
 import { CaregiverInviteCard } from "@/components/caregiver-invite-card";
+import {
+    Select,
+    SelectContent,
+    SelectItem,
+    SelectTrigger,
+    SelectValue,
+} from "@/components/ui/select";
 
 interface PatientProfile {
     profile_id: string;
@@ -714,16 +721,19 @@ export default function ProfilePage() {
                                                 <Label htmlFor="gender" className="text-base font-medium">
                                                     Gender
                                                 </Label>
-                                                <select
-                                                    id="gender"
-                                                    {...register("patient_profile.gender")}
-                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-base file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                <Select
+                                                    value={watchedValues.patient_profile.gender || ""}
+                                                    onValueChange={(v) => setValue("patient_profile.gender", v, { shouldDirty: true })}
                                                 >
-                                                    <option value="">Select gender</option>
-                                                    {GENDERS.map(gender => (
-                                                        <option key={gender} value={gender}>{gender}</option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger id="gender" className="h-10">
+                                                        <SelectValue placeholder="Select gender" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {GENDERS.map((g) => (
+                                                            <SelectItem key={g} value={g}>{g}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                                 <FieldError errors={[errors.patient_profile?.gender]} />
                                             </div>
 
@@ -732,16 +742,19 @@ export default function ProfilePage() {
                                                 <Label htmlFor="blood_type" className="text-base font-medium">
                                                     Blood Type
                                                 </Label>
-                                                <select
-                                                    id="blood_type"
-                                                    {...register("patient_profile.blood_type")}
-                                                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-base ring-offset-background file:border-0 file:bg-transparent file:text-base file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                                                <Select
+                                                    value={watchedValues.patient_profile.blood_type || ""}
+                                                    onValueChange={(v) => setValue("patient_profile.blood_type", v, { shouldDirty: true })}
                                                 >
-                                                    <option value="">Select blood type</option>
-                                                    {BLOOD_TYPES.map(type => (
-                                                        <option key={type} value={type}>{type}</option>
-                                                    ))}
-                                                </select>
+                                                    <SelectTrigger id="blood_type" className="h-10">
+                                                        <SelectValue placeholder="Select blood type" />
+                                                    </SelectTrigger>
+                                                    <SelectContent>
+                                                        {BLOOD_TYPES.map((t) => (
+                                                            <SelectItem key={t} value={t}>{t}</SelectItem>
+                                                        ))}
+                                                    </SelectContent>
+                                                </Select>
                                                 <FieldError errors={[errors.patient_profile?.blood_type]} />
                                             </div>
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabase-admin";
-import { requirePatientSession } from "@/lib/authz";
+import { requireUserSession } from "@/lib/authz";
 
 const AUDIT_COLUMNS =
 	"id, actor_id, actor_type, action, resource_type, resource_id, created_at, tx_hash, block_number, content_hash, ipfs_cid";
@@ -38,7 +38,7 @@ function summarizeEncounter(r: Record<string, unknown>): string {
 
 export async function GET(req: Request) {
 	try {
-		const patient = await requirePatientSession(req);
+		const patient = await requireUserSession(req);
 		if (patient instanceof NextResponse) return patient;
 
 		const profileId = patient.profileId;

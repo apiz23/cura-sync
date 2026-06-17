@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAnySession } from "@/lib/authz";
 import { curaSyncAiUrl, readAiError } from "@/lib/cura-sync-ai";
+import supabaseAdmin from "@/lib/supabase-admin";
 
 const MAX_SYMPTOM_LENGTH = 1000;
 const AUTH_ANALYZE_TIMEOUT_MS = 45000;
@@ -66,13 +67,80 @@ function isTimeoutError(err: unknown) {
 	);
 }
 
+async function enrichContextFromDb(
+	profileId: string,
+	base: Record<string, unknown>,
+): Promise<Record<string, unknown>> {
+	const enriched = { ...base };
+
+	const [allergiesRes, conditionsRes, patientProfileRes] = await Promise.all([
+		supabaseAdmin
+			.from("cura_allergies")
+			.select("allergen, reaction, severity, status")
+			.eq("profile_id", profileId)
+			.eq("status", "ACTIVE")
+			.limit(10),
+		supabaseAdmin
+			.from("cura_conditions")
+			.select("name, severity, status")
+			.eq("profile_id", profileId)
+			.in("status", ["ACTIVE", "CHRONIC"])
+			.limit(10),
+		supabaseAdmin
+			.from("cura_patient_profiles")
+			.select("date_of_birth, gender, blood_type, height_cm, weight_kg, allergies, chronic_conditions")
+			.eq("profile_id", profileId)
+			.maybeSingle(),
+	]);
+
+	// Merge base patient profile if not already provided by client
+	const pp = patientProfileRes.data;
+	if (pp) {
+		if (!enriched.date_of_birth && pp.date_of_birth) enriched.date_of_birth = pp.date_of_birth;
+		if (!enriched.gender && pp.gender) enriched.gender = pp.gender;
+		if (!enriched.blood_type && pp.blood_type) enriched.blood_type = pp.blood_type;
+		if (enriched.height_cm == null && pp.height_cm != null) enriched.height_cm = pp.height_cm;
+		if (enriched.weight_kg == null && pp.weight_kg != null) enriched.weight_kg = pp.weight_kg;
+	}
+
+	// Structured allergies override/extend free-text field
+	if (allergiesRes.data && allergiesRes.data.length > 0) {
+		const allergyLines = allergiesRes.data.map((a) => {
+			let line = a.allergen;
+			if (a.reaction) line += ` (${a.reaction})`;
+			if (a.severity) line += ` — ${a.severity}`;
+			return line;
+		});
+		enriched.allergies = allergyLines.join("; ");
+	} else if (!enriched.allergies && pp?.allergies) {
+		enriched.allergies = pp.allergies;
+	}
+
+	// Structured conditions override/extend free-text field
+	if (conditionsRes.data && conditionsRes.data.length > 0) {
+		const conditionLines = conditionsRes.data.map((c) => {
+			let line = c.name;
+			if (c.severity) line += ` (${c.severity})`;
+			if (c.status === "CHRONIC") line += " — chronic";
+			return line;
+		});
+		enriched.chronic_conditions = conditionLines.join("; ");
+	} else if (!enriched.chronic_conditions && pp?.chronic_conditions) {
+		enriched.chronic_conditions = pp.chronic_conditions;
+	}
+
+	return Object.fromEntries(
+		Object.entries(enriched).filter(([, v]) => v !== undefined && v !== null && v !== ""),
+	);
+}
+
 export async function POST(req: NextRequest) {
 	try {
 		const session = await requireAnySession(req);
 		if (session instanceof NextResponse) return session;
 
 		const { symptoms, patient_context, iot_data } = await req.json();
-		const cleanContext = cleanPatientContext(patient_context);
+		let cleanContext: Record<string, unknown> = cleanPatientContext(patient_context) ?? {};
 		const cleanIot = cleanIotData(iot_data);
 
 		if (!symptoms || !symptoms.trim()) {
@@ -87,6 +155,12 @@ export async function POST(req: NextRequest) {
 				{ error: `Symptoms input is limited to ${MAX_SYMPTOM_LENGTH} characters.` },
 				{ status: 400 },
 			);
+		}
+
+		// Enrich patient context from DB for logged-in patients
+		const profileId = session.kind === "patient" ? session.profileId : null;
+		if (profileId) {
+			cleanContext = await enrichContextFromDb(profileId, cleanContext);
 		}
 
 		const aiRes = await fetch(

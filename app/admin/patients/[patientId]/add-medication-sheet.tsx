@@ -39,11 +39,11 @@ import {
 import { format } from "date-fns";
 import { cn } from "@/lib/utils";
 import {
-    getDefaultScheduleForFrequency,
-    getScheduleOptionsForFrequency,
     MEDICATION_FREQUENCY_OPTIONS,
     normalizeMedicationFrequency,
-    normalizeMedicationSchedule,
+    getDefaultTimesForFrequency,
+    parseScheduleToTimes,
+    timesToScheduleString,
 } from "@/lib/medication-options";
 
 /* ================= TYPES ================= */
@@ -52,7 +52,7 @@ type MedicationFormData = {
     name: string;
     dosage: string;
     frequency: string;
-    schedule: string;
+    scheduleTimes: string[];
     status: string;
     start_date: Date;
     end_date?: Date;
@@ -60,7 +60,7 @@ type MedicationFormData = {
     prescribed_by: string;
 };
 
-type FormErrors = Partial<Record<keyof MedicationFormData | "submit", string>>;
+type FormErrors = Partial<Record<keyof MedicationFormData | "submit" | "scheduleTimes", string>>;
 
 /* ================= CONSTANTS ================= */
 
@@ -90,7 +90,7 @@ export default function AddMedicationSheet({
         name: "",
         dosage: "",
         frequency: "Once daily",
-        schedule: getDefaultScheduleForFrequency("Once daily"),
+        scheduleTimes: getDefaultTimesForFrequency("Once daily"),
         status: "ACTIVE",
         start_date: new Date(),
         end_date: undefined,
@@ -111,18 +111,7 @@ export default function AddMedicationSheet({
             setFormData((prev) => ({
                 ...prev,
                 frequency: nextFrequency,
-                schedule: normalizeMedicationSchedule(
-                    nextFrequency,
-                    prev.schedule
-                ),
-            }));
-        } else if (field === "schedule") {
-            setFormData((prev) => ({
-                ...prev,
-                schedule: normalizeMedicationSchedule(
-                    prev.frequency,
-                    String(value)
-                ),
+                scheduleTimes: getDefaultTimesForFrequency(nextFrequency),
             }));
         } else {
             setFormData((prev) => ({ ...prev, [field]: value }));
@@ -145,8 +134,8 @@ export default function AddMedicationSheet({
         if (!formData.frequency) {
             newErrors.frequency = "Frequency is required";
         }
-        if (!formData.schedule) {
-            newErrors.schedule = "Schedule is required";
+        if (formData.scheduleTimes.length > 0 && formData.scheduleTimes.some(t => !t)) {
+            newErrors.scheduleTimes = "All dose times are required";
         }
         if (!formData.start_date) {
             newErrors.start_date = "Start date is required";
@@ -169,10 +158,7 @@ export default function AddMedicationSheet({
                 name: formData.name.trim(),
                 dosage: formData.dosage.trim(),
                 frequency: normalizeMedicationFrequency(formData.frequency),
-                schedule: normalizeMedicationSchedule(
-                    formData.frequency,
-                    formData.schedule
-                ),
+                schedule: timesToScheduleString(formData.scheduleTimes),
                 status: formData.status,
                 start_date: format(formData.start_date, "yyyy-MM-dd"),
                 end_date: formData.end_date
@@ -200,7 +186,7 @@ export default function AddMedicationSheet({
                 name: "",
                 dosage: "",
                 frequency: "Once daily",
-                schedule: getDefaultScheduleForFrequency("Once daily"),
+                scheduleTimes: getDefaultTimesForFrequency("Once daily"),
                 status: "ACTIVE",
                 start_date: new Date(),
                 end_date: undefined,
@@ -231,7 +217,7 @@ export default function AddMedicationSheet({
                 name: "",
                 dosage: "",
                 frequency: "Once daily",
-                schedule: getDefaultScheduleForFrequency("Once daily"),
+                scheduleTimes: getDefaultTimesForFrequency("Once daily"),
                 status: "ACTIVE",
                 start_date: new Date(),
                 end_date: undefined,
@@ -265,10 +251,6 @@ export default function AddMedicationSheet({
                     </SheetHeader>
 
                     {(() => {
-                        const scheduleOptions = getScheduleOptionsForFrequency(
-                            formData.frequency
-                        );
-
                         return (
                     <div className="space-y-5 py-2">
                         {/* Medication Name */}
@@ -333,74 +315,67 @@ export default function AddMedicationSheet({
                             />
                         </div>
 
-                        {/* Frequency & Schedule Row */}
-                        <div className="grid grid-cols-2 gap-4">
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="frequency"
-                                    className="text-base font-medium"
-                                >
-                                    Frequency *
-                                </Label>
-                                <Select
-                                    value={formData.frequency}
-                                    onValueChange={(value) =>
-                                        handleInputChange("frequency", value)
-                                    }
-                                >
-                                    <SelectTrigger className="h-10 rounded-lg">
-                                        <SelectValue placeholder="Select frequency" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-lg">
-                                        {MEDICATION_FREQUENCY_OPTIONS.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                                className="rounded-md"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <Clock3 className="h-3.5 w-3.5 text-muted-foreground" />
-                                                    {option.label}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
-
-                            <div className="space-y-2">
-                                <Label
-                                    htmlFor="schedule"
-                                    className="text-base font-medium"
-                                >
-                                    Schedule *
-                                </Label>
-                                <Select
-                                    value={formData.schedule}
-                                    onValueChange={(value) =>
-                                        handleInputChange("schedule", value)
-                                    }
-                                >
-                                    <SelectTrigger className="h-10 rounded-lg">
-                                        <SelectValue placeholder="Select schedule" />
-                                    </SelectTrigger>
-                                    <SelectContent className="rounded-lg">
-                                        {scheduleOptions.map((option) => (
-                                            <SelectItem
-                                                key={option.value}
-                                                value={option.value}
-                                                className="rounded-md"
-                                            >
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="h-3.5 w-3.5 text-muted-foreground" />
-                                                    {option.label}
-                                                </div>
-                                            </SelectItem>
-                                        ))}
-                                    </SelectContent>
-                                </Select>
-                            </div>
+                        {/* Frequency */}
+                        <div className="space-y-2">
+                            <Label htmlFor="frequency" className="text-base font-medium">
+                                Frequency *
+                            </Label>
+                            <Select
+                                value={formData.frequency}
+                                onValueChange={(value) => handleInputChange("frequency", value)}
+                            >
+                                <SelectTrigger className="h-10 rounded-lg">
+                                    <SelectValue placeholder="Select frequency" />
+                                </SelectTrigger>
+                                <SelectContent className="rounded-lg">
+                                    {MEDICATION_FREQUENCY_OPTIONS.map((option) => (
+                                        <SelectItem key={option.value} value={option.value} className="rounded-md">
+                                            <div className="flex items-center gap-2">
+                                                <Clock3 className="h-3.5 w-3.5 text-muted-foreground" />
+                                                {option.label}
+                                            </div>
+                                        </SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
                         </div>
+
+                        {/* Dose Times */}
+                        {formData.scheduleTimes.length > 0 && (
+                            <div className="space-y-2">
+                                <div className="flex items-center justify-between">
+                                    <Label className="text-base font-medium">
+                                        Dose Time{formData.scheduleTimes.length > 1 ? "s" : ""} *
+                                    </Label>
+                                    {errors.scheduleTimes && (
+                                        <span className="text-base text-destructive flex items-center gap-1">
+                                            <AlertCircle className="h-3 w-3" />
+                                            {errors.scheduleTimes}
+                                        </span>
+                                    )}
+                                </div>
+                                <div className="flex flex-wrap gap-3">
+                                    {formData.scheduleTimes.map((time, idx) => (
+                                        <div key={idx} className="flex items-center gap-2">
+                                            <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+                                                <Clock className="h-3.5 w-3.5" />
+                                                <span>Dose {idx + 1}</span>
+                                            </div>
+                                            <Input
+                                                type="time"
+                                                value={time}
+                                                onChange={(e) => {
+                                                    const next = [...formData.scheduleTimes];
+                                                    next[idx] = e.target.value;
+                                                    setFormData((prev) => ({ ...prev, scheduleTimes: next }));
+                                                }}
+                                                className="h-10 w-32 rounded-lg"
+                                            />
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* Dates Row */}
                         <div className="grid grid-cols-2 gap-4">

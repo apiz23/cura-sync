@@ -286,10 +286,47 @@ function clearCachedStaffSessionVersion(staffId: string): void {
     staffSessionVersionCache.delete(staffId);
 }
 
+export type UserSession = {
+    kind: "user";
+    profileId: string;
+    role: string;
+};
+
 export type CaregiverSession = {
     kind: "caregiver";
     profileId: string;
 };
+
+/** Any authenticated Clerk user — patient, caregiver, or unknown role. */
+export async function requireUserSession(
+    req?: Request
+): Promise<UserSession | NextResponse> {
+    let userId: string;
+    if (req) {
+        const result = await requireMobileOrBrowserUserId(req);
+        if (result instanceof NextResponse) return result;
+        userId = result;
+    } else {
+        const browserAuth = await auth();
+        if (!browserAuth.userId) {
+            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        }
+        userId = browserAuth.userId;
+    }
+
+    const { data, error } = await supabase
+        .from("cura_profiles")
+        .select("role")
+        .eq("id", userId)
+        .maybeSingle();
+
+    if (error) {
+        return NextResponse.json({ error: "Profile lookup failed" }, { status: 500 });
+    }
+
+    const role = String(data?.role ?? "patient").toLowerCase();
+    return { kind: "user", profileId: userId, role };
+}
 
 export async function requireCaregiverSession(
     req?: Request

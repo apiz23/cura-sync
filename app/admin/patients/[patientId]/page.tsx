@@ -1211,12 +1211,12 @@ function AddMedicalRecordSheet({
 	return (
 		<Sheet open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
 			<SheetTrigger asChild>{children}</SheetTrigger>
-			<SheetContent className="w-full sm:max-w-md overflow-y-auto">
-				<SheetHeader>
+			<SheetContent className="w-full sm:max-w-md overflow-y-auto p-6">
+				<SheetHeader className="mb-6">
 					<SheetTitle>Add Medical Record</SheetTitle>
 				</SheetHeader>
 
-				<form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-5">
+				<form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
 					<div className="space-y-2">
 						<Label>Record type</Label>
 						<Select
@@ -1533,12 +1533,12 @@ function EditMedicalRecordSheet({
 			}}
 		>
 			<SheetTrigger asChild>{children}</SheetTrigger>
-			<SheetContent className="w-full overflow-y-auto sm:max-w-md p-4">
-				<SheetHeader>
+			<SheetContent className="w-full overflow-y-auto sm:max-w-md p-6">
+				<SheetHeader className="mb-6">
 					<SheetTitle>Edit {recordType.charAt(0).toUpperCase() + recordType.slice(1)}</SheetTitle>
 				</SheetHeader>
 
-				<form onSubmit={(e) => void handleSubmit(e)} className="mt-6 space-y-5">
+				<form onSubmit={(e) => void handleSubmit(e)} className="space-y-5">
 					{recordType === "condition" && (
 						<>
 							<div className="space-y-2">

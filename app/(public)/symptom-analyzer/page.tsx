@@ -165,9 +165,9 @@ function urgencyTimeline(urgency: AnalysisResult["urgency"]) {
 function sourceLabel(source: string | undefined): { label: string; class: string } | null {
 	switch (source) {
 		case "jamai_structured":
-			return { label: "AI-powered", class: "bg-primary/10 text-primary border-primary/20" };
+			return { label: "JamAI", class: "bg-primary/10 text-primary border-primary/20" };
 		case "biobert_enhanced_ai":
-			return { label: "BioBERT + AI", class: "bg-primary/10 text-primary border-primary/20" };
+			return { label: "JamAI + BioBERT", class: "bg-primary/10 text-primary border-primary/20" };
 		case "knowledge_base":
 			return {
 				label: "Knowledge Base",

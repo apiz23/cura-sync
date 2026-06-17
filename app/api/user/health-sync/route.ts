@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import supabase from "@/lib/supabase";
-import { requirePatientSession } from "@/lib/authz";
+import { requireUserSession } from "@/lib/authz";
 
 const isoDateTimeSchema = z.string().refine((value) => !Number.isNaN(Date.parse(value)), {
     message: "Expected a valid ISO datetime string",
@@ -174,7 +174,7 @@ export async function OPTIONS() {
 
 export async function GET(req: Request) {
     try {
-        const patient = await requirePatientSession(req);
+        const patient = await requireUserSession(req);
         if (patient instanceof NextResponse) return patient;
 
         const days = parseDays(req.url);
@@ -253,7 +253,7 @@ export async function GET(req: Request) {
 
 export async function POST(req: Request) {
     try {
-        const patient = await requirePatientSession(req);
+        const patient = await requireUserSession(req);
         if (patient instanceof NextResponse) return patient;
 
         const parsedBody = healthSyncBodySchema.safeParse(await req.json());

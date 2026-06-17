@@ -10,7 +10,7 @@ import {
     Activity,
     Lock,
     Settings,
-    Video,
+    Users,
 } from "lucide-react";
 
 export const userMenu = [
@@ -47,11 +47,6 @@ export const userMenu = [
                 url: "/user/medications",
                 icon: Pill,
             },
-            {
-                title: "Telehealth",
-                url: "/user/telehealth",
-                icon: Video,
-            },
         ],
     },
     {
@@ -66,6 +61,16 @@ export const userMenu = [
                 title: "Blockchain Security",
                 url: "/user/blockchain",
                 icon: ShieldCheck,
+            },
+        ],
+    },
+    {
+        title: "Care Network",
+        items: [
+            {
+                title: "Caregiver",
+                url: "/user/caregiver",
+                icon: Users,
             },
         ],
     },

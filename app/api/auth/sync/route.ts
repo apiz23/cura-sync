@@ -13,7 +13,7 @@ export async function POST() {
             );
         }
 
-        const userRole = (user.publicMetadata?.role as string) || "patient";
+        const clerkRole = (user.publicMetadata?.role as string | undefined)?.toLowerCase();
         const fullName = `${user.firstName ?? ""} ${
             user.lastName ?? ""
         }`.trim();
@@ -40,12 +40,27 @@ export async function POST() {
             await migrateProfileId(existingByEmail.id, newId);
         }
 
+        // Prefer Clerk metadata role; fall back to existing DB role so a
+        // caregiver role set by the redeem route is never overwritten with "patient".
+        const { data: existing } = await supabaseAdmin
+            .from("cura_profiles")
+            .select("role")
+            .eq("id", newId)
+            .maybeSingle();
+
+        const ALLOWED_ROLES = ["patient", "caregiver", "admin", "staff"];
+        const dbRole = typeof existing?.role === "string" ? existing.role.toLowerCase() : null;
+        const resolvedRole =
+            clerkRole && ALLOWED_ROLES.includes(clerkRole) ? clerkRole :
+            dbRole && ALLOWED_ROLES.includes(dbRole) ? dbRole :
+            "patient";
+
         const userData = {
             id: newId,
             email,
             full_name: fullName,
             avatar_url: user.imageUrl,
-            role: userRole.toLowerCase(),
+            role: resolvedRole,
             updated_at: new Date().toISOString(),
         };
 

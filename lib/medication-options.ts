@@ -15,88 +15,97 @@ export const MEDICATION_FREQUENCY_OPTIONS: MedicationOption[] = [
     { value: "As needed", label: "As needed" },
 ];
 
-const SCHEDULE_OPTIONS_BY_FREQUENCY: Record<string, MedicationOption[]> = {
-    "Once daily": [
-        { value: "Morning", label: "Morning" },
-        { value: "Noon", label: "Noon" },
-        { value: "Evening", label: "Evening" },
-        { value: "Night", label: "Night" },
-    ],
-    "Twice daily": [
-        { value: "Morning and evening", label: "Morning and evening" },
-        { value: "Noon and night", label: "Noon and night" },
-        { value: "Every 12 hours", label: "Every 12 hours" },
-    ],
-    "Three times daily": [
-        {
-            value: "Morning, noon, and evening",
-            label: "Morning, noon, and evening",
-        },
-        { value: "Every 8 hours", label: "Every 8 hours" },
-    ],
-    "Four times daily": [
-        {
-            value: "Morning, afternoon, evening, and night",
-            label: "Morning, afternoon, evening, and night",
-        },
-        { value: "Every 6 hours", label: "Every 6 hours" },
-    ],
-    "Every 6 hours": [{ value: "Every 6 hours", label: "Every 6 hours" }],
-    "Every 8 hours": [{ value: "Every 8 hours", label: "Every 8 hours" }],
-    "Every 12 hours": [{ value: "Every 12 hours", label: "Every 12 hours" }],
-    Weekly: [
-        { value: "Once a week", label: "Once a week" },
-        { value: "Same day every week", label: "Same day every week" },
-    ],
-    "As needed": [
-        { value: "As needed", label: "As needed" },
-        { value: "As directed", label: "As directed" },
-    ],
+const DEFAULT_TIMES_BY_FREQUENCY: Record<string, string[]> = {
+    "Once daily":        ["08:00"],
+    "Twice daily":       ["08:00", "20:00"],
+    "Three times daily": ["08:00", "14:00", "20:00"],
+    "Four times daily":  ["08:00", "12:00", "16:00", "20:00"],
+    "Every 6 hours":     ["06:00", "12:00", "18:00", "00:00"],
+    "Every 8 hours":     ["06:00", "14:00", "22:00"],
+    "Every 12 hours":    ["08:00", "20:00"],
+    "Weekly":            ["08:00"],
+    "As needed":         [],
 };
 
 const LEGACY_FREQUENCY_ALIASES: Record<string, string> = {
     Other: "As needed",
 };
 
-const LEGACY_SCHEDULE_ALIASES: Record<string, string> = {
-    "Morning & Night": "Morning and evening",
-    "Morning, Afternoon & Night": "Morning, noon, and evening",
-    Afternoon: "Noon",
-};
-
 export function normalizeMedicationFrequency(value?: string | null): string {
     const trimmed = value?.trim();
     if (!trimmed) return MEDICATION_FREQUENCY_OPTIONS[0].value;
-
     const normalized = LEGACY_FREQUENCY_ALIASES[trimmed] ?? trimmed;
     return (
-        MEDICATION_FREQUENCY_OPTIONS.find((option) => option.value === normalized)
-            ?.value ?? MEDICATION_FREQUENCY_OPTIONS[0].value
+        MEDICATION_FREQUENCY_OPTIONS.find((o) => o.value === normalized)?.value ??
+        MEDICATION_FREQUENCY_OPTIONS[0].value
     );
 }
 
-export function getScheduleOptionsForFrequency(
-    frequency?: string | null
-): MedicationOption[] {
-    const normalizedFrequency = normalizeMedicationFrequency(frequency);
-    return (
-        SCHEDULE_OPTIONS_BY_FREQUENCY[normalizedFrequency] ??
-        SCHEDULE_OPTIONS_BY_FREQUENCY["Once daily"]
-    );
+export function getDefaultTimesForFrequency(frequency?: string | null): string[] {
+    const f = normalizeMedicationFrequency(frequency);
+    return [...(DEFAULT_TIMES_BY_FREQUENCY[f] ?? ["08:00"])];
 }
 
+export function getTimeSlotsCount(frequency?: string | null): number {
+    return getDefaultTimesForFrequency(frequency).length;
+}
+
+/** Parse existing schedule string (legacy labels or HH:MM) into time array. */
+export function parseScheduleToTimes(
+    frequency?: string | null,
+    schedule?: string | null,
+): string[] {
+    const defaults = getDefaultTimesForFrequency(frequency);
+    if (!schedule?.trim()) return defaults;
+
+    // Already HH:MM format
+    const timeMatches = schedule.match(/\b([01]?\d|2[0-3]):([0-5]\d)\b/g);
+    if (timeMatches && timeMatches.length > 0) {
+        const normalized = timeMatches.map((t) => {
+            const [h, m] = t.split(":");
+            return `${String(parseInt(h)).padStart(2, "0")}:${m}`;
+        });
+        // Pad or trim to match slot count
+        const count = defaults.length;
+        if (normalized.length >= count) return normalized.slice(0, count);
+        return [...normalized, ...defaults.slice(normalized.length)];
+    }
+
+    // Legacy keyword mapping
+    const t = schedule.toLowerCase();
+    const mapped: string[] = [];
+    if (/morning/.test(t)) mapped.push("08:00");
+    if (/noon|midday|lunch/.test(t)) mapped.push("12:00");
+    if (/afternoon/.test(t)) mapped.push("14:00");
+    if (/evening/.test(t)) mapped.push("19:00");
+    if (/night|bed/.test(t)) mapped.push("21:00");
+
+    if (mapped.length > 0) {
+        const count = defaults.length;
+        if (mapped.length >= count) return mapped.slice(0, count);
+        return [...mapped, ...defaults.slice(mapped.length)];
+    }
+
+    return defaults;
+}
+
+/** Join times array into schedule string stored in DB. */
+export function timesToScheduleString(times: string[]): string {
+    return times.filter(Boolean).join(", ");
+}
+
+// Legacy compat — kept so any old import doesn't break
 export function getDefaultScheduleForFrequency(frequency?: string | null): string {
-    return getScheduleOptionsForFrequency(frequency)[0].value;
+    return timesToScheduleString(getDefaultTimesForFrequency(frequency));
+}
+
+export function getScheduleOptionsForFrequency(_frequency?: string | null): MedicationOption[] {
+    return [];
 }
 
 export function normalizeMedicationSchedule(
     frequency?: string | null,
-    schedule?: string | null
+    schedule?: string | null,
 ): string {
-    const options = getScheduleOptionsForFrequency(frequency);
-    const trimmed = schedule?.trim();
-    if (!trimmed) return options[0].value;
-
-    const normalized = LEGACY_SCHEDULE_ALIASES[trimmed] ?? trimmed;
-    return options.find((option) => option.value === normalized)?.value ?? options[0].value;
+    return timesToScheduleString(parseScheduleToTimes(frequency, schedule));
 }

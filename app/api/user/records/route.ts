@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
-import { requirePatientSession } from "@/lib/authz";
+import { requireUserSession } from "@/lib/authz";
 
 export async function GET(req: Request) {
     try {
-        const patient = await requirePatientSession(req);
+        const patient = await requireUserSession(req);
         if (patient instanceof NextResponse) return patient;
 
         const profileId = patient.profileId;

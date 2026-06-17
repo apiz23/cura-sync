@@ -1,11 +1,11 @@
 import { NextResponse } from "next/server";
 
 import supabase from "@/lib/supabase";
-import { requirePatientSession } from "@/lib/authz";
+import { requireUserSession } from "@/lib/authz";
 
 export async function GET(req: Request) {
     try {
-        const patient = await requirePatientSession(req);
+        const patient = await requireUserSession(req);
         if (patient instanceof NextResponse) return patient;
 
         const { data, error } = await supabase
@@ -29,7 +29,7 @@ export async function GET(req: Request) {
 
 export async function PATCH(req: Request) {
     try {
-        const patient = await requirePatientSession(req);
+        const patient = await requireUserSession(req);
         if (patient instanceof NextResponse) return patient;
 
         const body = await req.json().catch(() => ({}));

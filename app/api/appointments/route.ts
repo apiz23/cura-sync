@@ -130,7 +130,6 @@ export async function GET(req: Request) {
                 end_time,
                 status,
                 reason_for_visit,
-                appointment_type,
                 created_at
             `
             )

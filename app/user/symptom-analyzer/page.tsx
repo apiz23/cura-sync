@@ -233,10 +233,14 @@ function sourceLabel(
 	source: string | undefined,
 ): { label: string; className: string } | null {
 	switch (source) {
-		case "biobert_enhanced_ai":
 		case "jamai_structured":
 			return {
-				label: "AI-powered",
+				label: "JamAI",
+				className: "bg-primary/10 text-primary border-primary/20",
+			};
+		case "biobert_enhanced_ai":
+			return {
+				label: "JamAI + BioBERT",
 				className: "bg-primary/10 text-primary border-primary/20",
 			};
 		case "knowledge_base":
@@ -251,12 +255,12 @@ function sourceLabel(
 			};
 		case "rule_based_safety":
 			return {
-				label: "Rule-based Triage",
+				label: "Rule-based",
 				className: "bg-chart-5/10 text-chart-5 border-chart-5/30 dark:text-chart-5",
 			};
 		case "fallback":
 			return {
-				label: "General Guidance",
+				label: "Fallback",
 				className: "bg-muted text-muted-foreground border-border",
 			};
 		default:
@@ -661,6 +665,7 @@ export default function SymptomsCheckPage() {
 						symptoms: allSymptoms.join(", "),
 						was_accurate: wasAccurate,
 						possible_disease: result.possible_disease,
+						source: result.source,
 					}),
 				});
 				if (!res.ok) throw new Error("Feedback failed");

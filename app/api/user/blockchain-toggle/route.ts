@@ -1,10 +1,10 @@
 import { NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabase-admin";
-import { requirePatientSession } from "@/lib/authz";
+import { requireUserSession } from "@/lib/authz";
 
 export async function GET(req: Request) {
     try {
-        const patient = await requirePatientSession(req);
+        const patient = await requireUserSession(req);
         if (patient instanceof NextResponse) return patient;
 
         const { data: profile, error: profileError } = await supabaseAdmin
@@ -43,7 +43,7 @@ export async function GET(req: Request) {
 
 export async function PATCH(req: Request) {
     try {
-        const patient = await requirePatientSession(req);
+        const patient = await requireUserSession(req);
         if (patient instanceof NextResponse) return patient;
 
         const body = (await req.json()) as { enabled: boolean };

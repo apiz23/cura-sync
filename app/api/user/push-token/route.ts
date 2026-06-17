@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
-import { requirePatientSession } from "@/lib/authz";
+import { requireUserSession } from "@/lib/authz";
 import { z } from "zod";
 
 const schema = z.object({
@@ -9,7 +9,7 @@ const schema = z.object({
 
 export async function PUT(req: Request) {
     try {
-        const session = await requirePatientSession(req);
+        const session = await requireUserSession(req);
         if (session instanceof NextResponse) return session;
 
         const body = await req.json().catch(() => null);

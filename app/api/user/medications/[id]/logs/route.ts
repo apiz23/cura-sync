@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
-import { requirePatientSession } from "@/lib/authz";
+import { requireUserSession } from "@/lib/authz";
 
 const ALLOWED_STATUSES = ["TAKEN", "MISSED", "SKIPPED"] as const;
 type AllowedStatus = (typeof ALLOWED_STATUSES)[number];
@@ -15,7 +15,7 @@ export async function POST(
 ) {
     const { id } = await params;
 
-    const patient = await requirePatientSession();
+    const patient = await requireUserSession();
     if (patient instanceof NextResponse) return patient;
 
     const body = await req.json().catch(() => ({}));

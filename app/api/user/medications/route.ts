@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
-import { requirePatientSession } from "@/lib/authz";
+import { requireUserSession } from "@/lib/authz";
 import { presentMedications } from "@/lib/medication-presenter";
 
 /* =========================
@@ -8,7 +8,7 @@ import { presentMedications } from "@/lib/medication-presenter";
    (patient-only)
    ========================= */
 export async function GET(_req: NextRequest) {
-    const patient = await requirePatientSession(_req);
+    const patient = await requireUserSession(_req);
     if (patient instanceof NextResponse) return patient;
 
     const { data, error } = await supabase

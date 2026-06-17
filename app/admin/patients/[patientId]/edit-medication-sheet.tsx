@@ -45,11 +45,13 @@ import { Switch } from "@/components/ui/switch";
 import { Card } from "@/components/ui/card";
 import { Calendar } from "@/components/ui/calendar";
 import {
-    getScheduleOptionsForFrequency,
     MEDICATION_FREQUENCY_OPTIONS,
     normalizeMedicationFrequency,
-    normalizeMedicationSchedule,
+    getDefaultTimesForFrequency,
+    parseScheduleToTimes,
+    timesToScheduleString,
 } from "@/lib/medication-options";
+import { Clock } from "lucide-react";
 
 interface EditMedicationSheetProps {
     open: boolean;
@@ -71,7 +73,7 @@ export default function EditMedicationSheet({
             name: medication.name,
             dosage: medication.dosage,
             frequency,
-            schedule: normalizeMedicationSchedule(frequency, medication.schedule),
+            scheduleTimes: parseScheduleToTimes(frequency, medication.schedule),
             start_date: medication.start_date,
             end_date: medication.end_date ?? "",
             notes: medication.notes ?? "",
@@ -109,21 +111,7 @@ export default function EditMedicationSheet({
             setForm((prev) => ({
                 ...prev,
                 frequency: nextFrequency,
-                schedule: normalizeMedicationSchedule(
-                    nextFrequency,
-                    prev.schedule
-                ),
-            }));
-            return;
-        }
-
-        if (key === "schedule") {
-            setForm((prev) => ({
-                ...prev,
-                schedule: normalizeMedicationSchedule(
-                    prev.frequency,
-                    String(value)
-                ),
+                scheduleTimes: getDefaultTimesForFrequency(nextFrequency),
             }));
             return;
         }
@@ -144,8 +132,8 @@ export default function EditMedicationSheet({
             setError("Frequency is required");
             return false;
         }
-        if (!form.schedule.trim()) {
-            setError("Schedule is required");
+        if (form.scheduleTimes.length > 0 && form.scheduleTimes.some(t => !t)) {
+            setError("All dose times are required");
             return false;
         }
         if (!form.start_date) {
@@ -172,8 +160,6 @@ export default function EditMedicationSheet({
 
     const endDate = form.end_date ? new Date(form.end_date) : undefined;
 
-    const scheduleOptions = getScheduleOptionsForFrequency(form.frequency);
-
     async function handleSave() {
         if (!validateForm()) return;
 
@@ -185,10 +171,7 @@ export default function EditMedicationSheet({
                 name: form.name,
                 dosage: form.dosage,
                 frequency: normalizeMedicationFrequency(form.frequency),
-                schedule: normalizeMedicationSchedule(
-                    form.frequency,
-                    form.schedule
-                ),
+                schedule: timesToScheduleString(form.scheduleTimes),
                 start_date: form.start_date,
                 end_date: form.is_ongoing ? null : form.end_date || null,
                 notes: form.notes || null,
@@ -373,61 +356,54 @@ export default function EditMedicationSheet({
                         </div>
 
                         <div className="space-y-4">
-                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div className="space-y-2.5">
-                                    <Label className="text-base font-medium text-foreground">
-                                        Frequency *
-                                    </Label>
-                                    <Select
-                                        value={form.frequency}
-                                        onValueChange={(value) =>
-                                            updateField("frequency", value)
-                                        }
-                                    >
-                                        <SelectTrigger className="bg-background border-border/60 focus:border-primary rounded-xl h-11">
-                                            <SelectValue placeholder="Select frequency" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border-border/60">
-                                            {MEDICATION_FREQUENCY_OPTIONS.map((option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                    className="rounded-lg focus:bg-muted"
-                                                >
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
-
-                                <div className="space-y-2.5">
-                                    <Label className="text-base font-medium text-foreground">
-                                        Specific Schedule
-                                    </Label>
-                                    <Select
-                                        value={form.schedule}
-                                        onValueChange={(value) =>
-                                            updateField("schedule", value)
-                                        }
-                                    >
-                                        <SelectTrigger className="bg-background border-border/60 focus:border-primary rounded-xl h-11">
-                                            <SelectValue placeholder="Select schedule" />
-                                        </SelectTrigger>
-                                        <SelectContent className="rounded-xl border-border/60">
-                                            {scheduleOptions.map((option) => (
-                                                <SelectItem
-                                                    key={option.value}
-                                                    value={option.value}
-                                                    className="rounded-lg focus:bg-muted"
-                                                >
-                                                    {option.label}
-                                                </SelectItem>
-                                            ))}
-                                        </SelectContent>
-                                    </Select>
-                                </div>
+                            <div className="space-y-2.5">
+                                <Label className="text-base font-medium text-foreground">
+                                    Frequency *
+                                </Label>
+                                <Select
+                                    value={form.frequency}
+                                    onValueChange={(value) => updateField("frequency", value)}
+                                >
+                                    <SelectTrigger className="bg-background border-border/60 focus:border-primary rounded-xl h-11">
+                                        <SelectValue placeholder="Select frequency" />
+                                    </SelectTrigger>
+                                    <SelectContent className="rounded-xl border-border/60">
+                                        {MEDICATION_FREQUENCY_OPTIONS.map((option) => (
+                                            <SelectItem key={option.value} value={option.value} className="rounded-lg focus:bg-muted">
+                                                {option.label}
+                                            </SelectItem>
+                                        ))}
+                                    </SelectContent>
+                                </Select>
                             </div>
+
+                            {form.scheduleTimes.length > 0 && (
+                                <div className="space-y-2.5">
+                                    <Label className="text-base font-medium text-foreground">
+                                        Dose Time{form.scheduleTimes.length > 1 ? "s" : ""} *
+                                    </Label>
+                                    <div className="flex flex-wrap gap-3">
+                                        {form.scheduleTimes.map((time, idx) => (
+                                            <div key={idx} className="flex items-center gap-2">
+                                                <div className="flex items-center gap-1.5 text-muted-foreground text-sm">
+                                                    <Clock className="h-3.5 w-3.5" />
+                                                    <span>Dose {idx + 1}</span>
+                                                </div>
+                                                <Input
+                                                    type="time"
+                                                    value={time}
+                                                    onChange={(e) => {
+                                                        const next = [...form.scheduleTimes];
+                                                        next[idx] = e.target.value;
+                                                        setForm((prev) => ({ ...prev, scheduleTimes: next }));
+                                                    }}
+                                                    className="h-10 w-32 rounded-xl bg-background border-border/60"
+                                                />
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </Card>
 
