@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { ScrollText, X, RefreshCw, Download } from "lucide-react";
+import { toast } from "sonner";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import {
@@ -136,9 +137,14 @@ export default function AuditTrailPage() {
 			});
 			if (!res.ok) throw new Error("Export failed");
 			const json: AuditResponse = await res.json();
+			if (json.total > json.data.length) {
+				toast.warning(
+					`Export capped at ${json.data.length.toLocaleString()} rows. ${(json.total - json.data.length).toLocaleString()} entries were omitted. Narrow your date range to export all.`
+				);
+			}
 			exportAuditLogsToCSV(json.data);
 		} catch {
-			// silently ignore export errors
+			toast.error("Export failed. Please try again.");
 		} finally {
 			setExporting(false);
 		}
