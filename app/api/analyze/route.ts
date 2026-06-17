@@ -157,8 +157,8 @@ export async function POST(req: NextRequest) {
 			);
 		}
 
-		// Enrich patient context from DB for logged-in patients
-		const profileId = session.kind === "patient" ? session.profileId : null;
+		// Enrich patient context from DB for any logged-in user
+		const profileId = "profileId" in session ? session.profileId : null;
 		if (profileId) {
 			cleanContext = await enrichContextFromDb(profileId, cleanContext);
 		}
