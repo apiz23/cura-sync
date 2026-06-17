@@ -6,6 +6,7 @@ import {
     Shield,
     Hospital,
     ScrollText,
+    BarChart3,
 } from "lucide-react";
 
 export const adminMenu = [
@@ -53,6 +54,12 @@ export const adminMenu = [
         title: "System & Security",
         roles: ["admin"],
         items: [
+            {
+                title: "Reports",
+                url: "/admin/reports",
+                icon: BarChart3,
+                roles: ["admin"],
+            },
             {
                 title: "Audit Trail",
                 url: "/admin/audit",
