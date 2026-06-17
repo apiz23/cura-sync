@@ -25,12 +25,15 @@ import {
 	Clock,
 	MapPin,
 	Edit,
+	ExternalLink,
+	Paperclip,
 	Printer,
 	ArrowLeft,
 	Scissors,
 	AlertTriangle,
 	Plus,
 	ShieldCheck,
+	Upload,
 } from "lucide-react";
 import React, { useCallback, useEffect, useState } from "react";
 import { useRef } from "react";
@@ -137,6 +140,7 @@ type MedEncounter = {
 	reason: string | null;
 	diagnosis_summary: string | null;
 	notes: string | null;
+	ipfs_cid: string | null;
 };
 
 type MedicalRecordsData = {
@@ -1008,58 +1012,140 @@ function MedicalRecordsTabs({
 					<MedEmptyState label="encounters" />
 				) : (
 					records.encounters.map((e) => (
-						<div key={e.id} className="rounded-xl border border-border bg-card p-4">
-							<div className="flex flex-wrap items-start justify-between gap-3">
-								<div className="flex items-center gap-3">
-									<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-										<CalendarDays className="h-4 w-4" />
-									</div>
-									<div>
-										<p className="font-semibold text-foreground">{e.reason ?? "Visit"}</p>
-										<p className="text-base text-muted-foreground">
-											{formatDate(e.encounter_date)}
-											{e.facility_name ? ` · ${e.facility_name}` : null}
-											{e.provider_name ? ` · ${e.provider_name}` : null}
-										</p>
-									</div>
-								</div>
-								<div className="flex flex-wrap items-center gap-2">
-									<Badge variant="outline">{e.encounter_type}</Badge>
-									{canManage && (
-										<EditMedicalRecordSheet
-											patientId={patientId}
-											recordId={e.id}
-											recordType="encounter"
-											initialFields={{
-												encounter_type: e.encounter_type,
-												encounter_date: e.encounter_date,
-												facility_name: e.facility_name ?? "",
-												provider_name: e.provider_name ?? "",
-												reason: e.reason ?? "",
-												diagnosis_summary: e.diagnosis_summary ?? "",
-												notes: e.notes ?? "",
-											}}
-											onSuccess={onRefresh}
-										>
-											<Button size="sm" variant="ghost" className="h-7 px-2">
-												<Edit className="h-3.5 w-3.5" />
-											</Button>
-										</EditMedicalRecordSheet>
-									)}
-								</div>
-							</div>
-							{e.diagnosis_summary && (
-								<p className="mt-3 text-base text-muted-foreground">
-									<span className="font-medium text-foreground">Diagnosis: </span>
-									{e.diagnosis_summary}
-								</p>
-							)}
-							{e.notes && <p className="mt-1 text-base text-muted-foreground">{e.notes}</p>}
-						</div>
+						<EncounterCard
+							key={e.id}
+							encounter={e}
+							patientId={patientId}
+							canManage={canManage}
+							onRefresh={onRefresh}
+						/>
 					))
 				)}
 			</TabsContent>
 		</Tabs>
+	);
+}
+
+function EncounterCard({
+	encounter: e,
+	patientId,
+	canManage,
+	onRefresh,
+}: {
+	encounter: MedEncounter;
+	patientId: string;
+	canManage: boolean;
+	onRefresh: () => void;
+}) {
+	const [uploading, setUploading] = useState(false);
+	const [ipfsCid, setIpfsCid] = useState<string | null>(e.ipfs_cid ?? null);
+	const fileInputRef = useRef<HTMLInputElement>(null);
+
+	const handleFileChange = async (ev: React.ChangeEvent<HTMLInputElement>) => {
+		const file = ev.target.files?.[0];
+		if (!file) return;
+		setUploading(true);
+		try {
+			const form = new FormData();
+			form.append("file", file);
+			const res = await fetch(`/api/patients/${patientId}/records/${e.id}/upload`, {
+				method: "POST",
+				body: form,
+			});
+			const json = await res.json().catch(() => null);
+			if (!res.ok) throw new Error(json?.error ?? "Upload failed");
+			setIpfsCid(json.cid as string);
+			toast.success("Document uploaded to IPFS");
+			onRefresh();
+		} catch (err) {
+			toast.error(err instanceof Error ? err.message : "Upload failed");
+		} finally {
+			setUploading(false);
+			if (fileInputRef.current) fileInputRef.current.value = "";
+		}
+	};
+
+	return (
+		<div className="rounded-xl border border-border bg-card p-4">
+			<div className="flex flex-wrap items-start justify-between gap-3">
+				<div className="flex items-center gap-3">
+					<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+						<CalendarDays className="h-4 w-4" />
+					</div>
+					<div>
+						<p className="font-semibold text-foreground">{e.reason ?? "Visit"}</p>
+						<p className="text-base text-muted-foreground">
+							{formatDate(e.encounter_date)}
+							{e.facility_name ? ` · ${e.facility_name}` : null}
+							{e.provider_name ? ` · ${e.provider_name}` : null}
+						</p>
+					</div>
+				</div>
+				<div className="flex flex-wrap items-center gap-2">
+					<Badge variant="outline">{e.encounter_type}</Badge>
+					{ipfsCid ? (
+						<a
+							href={`https://gateway.pinata.cloud/ipfs/${ipfsCid}`}
+							target="_blank"
+							rel="noopener noreferrer"
+						>
+							<Badge variant="secondary" className="flex items-center gap-1 text-xs">
+								<Paperclip className="h-3 w-3" />
+								IPFS doc
+								<ExternalLink className="h-3 w-3" />
+							</Badge>
+						</a>
+					) : null}
+					{canManage && (
+						<>
+							<input
+								ref={fileInputRef}
+								type="file"
+								className="hidden"
+								accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+								onChange={handleFileChange}
+							/>
+							<Button
+								size="sm"
+								variant="ghost"
+								className="h-7 px-2"
+								disabled={uploading}
+								onClick={() => fileInputRef.current?.click()}
+								title="Upload document to IPFS"
+							>
+								<Upload className="h-3.5 w-3.5" />
+							</Button>
+							<EditMedicalRecordSheet
+								patientId={patientId}
+								recordId={e.id}
+								recordType="encounter"
+								initialFields={{
+									encounter_type: e.encounter_type,
+									encounter_date: e.encounter_date,
+									facility_name: e.facility_name ?? "",
+									provider_name: e.provider_name ?? "",
+									reason: e.reason ?? "",
+									diagnosis_summary: e.diagnosis_summary ?? "",
+									notes: e.notes ?? "",
+								}}
+								onSuccess={onRefresh}
+							>
+								<Button size="sm" variant="ghost" className="h-7 px-2">
+									<Edit className="h-3.5 w-3.5" />
+								</Button>
+							</EditMedicalRecordSheet>
+						</>
+					)}
+				</div>
+			</div>
+			{e.diagnosis_summary && (
+				<p className="mt-3 text-base text-muted-foreground">
+					<span className="font-medium text-foreground">Diagnosis: </span>
+					{e.diagnosis_summary}
+				</p>
+			)}
+			{e.notes && <p className="mt-1 text-base text-muted-foreground">{e.notes}</p>}
+		</div>
 	);
 }
 

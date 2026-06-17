@@ -25,8 +25,47 @@ const mono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-	title: "CuraSync",
-	description: "AI-powered healthcare platform",
+	title: {
+		default: "CuraSync — AI-Powered Healthcare Platform",
+		template: "%s | CuraSync",
+	},
+	description:
+		"CuraSync connects patients with clinics through AI-powered health tracking, appointment management, and real-time monitoring. Available across Malaysia.",
+	keywords: [
+		"healthcare platform Malaysia",
+		"clinic management system",
+		"AI health tracking",
+		"patient management",
+		"appointment booking Malaysia",
+		"CuraSync",
+	],
+	metadataBase: new URL("https://cura-sync.my"),
+	alternates: {
+		canonical: "/",
+	},
+	openGraph: {
+		title: "CuraSync — AI-Powered Healthcare Platform",
+		description:
+			"Connect patients with clinics through AI health tracking and real-time monitoring.",
+		url: "https://cura-sync.my",
+		siteName: "CuraSync",
+		locale: "en_MY",
+		type: "website",
+	},
+	twitter: {
+		card: "summary_large_image",
+		title: "CuraSync — AI-Powered Healthcare Platform",
+		description:
+			"Connect patients with clinics through AI health tracking and real-time monitoring.",
+	},
+	robots: {
+		index: true,
+		follow: true,
+		googleBot: {
+			index: true,
+			follow: true,
+		},
+	},
 	icons: {
 		icon: [
 			{ url: "/icons/favicon-16x16.png", sizes: "16x16", type: "image/png" },

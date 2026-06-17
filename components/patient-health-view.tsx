@@ -3,6 +3,7 @@
 import { memo, useMemo } from "react";
 import {
     Activity,
+    Droplets,
     Heart,
     Moon,
     Footprints,
@@ -61,12 +62,14 @@ type DayBucket = {
     steps: number | null;
     sleepHours: number | null;
     heartRate: number | null;
+    spo2: number | null;
 };
 
 type Aggregates = {
     avgSleepHours: number | null;
     avgHeartRate: number | null;
     avgSteps: number | null;
+    avgSpo2: number | null;
 };
 
 type Trend = "up" | "down" | "flat" | null;
@@ -88,6 +91,10 @@ const hrConfig = {
 
 const sleepConfig = {
     sleepHours: { label: "Sleep (hrs)", color: "var(--chart-4)" },
+} satisfies ChartConfig;
+
+const spo2Config = {
+    spo2: { label: "SpO₂ (%)", color: "#0ea5e9" },
 } satisfies ChartConfig;
 
 function formatLocalDate(d: Date): string {
@@ -134,11 +141,12 @@ function computeAggregates(snapshots: HealthSyncSnapshot[]): Aggregates {
     const days = getSnapshotWindowDays(snapshots);
     const daySet = new Set(days);
     const recent = snapshots.filter((s) => daySet.has(snapLocalDate(s.rangeStart)));
-    if (!recent.length) return { avgSleepHours: null, avgHeartRate: null, avgSteps: null };
+    if (!recent.length) return { avgSleepHours: null, avgHeartRate: null, avgSteps: null, avgSpo2: null };
 
     const withSleep = recent.filter((s) => s.summary.totalSleepMinutes > 0);
     const withHR = recent.filter((s) => s.summary.averageHeartRateBpm !== null);
     const withSteps = recent.filter((s) => s.summary.stepsCount > 0);
+    const withSpo2 = recent.filter((s) => (s.summary.averageSpo2Percent ?? 0) > 0);
 
     return {
         avgSleepHours: withSleep.length
@@ -155,6 +163,11 @@ function computeAggregates(snapshots: HealthSyncSnapshot[]): Aggregates {
         avgSteps: withSteps.length
             ? Math.round(
                   withSteps.reduce((sum, s) => sum + s.summary.stepsCount, 0) / withSteps.length
+              )
+            : null,
+        avgSpo2: withSpo2.length
+            ? parseFloat(
+                  (withSpo2.reduce((sum, s) => sum + (s.summary.averageSpo2Percent ?? 0), 0) / withSpo2.length).toFixed(1)
               )
             : null,
     };
@@ -181,6 +194,7 @@ function buildChartData(snapshots: HealthSyncSnapshot[]): DayBucket[] {
                     ? parseFloat((snap.summary.totalSleepMinutes / 60).toFixed(1))
                     : null,
             heartRate: snap?.summary.averageHeartRateBpm ?? null,
+            spo2: snap?.summary.averageSpo2Percent ?? null,
         };
     });
 }
@@ -217,6 +231,12 @@ function hrColor(bpm: number): string {
     if (bpm >= 60 && bpm <= 100) return "text-chart-3";
     if (bpm > 100) return "text-destructive";
     return "text-chart-5";
+}
+
+function spo2Color(pct: number): string {
+    if (pct >= 95) return "text-sky-500";
+    if (pct >= 90) return "text-chart-5";
+    return "text-destructive";
 }
 
 const StatCard = memo(function StatCard({
@@ -288,6 +308,7 @@ export function PatientHealthView({
             steps: computeTrend(latest?.steps ?? null, aggregates.avgSteps),
             hr: computeTrend(latest?.heartRate ?? null, aggregates.avgHeartRate),
             sleep: computeTrend(latest?.sleepHours ?? null, aggregates.avgSleepHours),
+            spo2: computeTrend(latest?.spo2 ?? null, aggregates.avgSpo2),
         };
     }, [chartData, aggregates]);
 
@@ -337,7 +358,7 @@ export function PatientHealthView({
                 </div>
             )}
 
-            <div className="grid gap-4 sm:grid-cols-3">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                 <StatCard
                     label="Avg Sleep · 7 days"
                     value={
@@ -393,6 +414,27 @@ export function PatientHealthView({
                     color="var(--chart-1)"
                     icon={Footprints}
                     trend={trends.steps}
+                />
+                <StatCard
+                    label="Avg SpO₂ · 7 days"
+                    value={
+                        aggregates.avgSpo2 !== null
+                            ? String(aggregates.avgSpo2)
+                            : null
+                    }
+                    unit="%"
+                    sub={
+                        aggregates.avgSpo2 !== null
+                            ? aggregates.avgSpo2 >= 95
+                                ? "Normal oxygen level"
+                                : aggregates.avgSpo2 >= 90
+                                  ? "Below normal — monitor"
+                                  : "Critical — seek care"
+                            : undefined
+                    }
+                    color="#0ea5e9"
+                    icon={Droplets}
+                    trend={trends.spo2}
                 />
             </div>
 
@@ -556,6 +598,33 @@ export function PatientHealthView({
                 </CardContent>
             </Card>
 
+            {/* SpO₂ */}
+            <Card className="border shadow-sm">
+                <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-semibold">Blood Oxygen (SpO₂)</CardTitle>
+                    <CardDescription>% · last 7 days · normal ≥95% (dashed)</CardDescription>
+                </CardHeader>
+                <CardContent>
+                    <ChartContainer config={spo2Config} className="h-52 w-full">
+                        <AreaChart accessibilityLayer data={chartData}>
+                            <defs>
+                                <linearGradient id="spo2Grad" x1="0" y1="0" x2="0" y2="1">
+                                    <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.25} />
+                                    <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0} />
+                                </linearGradient>
+                            </defs>
+                            <CartesianGrid vertical={false} />
+                            <XAxis dataKey="label" tickLine={false} tickMargin={8} axisLine={false} tick={{ fontSize: 11 }} />
+                            <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 10 }} domain={[85, 100]} tickFormatter={(v) => `${v}%`} width={36} />
+                            <ReferenceLine y={95} stroke="#10b981" strokeDasharray="3 3" strokeOpacity={0.5} label={{ value: "95%", position: "insideTopRight", fontSize: 10, fill: "#10b981" }} />
+                            <ReferenceLine y={90} stroke="var(--chart-5)" strokeDasharray="3 3" strokeOpacity={0.4} />
+                            <ChartTooltip cursor={false} content={<ChartTooltipContent hideLabel={false} />} />
+                            <Area type="monotone" dataKey="spo2" stroke="#0ea5e9" strokeWidth={2} fill="url(#spo2Grad)" connectNulls={false} dot={{ fill: "#0ea5e9", strokeWidth: 0, r: 3 }} activeDot={{ r: 5 }} />
+                        </AreaChart>
+                    </ChartContainer>
+                </CardContent>
+            </Card>
+
             {/* History table */}
             <Card className="border shadow-sm">
                 <CardHeader className="pb-2">
@@ -572,6 +641,7 @@ export function PatientHealthView({
                                     <th className="px-4 py-3 text-right font-medium">Steps</th>
                                     <th className="px-4 py-3 text-right font-medium">Sleep</th>
                                     <th className="px-4 py-3 text-right font-medium">Avg HR</th>
+                                    <th className="px-4 py-3 text-right font-medium">SpO₂</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -581,6 +651,7 @@ export function PatientHealthView({
                                             ? snap.summary.totalSleepMinutes / 60
                                             : null;
                                     const hr = snap.summary.averageHeartRateBpm;
+                                    const spo2 = snap.summary.averageSpo2Percent;
                                     return (
                                         <tr
                                             key={snap.id}
@@ -613,6 +684,11 @@ export function PatientHealthView({
                                                 className={`px-4 py-3 text-right font-mono font-medium ${hr !== null ? hrColor(hr) : "text-muted-foreground"}`}
                                             >
                                                 {hr !== null ? `${hr} bpm` : "—"}
+                                            </td>
+                                            <td
+                                                className={`px-4 py-3 text-right font-mono font-medium ${spo2 !== null ? spo2Color(spo2) : "text-muted-foreground"}`}
+                                            >
+                                                {spo2 !== null ? `${spo2}%` : "—"}
                                             </td>
                                         </tr>
                                     );

@@ -1,26 +1,12 @@
-import { NextResponse } from "next/server";
-import { auth } from "@clerk/nextjs/server";
+import { NextRequest, NextResponse } from "next/server";
 import supabase from "@/lib/supabase";
+import { requireCaregiverSession } from "@/lib/authz";
 
-export async function GET() {
-    const { userId } = await auth();
-    if (!userId) {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
+export async function GET(req: NextRequest) {
+    const session = await requireCaregiverSession(req);
+    if (session instanceof NextResponse) return session;
 
-    // Verify caregiver role.
-    const { data: profile, error: profileError } = await supabase
-        .from("cura_profiles")
-        .select("role")
-        .eq("id", userId)
-        .maybeSingle();
-
-    if (profileError || !profile) {
-        return NextResponse.json({ error: "Profile not found" }, { status: 404 });
-    }
-    if (profile.role !== "caregiver") {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+    const userId = session.profileId;
 
     // Fetch active caregiver links with patient profiles.
     const { data: links, error: linksError } = await supabase

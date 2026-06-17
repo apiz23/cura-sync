@@ -1,6 +1,7 @@
 import {
     LayoutDashboard,
     Brain,
+    Bell,
     FileText,
     CalendarDays,
     ShieldCheck,
@@ -9,6 +10,7 @@ import {
     Activity,
     Lock,
     Settings,
+    Video,
 } from "lucide-react";
 
 export const userMenu = [
@@ -45,6 +47,11 @@ export const userMenu = [
                 url: "/user/medications",
                 icon: Pill,
             },
+            {
+                title: "Telehealth",
+                url: "/user/telehealth",
+                icon: Video,
+            },
         ],
     },
     {
@@ -69,6 +76,11 @@ export const userMenu = [
                 title: "Profile Settings",
                 url: "/user/profile",
                 icon: User,
+            },
+            {
+                title: "Notifications",
+                url: "/user/notifications",
+                icon: Bell,
             },
             {
                 title: "Preferences",

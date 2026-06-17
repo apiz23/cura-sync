@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, AlertTriangle, Stethoscope, Scissors, CalendarDays } from "lucide-react";
+import { FileText, AlertTriangle, ExternalLink, Paperclip, Stethoscope, Scissors, CalendarDays } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -49,6 +49,7 @@ type Encounter = {
     reason: string | null;
     diagnosis_summary: string | null;
     notes: string | null;
+    ipfs_cid: string | null;
     created_at: string;
 };
 
@@ -347,7 +348,15 @@ export default function RecordsPage() {
                                                 </p>
                                             </div>
                                         </div>
-                                        <Badge variant="outline">{encounter.encounter_type}</Badge>
+                                        <div className="flex flex-wrap gap-2">
+                                            <Badge variant="outline">{encounter.encounter_type}</Badge>
+                                            {encounter.ipfs_cid ? (
+                                                <Badge variant="outline" className="gap-1 border-sky-500/30 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
+                                                    <Paperclip className="h-3 w-3" />
+                                                    Document
+                                                </Badge>
+                                            ) : null}
+                                        </div>
                                     </div>
                                     {encounter.diagnosis_summary ? (
                                         <p className="mt-3 text-base text-muted-foreground">
@@ -357,6 +366,17 @@ export default function RecordsPage() {
                                     ) : null}
                                     {encounter.notes ? (
                                         <p className="mt-1 text-base text-muted-foreground">{encounter.notes}</p>
+                                    ) : null}
+                                    {encounter.ipfs_cid ? (
+                                        <a
+                                            href={`https://gateway.pinata.cloud/ipfs/${encounter.ipfs_cid}`}
+                                            target="_blank"
+                                            rel="noopener noreferrer"
+                                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-300 dark:hover:bg-sky-900/40"
+                                        >
+                                            <ExternalLink className="h-3 w-3" />
+                                            View attached document (IPFS)
+                                        </a>
                                     ) : null}
                                 </div>
                             ))

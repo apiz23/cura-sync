@@ -5,6 +5,7 @@ import {
   Building,
   Calendar,
   CalendarClock,
+  Download,
   Clock,
   Filter,
   History,
@@ -104,6 +105,47 @@ function formatDate(dateString: string) {
   }).format(date);
 }
 
+function toIcsDate(dateStr: string, timeStr: string): string {
+  const [y, mo, d] = dateStr.split("-");
+  const [h, mi] = timeStr.split(":");
+  return `${y}${mo?.padStart(2, "0")}${d?.padStart(2, "0")}T${(h ?? "00").padStart(2, "0")}${(mi ?? "00").padStart(2, "0")}00`;
+}
+
+function exportAppointmentIcs(appointment: Appointment) {
+  const dtStart = toIcsDate(appointment.appointment_date, appointment.start_time);
+  const dtEnd = toIcsDate(appointment.appointment_date, appointment.end_time || appointment.start_time);
+  const summary = `Appointment — ${appointment.facility_name ?? "Healthcare Facility"}`;
+  const description = appointment.reason_for_visit?.trim() || "Medical appointment";
+  const uid = `cura-sync-appt-${appointment.id}@curasync`;
+  const now = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
+
+  const ics = [
+    "BEGIN:VCALENDAR",
+    "VERSION:2.0",
+    "PRODID:-//CuraSync//Appointment//EN",
+    "CALSCALE:GREGORIAN",
+    "METHOD:PUBLISH",
+    "BEGIN:VEVENT",
+    `UID:${uid}`,
+    `DTSTAMP:${now}Z`,
+    `DTSTART:${dtStart}`,
+    `DTEND:${dtEnd}`,
+    `SUMMARY:${summary}`,
+    `DESCRIPTION:${description}`,
+    "STATUS:CONFIRMED",
+    "END:VEVENT",
+    "END:VCALENDAR",
+  ].join("\r\n");
+
+  const blob = new Blob([ics], { type: "text/calendar;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = `appointment-${appointment.appointment_date}.ics`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
 function toAppointmentKey(appointment: Appointment) {
   return `${appointment.appointment_date}T${appointment.start_time}`;
 }
@@ -200,6 +242,15 @@ function AppointmentList({
                     </Button>
                   </Link>
                 ) : null}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => exportAppointmentIcs(appointment)}
+                  title="Add to calendar"
+                >
+                  <Download className="mr-1.5 h-3.5 w-3.5" />
+                  .ics
+                </Button>
                 {canCancel ? (
                   <Badge variant="secondary" className="px-3 py-2 text-base">
                     Active booking

@@ -1,20 +1,58 @@
 import { NextRequest, NextResponse } from "next/server";
 import { clerkClient } from "@clerk/nextjs/server";
-import { requireAnySession } from "@/lib/authz";
+import { requireMobileOrBrowserUserId } from "@/lib/mobile-auth";
 import supabaseAdmin from "@/lib/supabase-admin";
 
-export async function POST(req: NextRequest) {
-    // Redeeming a code is how a user BECOMES a caregiver — it must not require
-    // being one already. requireAnySession accepts any authenticated Clerk
-    // user (patient or existing caregiver) and rejects only staff/admin/doctor
-    // sessions, which use a separate auth system entirely.
-    const session = await requireAnySession(req);
-    if (session instanceof NextResponse) return session;
-    if (session.kind !== "patient") {
-        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-    }
+async function resolveProfileId(clerkUserId: string): Promise<string | null> {
+    // Direct ID match (most common case).
+    const { data: direct } = await supabaseAdmin
+        .from("cura_profiles")
+        .select("id")
+        .eq("id", clerkUserId)
+        .maybeSingle();
+    if (direct) return direct.id;
 
-    const caregiverId = session.profileId;
+    // Fallback: match by Clerk email (handles migrated/mismatched accounts).
+    try {
+        const client = await clerkClient();
+        const clerkUser = await client.users.getUser(clerkUserId);
+        const email = clerkUser.emailAddresses[0]?.emailAddress;
+        if (!email) return null;
+
+        const { data: byEmail } = await supabaseAdmin
+            .from("cura_profiles")
+            .select("id")
+            .eq("email", email)
+            .order("created_at", { ascending: false })
+            .limit(1)
+            .maybeSingle();
+        if (byEmail) return byEmail.id;
+
+        // Auto-provision a new profile for first-time users.
+        const fullName = `${clerkUser.firstName ?? ""} ${clerkUser.lastName ?? ""}`.trim();
+        const { data: provisioned } = await supabaseAdmin
+            .from("cura_profiles")
+            .upsert(
+                { id: clerkUserId, email, full_name: fullName || null, role: "patient", updated_at: new Date().toISOString() },
+                { onConflict: "id" }
+            )
+            .select("id")
+            .single();
+        return provisioned?.id ?? null;
+    } catch {
+        return null;
+    }
+}
+
+export async function POST(req: NextRequest) {
+    // Any authenticated Clerk user can redeem — they become a caregiver after.
+    const clerkUserId = await requireMobileOrBrowserUserId(req);
+    if (clerkUserId instanceof NextResponse) return clerkUserId;
+
+    const caregiverId = await resolveProfileId(clerkUserId);
+    if (!caregiverId) {
+        return NextResponse.json({ error: "Profile not found" }, { status: 404 });
+    }
 
     let body: { code?: string; relationship?: string };
     try {
@@ -53,7 +91,7 @@ export async function POST(req: NextRequest) {
         .from("cura_caregiver_links")
         .select("id")
         .eq("caregiver_profile_id", caregiverId)
-        .eq("patient", patientId)
+        .eq("patient_profile_id", patientId)
         .eq("status", "ACTIVE")
         .maybeSingle();
 
@@ -66,13 +104,14 @@ export async function POST(req: NextRequest) {
         .from("cura_caregiver_links")
         .insert({
             caregiver_profile_id: caregiverId,
-            patient: patientId,
+            patient_profile_id: patientId,
             relationship: relationship || null,
             status: "ACTIVE",
         });
 
     if (linkError) {
-        return NextResponse.json({ error: "Failed to create link" }, { status: 500 });
+        console.error("cura_caregiver_links insert error:", linkError);
+        return NextResponse.json({ error: linkError.message }, { status: 500 });
     }
 
     // Mark invite as used.
@@ -106,7 +145,7 @@ export async function POST(req: NextRequest) {
 
         try {
             const client = await clerkClient();
-            await client.users.updateUserMetadata(caregiverId, {
+            await client.users.updateUserMetadata(clerkUserId, {
                 publicMetadata: { role: "caregiver" },
             });
         } catch (err) {

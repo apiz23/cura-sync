@@ -19,11 +19,16 @@ export function CaregiverInviteCard() {
         setState({ status: "loading" });
         try {
             const res = await fetch("/api/patient/caregiver-invite", { method: "POST" });
-            const json = await res.json();
-            if (!res.ok) throw new Error(json?.error ?? "Failed to generate code");
-            setState({ status: "ready", code: json.data.code, expiresAt: json.data.expiresAt });
+            const rawText = await res.text();
+            let json: { data?: { code: string; expiresAt: string }; error?: string } = {};
+            try { json = JSON.parse(rawText); } catch { /* non-JSON */ }
+            if (!res.ok) {
+                setState({ status: "error", message: `HTTP ${res.status}: ${json?.error ?? rawText}` });
+                return;
+            }
+            setState({ status: "ready", code: json.data!.code, expiresAt: json.data!.expiresAt });
         } catch (err) {
-            setState({ status: "error", message: err instanceof Error ? err.message : "Failed" });
+            setState({ status: "error", message: `Network error: ${err instanceof Error ? err.message : String(err)}` });
         }
     }
 
