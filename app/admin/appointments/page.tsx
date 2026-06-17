@@ -12,6 +12,7 @@ import {
     ChevronRight,
     Clock,
     Clock4,
+    Download,
     FileText,
     Filter,
     Loader2,
@@ -279,6 +280,41 @@ export default function AppointmentsPage() {
         }).format(date);
     };
 
+    function exportToCSV(appointments: Appointment[]) {
+        function escapeField(value: string): string {
+            if (value.includes(",") || value.includes('"') || value.includes("\n")) {
+                return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+        }
+
+        const headers = ["No", "Patient Name", "Date", "Time", "Reason", "Status"];
+        const rows = appointments.map((appt, index) =>
+            [
+                String(index + 1),
+                appt.patient_name,
+                appt.appointment_date,
+                appt.start_time,
+                appt.reason_for_visit ?? "",
+                appt.status,
+            ]
+                .map(escapeField)
+                .join(",")
+        );
+
+        const csv = [headers.join(","), ...rows].join("\r\n");
+        const BOM = "﻿";
+        const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `appointments-${new Date().toISOString().slice(0, 10)}.csv`;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        URL.revokeObjectURL(url);
+    }
+
     const getStatusConfig = (status: Appointment["status"]) => {
         switch (status) {
             case "CONFIRMED":
@@ -507,15 +543,29 @@ export default function AppointmentsPage() {
                                 : "Manage and track patient appointments"}
                         </p>
                     </div>
-                    <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={fetchAppointments}
-                        className="gap-2 border-border hover:bg-accent"
-                    >
-                        <RefreshCw className="h-4 w-4" />
-                        Refresh
-                    </Button>
+                    <div className="flex items-center gap-2">
+                        {!isDoctor && (
+                            <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => exportToCSV(filteredAppointments)}
+                                className="gap-2 border-border hover:bg-accent"
+                                disabled={filteredAppointments.length === 0}
+                            >
+                                <Download className="h-4 w-4" />
+                                Export CSV
+                            </Button>
+                        )}
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={fetchAppointments}
+                            className="gap-2 border-border hover:bg-accent"
+                        >
+                            <RefreshCw className="h-4 w-4" />
+                            Refresh
+                        </Button>
+                    </div>
                 </div>
 
                 {error ? (
