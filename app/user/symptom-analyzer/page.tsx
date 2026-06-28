@@ -57,6 +57,19 @@ type AnalysisResult = {
 	iot_flags?: string[];
 };
 
+type SymptomHistoryItem = {
+	id: string;
+	symptoms_text: string;
+	possible_disease: string | null;
+	confidence_level: string | null;
+	urgency: AnalysisResult["urgency"];
+	suggested_action: string | null;
+	source: string | null;
+	normalized_symptoms: string[];
+	iot_flags: string[];
+	created_at: string;
+};
+
 type UserProfile = {
 	full_name?: string | null;
 	patient_profile?: {
@@ -467,6 +480,9 @@ export default function SymptomsCheckPage() {
 	const [iotData, setIotData] = useState<IoTData | null>(null);
 	const [feedbackGiven, setFeedbackGiven] = useState(false);
 	const [feedbackSent, setFeedbackSent] = useState(false);
+	const [historyItems, setHistoryItems] = useState<SymptomHistoryItem[]>([]);
+	const [historyLoading, setHistoryLoading] = useState(true);
+	const [expandedHistoryId, setExpandedHistoryId] = useState<string | null>(null);
 	const analyzeAbortRef = useRef<AbortController | null>(null);
 	const resultRef = useRef<HTMLDivElement | null>(null);
 
@@ -480,6 +496,29 @@ export default function SymptomsCheckPage() {
 				if (!cancelled) setProfile(data);
 			} catch (e) {
 				console.error("Profile fetch error:", e);
+			}
+		})();
+		return () => {
+			cancelled = true;
+		};
+	}, []);
+
+	useEffect(() => {
+		let cancelled = false;
+		void (async () => {
+			try {
+				const res = await fetch("/api/user/symptom-history?limit=20", {
+					cache: "no-store",
+				});
+				if (!res.ok) return;
+				const json = (await res.json().catch(() => null)) as
+					| { success?: boolean; data?: { items?: SymptomHistoryItem[] } }
+					| null;
+				if (!cancelled) setHistoryItems(json?.data?.items ?? []);
+			} catch (e) {
+				console.error("History fetch error:", e);
+			} finally {
+				if (!cancelled) setHistoryLoading(false);
 			}
 		})();
 		return () => {
@@ -1088,6 +1127,73 @@ export default function SymptomsCheckPage() {
 							<p className="font-medium text-foreground">
 								Informational only — not a medical diagnosis.
 							</p>
+						</CardContent>
+					</Card>
+
+					<Card className="border-border/60 bg-card shadow-none">
+						<CardHeader>
+							<CardTitle className="flex items-center gap-2 text-foreground">
+								<Clock className="h-5 w-5 text-muted-foreground" />
+								History
+							</CardTitle>
+						</CardHeader>
+						<CardContent className="space-y-2">
+							{historyLoading ? (
+								<p className="text-sm text-muted-foreground">Loading…</p>
+							) : historyItems.length === 0 ? (
+								<p className="text-sm text-muted-foreground">No past analyses yet.</p>
+							) : (
+								historyItems.map((item) => {
+									const itemUrgency = urgencyConfig(item.urgency);
+									const itemSource = sourceLabel(item.source ?? undefined);
+									const isExpanded = expandedHistoryId === item.id;
+									return (
+										<button
+											key={item.id}
+											type="button"
+											onClick={() =>
+												setExpandedHistoryId(isExpanded ? null : item.id)
+											}
+											className="w-full rounded-lg border border-border/60 bg-muted/10 p-3 text-left transition-colors hover:bg-muted/20"
+										>
+											<div className="flex items-center justify-between gap-2">
+												<p className="truncate text-sm font-medium text-foreground">
+													{item.possible_disease || "Analysis"}
+												</p>
+												<span
+													className={cn(
+														"shrink-0 rounded-full border px-2 py-0.5 text-[10px] font-semibold uppercase",
+														itemUrgency.badgeClass,
+													)}
+												>
+													{itemUrgency.label}
+												</span>
+											</div>
+											<p className="mt-1 text-xs text-muted-foreground">
+												{new Date(item.created_at).toLocaleDateString("en-MY", {
+													day: "numeric",
+													month: "short",
+													hour: "2-digit",
+													minute: "2-digit",
+												})}
+												{itemSource ? ` · ${itemSource.label}` : ""}
+											</p>
+											{isExpanded ? (
+												<div className="mt-2 space-y-1 border-t border-border/50 pt-2">
+													<p className="text-xs text-muted-foreground">
+														{item.symptoms_text}
+													</p>
+													{item.suggested_action ? (
+														<p className="text-xs leading-relaxed text-foreground">
+															{item.suggested_action}
+														</p>
+													) : null}
+												</div>
+											) : null}
+										</button>
+									);
+								})
+							)}
 						</CardContent>
 					</Card>
 
