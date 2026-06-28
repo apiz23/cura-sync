@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from "react";
 import { useUser } from "@clerk/nextjs";
-import { Activity, X, AlertTriangle } from "lucide-react";
+import { motion } from "framer-motion";
+import { X, AlertTriangle } from "lucide-react";
 
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -10,6 +11,7 @@ import {
     PatientHealthView,
     type HealthSyncSnapshot,
 } from "@/components/patient-health-view";
+import { EASE } from "@/hooks/use-motion-config";
 
 type HealthSyncResponse = {
     success: boolean;
@@ -99,41 +101,50 @@ export default function HealthTrackingPage() {
         }).catch(() => undefined);
     }
 
-    const severityStyles: Record<string, string> = {
-        CRITICAL: "border-destructive/40 bg-destructive/10 text-destructive",
-        WARNING: "border-chart-5/40 bg-chart-5/10 text-chart-5",
-        INFO: "border-chart-2/40 bg-chart-2/10 text-chart-2",
+    const severityIconClass: Record<string, string> = {
+        CRITICAL: "text-destructive",
+        WARNING: "text-amber-500 dark:text-amber-400",
+        INFO: "text-primary",
     };
 
     return (
         <UserPageShell>
+            <motion.div
+                className="contents"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: EASE }}
+            >
             <UserPageHeader
-                icon={Activity}
-                title="Health Tracking"
+                sectionLabel="Health Tracking"
+                title="Wearable & Health Data"
                 description="Your health data synced from the CuraSync mobile app over the last 7 days."
             />
 
             {alerts.length > 0 && (
-                <div className="space-y-2">
-                    {alerts.map((alert) => (
-                        <div
-                            key={alert.id}
-                            className={`flex items-start gap-3 rounded-xl border px-4 py-3 text-base ${severityStyles[alert.severity] ?? severityStyles.WARNING}`}
-                        >
-                            <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                            <div className="flex-1">
-                                <span className="font-semibold">{alert.title}.</span>{" "}
-                                {alert.body}
-                            </div>
-                            <button
-                                onClick={() => dismissAlert(alert.id)}
-                                className="shrink-0 opacity-60 hover:opacity-100"
-                                aria-label="Dismiss alert"
+                <div>
+                    {alerts.map((alert) => {
+                        const colorClass = severityIconClass[alert.severity] ?? severityIconClass.INFO;
+                        return (
+                            <div
+                                key={alert.id}
+                                className="flex items-start gap-3 border-b border-border/40 py-3 last:border-0"
                             >
-                                <X className="h-4 w-4" />
-                            </button>
-                        </div>
-                    ))}
+                                <AlertTriangle className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${colorClass}`} />
+                                <div className="flex-1 text-sm">
+                                    <span className={`font-semibold ${colorClass}`}>{alert.title}. </span>
+                                    <span className="text-muted-foreground">{alert.body}</span>
+                                </div>
+                                <button
+                                    onClick={() => dismissAlert(alert.id)}
+                                    className="shrink-0 text-muted-foreground transition-colors hover:text-foreground"
+                                    aria-label="Dismiss alert"
+                                >
+                                    <X className="h-3.5 w-3.5" />
+                                </button>
+                            </div>
+                        );
+                    })}
                 </div>
             )}
 
@@ -162,6 +173,7 @@ export default function HealthTrackingPage() {
                     latestVendor={latest?.source.vendor ?? null}
                 />
             )}
+            </motion.div>
         </UserPageShell>
     );
 }

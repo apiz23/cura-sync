@@ -130,15 +130,14 @@ export default function RecordsPage() {
     return (
         <UserPageShell>
             <UserPageHeader
-                icon={FileText}
+                sectionLabel="Medical Records"
                 title="Medical History"
                 description="Your health records as maintained by your registered clinic. Contact your care team to add or update entries."
                 meta={
                     !loading && records ? (
-                        <Badge variant="outline" className="gap-2 px-3 py-1.5">
-                            <FileText className="h-3 w-3" />
-                            <span>{totalEntries} total {totalEntries === 1 ? "entry" : "entries"}</span>
-                        </Badge>
+                        <span className="font-mono text-xs text-muted-foreground">
+                            {totalEntries} total {totalEntries === 1 ? "entry" : "entries"}
+                        </span>
                     ) : null
                 }
             />
@@ -162,8 +161,11 @@ export default function RecordsPage() {
                 </div>
             ) : records ? (
                 <Tabs defaultValue="conditions">
-                    <TabsList className="h-auto flex-wrap gap-1">
-                        <TabsTrigger value="conditions">
+                    <TabsList className="h-auto gap-0 rounded-none border-b border-border bg-transparent p-0 flex-wrap">
+                        <TabsTrigger
+                            value="conditions"
+                            className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                        >
                             Conditions
                             {records.conditions.length ? (
                                 <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
@@ -171,26 +173,26 @@ export default function RecordsPage() {
                                 </span>
                             ) : null}
                         </TabsTrigger>
-                        <TabsTrigger value="allergies">
+                        <TabsTrigger value="allergies" className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">
                             Allergies
                             {records.allergies.length ? (
-                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
+                                <span className="ml-2 font-mono text-[10px] text-muted-foreground">
                                     {records.allergies.length}
                                 </span>
                             ) : null}
                         </TabsTrigger>
-                        <TabsTrigger value="procedures">
+                        <TabsTrigger value="procedures" className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">
                             Procedures
                             {records.procedures.length ? (
-                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
+                                <span className="ml-2 font-mono text-[10px] text-muted-foreground">
                                     {records.procedures.length}
                                 </span>
                             ) : null}
                         </TabsTrigger>
-                        <TabsTrigger value="encounters">
+                        <TabsTrigger value="encounters" className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">
                             Encounters
                             {records.encounters.length ? (
-                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
+                                <span className="ml-2 font-mono text-[10px] text-muted-foreground">
                                     {records.encounters.length}
                                 </span>
                             ) : null}

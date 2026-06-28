@@ -400,8 +400,8 @@ export default function ProfilePage() {
     return (
         <UserPageShell>
             <UserPageHeader
-                icon={User}
-                title="Profile Settings"
+                sectionLabel="Your Profile"
+                title="Health Profile"
                 description="Manage your personal information and medical details"
             />
             

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import {
 	Pill,
@@ -40,6 +41,7 @@ import {
 	SelectItem,
 } from "@/components/ui/select";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
+import { EASE } from "@/hooks/use-motion-config";
 
 export default function MedicationPage() {
 	const [medications, setMedications] = useState<Medication[]>([]);
@@ -326,16 +328,21 @@ export default function MedicationPage() {
 						))}
 					</div>
 				</div>
-			</UserPageShell>
+		</UserPageShell>
 		);
 	}
 
 	return (
 		<UserPageShell>
-			<div className="space-y-8">
+			<motion.div
+				className="space-y-8"
+				initial={{ opacity: 0, y: 12 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.4, ease: EASE }}
+			>
 				<UserPageHeader
-					icon={Pill}
-					title="Medication Manager"
+					sectionLabel="Your Medications"
+					title="Medications"
 					description="Review clinician-managed prescriptions and log your adherence."
 				/>
 
@@ -560,7 +567,7 @@ export default function MedicationPage() {
 						)}
 					</div>
 				)}
-			</div>
+			</motion.div>
 		</UserPageShell>
 	);
 }

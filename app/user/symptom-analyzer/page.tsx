@@ -799,8 +799,8 @@ export default function SymptomsCheckPage() {
 			contentClassName="gap-6 lg:px-8 xl:px-10"
 		>
 			<UserPageHeader
-				icon={Brain}
-				title="AI symptom analyzer"
+				sectionLabel="AI Health Assistant"
+				title="Symptom Analyzer"
 				description="Capture symptoms, saved profile context, and wearable readings in one review before you talk to a healthcare professional."
 				className="border-border/60 bg-card shadow-none"
 				meta={

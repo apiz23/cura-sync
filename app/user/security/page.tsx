@@ -2,12 +2,14 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
+import { motion } from "framer-motion";
 import { Shield, ShieldCheck, Lock, Mail, CalendarDays, Key, LogOut, ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { toast } from "sonner";
+import { EASE } from "@/hooks/use-motion-config";
 
 function formatDate(value: Date | null | undefined) {
     if (!value) return "—";
@@ -28,17 +30,17 @@ function StatusRow({
     active?: boolean;
 }) {
     return (
-        <div className="flex items-center justify-between gap-4 rounded-lg bg-muted/40 px-4 py-3">
-            <span className="text-base text-muted-foreground">{label}</span>
+        <div className="flex items-center justify-between gap-4 border-b border-border/40 py-3 last:border-0">
+            <span className="text-sm text-muted-foreground">{label}</span>
             <div className="flex items-center gap-2">
                 {active !== undefined ? (
                     active ? (
-                        <CheckCircle className="h-4 w-4 text-primary" />
+                        <CheckCircle className="h-3.5 w-3.5 text-primary" />
                     ) : (
-                        <XCircle className="h-4 w-4 text-muted-foreground" />
+                        <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
                     )
                 ) : null}
-                <span className="text-right text-base font-medium text-foreground">{value}</span>
+                <span className="text-right text-sm font-medium text-foreground">{value}</span>
             </div>
         </div>
     );
@@ -106,17 +108,23 @@ export default function SecurityPage() {
 
     return (
         <UserPageShell>
+            <motion.div
+                className="contents"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: EASE }}
+            >
             <UserPageHeader
-                icon={Shield}
+                sectionLabel="Account Security"
                 title="Security"
                 description="Manage your account security, authentication methods, and active sessions."
             />
 
             {/* Account identity */}
             <section className="space-y-4">
-                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Account identity
-                </h2>
+                </p>
                 <div className="rounded-xl border border-border bg-card p-5 space-y-3">
                     <div className="flex items-center gap-3">
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
@@ -139,9 +147,9 @@ export default function SecurityPage() {
 
             {/* Security status */}
             <section className="space-y-4">
-                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Security status
-                </h2>
+                </p>
                 <div className="space-y-2">
                     <StatusRow
                         label="Two-factor authentication"
@@ -170,9 +178,9 @@ export default function SecurityPage() {
 
             {/* Actions */}
             <section className="space-y-4">
-                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Actions
-                </h2>
+                </p>
                 <div className="space-y-3">
                     <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4">
                         <div className="flex items-center gap-3">
@@ -246,9 +254,9 @@ export default function SecurityPage() {
 
             {/* Blockchain protection */}
             <section className="space-y-4">
-                <h2 className="text-base font-bold uppercase tracking-wider text-muted-foreground">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Record protection
-                </h2>
+                </p>
                 <div className="rounded-xl border border-border bg-card p-5">
                     <div className="flex items-start justify-between gap-4">
                         <div className="flex items-start gap-3">
@@ -288,6 +296,7 @@ export default function SecurityPage() {
                     </div>
                 </div>
             </section>
+            </motion.div>
         </UserPageShell>
     );
 }

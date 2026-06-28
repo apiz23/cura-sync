@@ -183,7 +183,7 @@ export default function BlockchainPage() {
 	return (
 		<UserPageShell>
 			<UserPageHeader
-				icon={ShieldCheck}
+				sectionLabel="Audit Trail"
 				title="Blockchain Security"
 				description="Records are hashed with keccak256 and anchored on the Polygon Amoy testnet. Click Verify on any entry to re-check the on-chain proof in real time."
 				meta={

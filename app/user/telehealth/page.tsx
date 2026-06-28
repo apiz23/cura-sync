@@ -183,6 +183,7 @@ export default function TelehealthPage() {
     return (
         <UserPageShell>
             <UserPageHeader
+                sectionLabel="Virtual Consultations"
                 title="Telehealth"
                 description="Join video consultations with your healthcare provider."
             />

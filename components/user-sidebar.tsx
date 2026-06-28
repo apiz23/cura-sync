@@ -73,8 +73,9 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 												tooltip={item.title}
 												className="
                                                     gap-3
-                                                    data-[active=true]:bg-primary/90
-                                                    data-[active=true]:text-primary-foreground
+                                                    data-[active=true]:bg-muted/70
+                                                    data-[active=true]:text-foreground
+                                                    data-[active=true]:font-semibold
                                                     group-data-[collapsible=icon]:justify-center
                                                 "
 											>

@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import { motion } from "framer-motion";
 import {
   Building,
   Calendar,
@@ -14,6 +15,7 @@ import {
   Users,
   X,
 } from "lucide-react";
+import { EASE } from "@/hooks/use-motion-config";
 import { useUser } from "@clerk/nextjs";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -557,15 +559,20 @@ export default function AppointmentPage() {
 
   return (
     <UserPageShell>
-      <div className="space-y-8">
+      <motion.div
+        className="space-y-8"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, ease: EASE }}
+      >
         <UserPageHeader
-          icon={Calendar}
+          sectionLabel="Your Appointments"
           title="Appointments"
           description="Manage active bookings, review appointment history, and book new visits."
           meta={
-            <Badge variant="outline" className="shrink-0 px-4 py-2">
-              {appointments.length} total appointments
-            </Badge>
+            <span className="font-mono text-xs text-muted-foreground">
+              {appointments.length} total
+            </span>
           }
         />
 
@@ -626,11 +633,17 @@ export default function AppointmentPage() {
         </div>
 
         <Tabs defaultValue="active" className="space-y-4">
-          <TabsList className="grid w-full max-w-md grid-cols-2">
-            <TabsTrigger value="active">
+          <TabsList className="h-auto gap-0 rounded-none border-b border-border bg-transparent p-0">
+            <TabsTrigger
+              value="active"
+              className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
               Active ({isAppointmentsLoading ? "..." : activeAppointments.length})
             </TabsTrigger>
-            <TabsTrigger value="history">
+            <TabsTrigger
+              value="history"
+              className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            >
               History ({isAppointmentsLoading ? "..." : appointmentHistory.length})
             </TabsTrigger>
           </TabsList>
@@ -869,7 +882,7 @@ export default function AppointmentPage() {
             </div>
           )}
         </div>
-      </div>
+      </motion.div>
     </UserPageShell>
   );
 }

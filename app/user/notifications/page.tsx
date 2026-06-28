@@ -1,13 +1,14 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import { motion } from "framer-motion";
 import { Bell, BellOff, CheckCheck, Info, AlertTriangle, ShieldCheck, Pill, Calendar } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { EASE } from "@/hooks/use-motion-config";
 
 type Notification = {
     id: string;
@@ -97,14 +98,12 @@ export default function NotificationsPage() {
     return (
         <UserPageShell>
             <UserPageHeader
-                icon={Bell}
+                sectionLabel="Activity"
                 title="Notifications"
-                description="System alerts and updates for your health account."
+                description="Health alerts, appointment reminders, and system updates."
                 meta={
                     unreadCount > 0 ? (
-                        <Badge className="gap-1.5 px-2.5 py-1">
-                            <span>{unreadCount} unread</span>
-                        </Badge>
+                        <span className="font-mono text-xs text-muted-foreground">{unreadCount} unread</span>
                     ) : null
                 }
             />
@@ -145,39 +144,44 @@ export default function NotificationsPage() {
                     </div>
                 </div>
             ) : (
-                <div className="space-y-2">
-                    {notifications.map((notif) => {
+                <div>
+                    {notifications.map((notif, i) => {
                         const Icon = notifIcon(notif.type, notif.severity);
                         const styles = severityStyles(notif.severity);
                         return (
-                            <button
+                            <motion.button
                                 key={notif.id}
                                 onClick={() => { if (!notif.read) void markRead([notif.id]); }}
                                 className={cn(
-                                    "group w-full rounded-xl border border-border bg-card p-4 text-left transition-colors hover:bg-muted/30",
-                                    !notif.read && "border-primary/20 bg-primary/5 hover:bg-primary/10",
+                                    "group w-full border-b border-border/40 py-4 text-left transition-colors hover:bg-muted/20 last:border-0",
+                                    !notif.read && "bg-primary/[0.02]",
                                 )}
+                                initial={{ opacity: 0, y: 6 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}
                             >
-                                <div className="flex items-start gap-3">
-                                    <div className={cn("mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", styles.bg)}>
-                                        <Icon className={cn("h-4 w-4", styles.icon)} />
+                                <div className="flex items-start gap-4">
+                                    <div className={cn("mt-0.5 shrink-0", styles.icon)}>
+                                        <Icon className="h-4 w-4" />
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex flex-wrap items-center gap-2">
-                                            <p className={cn("font-medium text-foreground", !notif.read && "font-semibold")}>
+                                            <p className={cn("text-sm text-foreground", !notif.read ? "font-semibold" : "font-normal")}>
                                                 {notif.title}
                                             </p>
                                             {!notif.read && (
-                                                <span className="h-2 w-2 shrink-0 rounded-full bg-primary" />
+                                                <span className="h-1.5 w-1.5 shrink-0 rounded-full bg-primary" />
                                             )}
                                         </div>
                                         {notif.body ? (
-                                            <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{notif.body}</p>
+                                            <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">{notif.body}</p>
                                         ) : null}
-                                        <p className="mt-2 text-xs text-muted-foreground">{formatRelative(notif.created_at)}</p>
                                     </div>
+                                    <span className="shrink-0 font-mono text-[10px] text-muted-foreground">
+                                        {formatRelative(notif.created_at)}
+                                    </span>
                                 </div>
-                            </button>
+                            </motion.button>
                         );
                     })}
                 </div>

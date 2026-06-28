@@ -124,8 +124,8 @@ export default function CaregiverPage() {
     return (
         <UserPageShell>
             <UserPageHeader
-                icon={Users}
-                title="Caregiver"
+                sectionLabel="Care Network"
+                title="Caregiver Access"
                 description="Link to a patient to monitor their health, appointments, and medications."
                 meta={
                     isCaregiver ? (
