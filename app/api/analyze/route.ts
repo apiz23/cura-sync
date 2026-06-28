@@ -193,26 +193,56 @@ export async function POST(req: NextRequest) {
 		const data = await aiRes.json();
 		const urgency =
 			typeof data.urgency === "string" ? data.urgency.toLowerCase() : "unknown";
+		const normalizedUrgency =
+			urgency === "emergency" ||
+			urgency === "high" ||
+			urgency === "medium" ||
+			urgency === "low"
+				? urgency
+				: "unknown";
+		const normalizedSymptoms = Array.isArray(data.normalized_symptoms)
+			? data.normalized_symptoms
+			: [];
+		const iotFlags = Array.isArray(data.iot_flags) ? data.iot_flags : [];
 
-		return NextResponse.json({
+		const responsePayload = {
 			possible_disease: data.possible_disease,
 			confidence_level: data.confidence_level,
-			urgency:
-				urgency === "emergency" ||
-				urgency === "high" ||
-				urgency === "medium" ||
-				urgency === "low"
-					? urgency
-					: "unknown",
+			urgency: normalizedUrgency,
 			suggested_action: data.suggested_action,
 			disclaimer: data.disclaimer,
 			timestamp: data.timestamp,
 			source: data.source,
-			normalized_symptoms: Array.isArray(data.normalized_symptoms)
-				? data.normalized_symptoms
-				: [],
-			iot_flags: Array.isArray(data.iot_flags) ? data.iot_flags : [],
-		});
+			normalized_symptoms: normalizedSymptoms,
+			iot_flags: iotFlags,
+		};
+
+		// History write is best-effort and must never affect the response the
+		// user is waiting on. Only patient sessions get a history row — a
+		// doctor/staff session also hits this endpoint for clinical lookups,
+		// and that is not "checking their own symptoms".
+		if (session.kind === "patient") {
+			void supabaseAdmin
+				.from("cura_symptom_analyses")
+				.insert({
+					profile_id: session.profileId,
+					symptoms_text: symptoms.trim(),
+					possible_disease: responsePayload.possible_disease ?? null,
+					confidence_level: responsePayload.confidence_level ?? null,
+					urgency: responsePayload.urgency,
+					suggested_action: responsePayload.suggested_action ?? null,
+					source: responsePayload.source ?? null,
+					normalized_symptoms: normalizedSymptoms,
+					iot_flags: iotFlags,
+				})
+				.then(({ error }) => {
+					if (error) {
+						console.error("symptom-history insert failed:", error.message);
+					}
+				});
+		}
+
+		return NextResponse.json(responsePayload);
 	} catch (err: unknown) {
 		if (isTimeoutError(err)) {
 			return NextResponse.json(
