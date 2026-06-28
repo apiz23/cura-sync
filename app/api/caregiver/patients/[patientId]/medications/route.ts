@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import supabase from "@/lib/supabase";
+import supabaseAdmin from "@/lib/supabase-admin";
 import { requireCaregiverSession } from "@/lib/authz";
 import { presentMedications } from "@/lib/medication-presenter";
 
 async function verifyCaregiverLink(caregiverId: string, patientId: string): Promise<boolean> {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
         .from("cura_caregiver_links")
         .select("id")
         .eq("caregiver_profile_id", caregiverId)
-        .eq("patient", patientId)
+        .eq("patient_profile_id", patientId)
         .eq("status", "ACTIVE")
         .maybeSingle();
     return !!data;
@@ -28,7 +28,7 @@ export async function GET(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from("cura_medications")
         .select("*")
         .eq("profile_id", patientId)

@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import supabase from "@/lib/supabase";
+import supabaseAdmin from "@/lib/supabase-admin";
 import { requireCaregiverSession } from "@/lib/authz";
 
 async function verifyCaregiverLink(caregiverId: string, patientId: string): Promise<boolean> {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
         .from("cura_caregiver_links")
         .select("id")
         .eq("caregiver_profile_id", caregiverId)
-        .eq("patient", patientId)
+        .eq("patient_profile_id", patientId)
         .eq("status", "ACTIVE")
         .maybeSingle();
     return !!data;
@@ -31,7 +31,7 @@ export async function GET(
     const days = raw ? Math.min(Math.max(Math.trunc(Number(raw)), 1), 30) : 7;
     const limit = Math.min(days * 12, 100);
 
-    const { data, error } = await supabase
+    const { data, error } = await supabaseAdmin
         .from("cura_health_sync_snapshots")
         .select(`
             id, synced_at, range_start, range_end,

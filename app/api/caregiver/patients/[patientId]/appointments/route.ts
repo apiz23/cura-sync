@@ -1,13 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import supabase from "@/lib/supabase";
+import supabaseAdmin from "@/lib/supabase-admin";
 import { requireCaregiverSession } from "@/lib/authz";
 
 async function verifyCaregiverLink(caregiverId: string, patientId: string): Promise<boolean> {
-    const { data } = await supabase
+    const { data } = await supabaseAdmin
         .from("cura_caregiver_links")
         .select("id")
         .eq("caregiver_profile_id", caregiverId)
-        .eq("patient", patientId)
+        .eq("patient_profile_id", patientId)
         .eq("status", "ACTIVE")
         .maybeSingle();
     return !!data;
@@ -27,7 +27,7 @@ export async function GET(
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
-    const { data: appts, error } = await supabase
+    const { data: appts, error } = await supabaseAdmin
         .from("cura_appointments")
         .select("id, facility_id, appointment_date, start_time, end_time, status, reason_for_visit, created_at")
         .eq("profile_id", patientId)
@@ -40,7 +40,7 @@ export async function GET(
 
     const facilityIds = [...new Set((appts ?? []).map((a) => a.facility_id).filter(Boolean))];
     const { data: facilities } = facilityIds.length
-        ? await supabase.from("cura_facilities").select("id, name").in("id", facilityIds)
+        ? await supabaseAdmin.from("cura_facilities").select("id, name").in("id", facilityIds)
         : { data: [] };
 
     const facilityMap = new Map((facilities ?? []).map((f: any) => [f.id, f.name]));
