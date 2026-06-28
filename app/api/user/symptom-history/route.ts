@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import supabase from "@/lib/supabase";
+import supabaseAdmin from "@/lib/supabase-admin";
 import { requirePatientSession } from "@/lib/authz";
 
 type SymptomAnalysisRow = {
@@ -37,7 +37,7 @@ export async function GET(req: Request) {
 
 		const limit = parseLimit(req.url);
 
-		const itemsResult = await supabase
+		const itemsResult = await supabaseAdmin
 			.from("cura_symptom_analyses")
 			.select(
 				`
@@ -64,7 +64,7 @@ export async function GET(req: Request) {
 			);
 		}
 
-		const countResult = await supabase
+		const countResult = await supabaseAdmin
 			.from("cura_symptom_analyses")
 			.select("id", { count: "exact", head: true })
 			.eq("profile_id", patient.profileId);
