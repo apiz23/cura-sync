@@ -7,7 +7,7 @@ async function verifyCaregiverLink(caregiverId: string, patientId: string): Prom
         .from("cura_caregiver_links")
         .select("id")
         .eq("caregiver_profile_id", caregiverId)
-        .eq("patient_profile_id", patientId)
+        .eq("patient", patientId)
         .eq("status", "ACTIVE")
         .maybeSingle();
     return !!data;
