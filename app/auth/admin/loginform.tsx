@@ -1,33 +1,17 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Shield, Lock, Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Lock, Eye, EyeOff, Loader2, AlertTriangle } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-	Field,
-	FieldDescription,
-	FieldGroup,
-	FieldLabel,
-	FieldSeparator,
-} from "@/components/ui/field";
 import { Input } from "@/components/ui/input";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
 import { toast } from "sonner";
-import { BrandLogo } from "@/components/brand-logo";
-import Link from "next/link";
 
-export function AdminLoginForm({
-	className,
-	...props
-}: React.ComponentProps<"div">) {
+const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+export function AdminLoginForm({ className }: React.ComponentProps<"div">) {
 	const router = useRouter();
 	const [email, setEmail] = useState("");
 	const [password, setPassword] = useState("");
@@ -92,112 +76,154 @@ export function AdminLoginForm({
 	}
 
 	return (
-		<div className={cn("flex flex-col gap-6", className)} {...props}>
-			<Card className="overflow-hidden border shadow-sm">
-				<CardHeader className="flex flex-col items-center gap-4 p-8 pb-6 text-center">
-					<Link href="/" className="transition-opacity hover:opacity-80">
-						<BrandLogo className="size-14 rounded-2xl shadow-md" />
-					</Link>
-					<div className="space-y-1.5">
-						<CardTitle className="text-2xl font-bold tracking-tight">
-							Admin Portal
-						</CardTitle>
-						<CardDescription>
-							Secure access to system administration
-						</CardDescription>
-					</div>
-				</CardHeader>
+		<motion.div
+			className={cn("flex flex-col", className)}
+			initial={{ opacity: 0, y: 14 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.5, ease }}
+		>
+			{/* System label */}
+			<motion.p
+				className="mb-6 font-mono text-[9px] font-semibold uppercase tracking-[0.28em] text-muted-foreground"
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ delay: 0.08, duration: 0.4 }}
+			>
+				CuraSync · System Administration
+			</motion.p>
 
-				<CardContent className="px-8 pb-8">
-					<form onSubmit={(e) => void handleLogin(e)}>
-						<FieldGroup>
-							{error && (
-								<div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/8 px-4 py-3 text-sm text-destructive">
-									<AlertCircle className="h-4 w-4 shrink-0" />
-									{error}
-								</div>
-							)}
+			{/* Heading */}
+			<motion.div
+				className="mb-7"
+				initial={{ opacity: 0, y: 8 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ delay: 0.12, duration: 0.5, ease }}
+			>
+				<h1 className="text-[1.6rem] font-bold tracking-[-0.03em] text-foreground leading-tight">
+					Administrator Sign In
+				</h1>
+				<p className="mt-1.5 text-[0.82rem] text-muted-foreground">
+					Restricted to authorized system administrators.
+				</p>
+			</motion.div>
 
-							<Field>
-								<FieldLabel htmlFor="email">Email</FieldLabel>
-								<Input
-									id="email"
-									type="email"
-									required
-									placeholder="admin@curasync.com"
-									value={email}
-									onChange={(e) => setEmail(e.target.value)}
-									className="h-11 rounded-xl"
-									disabled={loading}
-									autoComplete="email"
-								/>
-							</Field>
+			{/* Form card */}
+			<motion.div
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ delay: 0.2, duration: 0.4 }}
+			>
+				<form onSubmit={(e) => void handleLogin(e)}>
+					<div className="rounded-xl border border-border bg-card">
+						<div className="px-6 py-6">
+							<div className="space-y-5">
+								<AnimatePresence mode="popLayout">
+									{error && (
+										<motion.div
+											key="error"
+											className="flex items-start gap-2.5 overflow-hidden rounded-lg border border-destructive/20 bg-destructive/8 px-4 py-3 text-sm text-destructive"
+											initial={{ opacity: 0, height: 0 }}
+											animate={{ opacity: 1, height: "auto" }}
+											exit={{ opacity: 0, height: 0 }}
+											transition={{ duration: 0.2, ease }}
+										>
+											<AlertTriangle className="mt-0.5 h-3.5 w-3.5 shrink-0" />
+											<span>{error}</span>
+										</motion.div>
+									)}
+								</AnimatePresence>
 
-							<Field>
-								<FieldLabel htmlFor="password">Password</FieldLabel>
-								<div className="relative">
-									<Input
-										id="password"
-										type={showPassword ? "text" : "password"}
-										required
-										placeholder="Enter your password"
-										value={password}
-										onChange={(e) => setPassword(e.target.value)}
-										className="h-11 rounded-xl pr-11"
-										disabled={loading}
-										autoComplete="current-password"
-									/>
-									<Button
-										type="button"
-										variant="ghost"
-										size="icon"
-										className="absolute right-1 top-1/2 h-8 w-8 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-										onClick={() => setShowPassword(!showPassword)}
-										disabled={loading}
+								<div>
+									<label
+										htmlFor="email"
+										className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground"
 									>
-										{showPassword ? (
-											<EyeOff className="h-4 w-4" />
-										) : (
-											<Eye className="h-4 w-4" />
-										)}
-									</Button>
+										Email Address
+									</label>
+									<Input
+										id="email"
+										type="email"
+										required
+										placeholder="admin@curasync.com"
+										value={email}
+										onChange={(e) => setEmail(e.target.value)}
+										className="h-10 rounded-lg text-sm"
+										disabled={loading}
+										autoComplete="email"
+									/>
 								</div>
-							</Field>
 
-							<Button
-								type="submit"
-								disabled={loading}
-								className="h-11 w-full rounded-xl font-semibold"
-								size="lg"
-							>
-								{loading ? (
-									<>
-										<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-										Authenticating...
-									</>
-								) : (
-									<>
-										<Lock className="mr-2 h-4 w-4" />
-										Sign In
-									</>
-								)}
-							</Button>
-
-							<FieldSeparator />
-
-							<div className="flex items-start gap-3 rounded-xl border border-border bg-muted/30 p-4">
-								<div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-									<Shield className="h-4 w-4 text-primary" />
+								<div>
+									<label
+										htmlFor="password"
+										className="mb-2 block font-mono text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground"
+									>
+										Password
+									</label>
+									<div className="relative">
+										<Input
+											id="password"
+											type={showPassword ? "text" : "password"}
+											required
+											placeholder="Enter your password"
+											value={password}
+											onChange={(e) => setPassword(e.target.value)}
+											className="h-10 rounded-lg pr-10 text-sm"
+											disabled={loading}
+											autoComplete="current-password"
+										/>
+										<button
+											type="button"
+											className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground transition-colors hover:text-foreground"
+											onClick={() => setShowPassword(!showPassword)}
+											disabled={loading}
+											aria-label={
+												showPassword ? "Hide password" : "Show password"
+											}
+										>
+											{showPassword ? (
+												<EyeOff className="h-3.5 w-3.5" />
+											) : (
+												<Eye className="h-3.5 w-3.5" />
+											)}
+										</button>
+									</div>
 								</div>
-								<FieldDescription className="text-xs leading-relaxed">
-									Restricted to authorized administrators. All activities are
-									logged and monitored for compliance.
-								</FieldDescription>
 							</div>
-						</FieldGroup>
-					</form>
-				</CardContent>
-			</Card>
-		</div>
+						</div>
+
+						<div className="border-t border-border px-6 py-4">
+							<p className="font-mono text-[0.62rem] leading-relaxed tracking-wide text-muted-foreground">
+								All access is logged and audited. Unauthorized use is prohibited.
+							</p>
+						</div>
+					</div>
+
+					<motion.div
+						className="mt-3"
+						whileTap={{ scale: 0.97 }}
+						transition={{ type: "spring", stiffness: 500, damping: 30 }}
+					>
+						<Button
+							type="submit"
+							disabled={loading}
+							className="h-11 w-full rounded-xl text-sm font-semibold"
+						>
+							{loading ? (
+								<>
+									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+									Authenticating...
+								</>
+							) : (
+								<>
+									<Lock className="mr-2 h-3.5 w-3.5" />
+									Sign In
+								</>
+							)}
+						</Button>
+					</motion.div>
+				</form>
+			</motion.div>
+		</motion.div>
 	);
 }

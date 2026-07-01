@@ -33,7 +33,7 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	};
 
 	return (
-		<Sidebar variant="inset" className="overflow-x-hidden" {...props}>
+		<Sidebar className="overflow-x-hidden" {...props}>
 			{/* ================= HEADER ================= */}
 			<SidebarHeader>
 				<SidebarMenu>
@@ -55,7 +55,7 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 			<SidebarContent className="overflow-x-hidden">
 				{userMenu.map((group) => (
 					<SidebarGroup key={group.title}>
-						<SidebarGroupLabel className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+						<SidebarGroupLabel className="px-2 font-mono text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/70">
 							{group.title}
 						</SidebarGroupLabel>
 
@@ -71,20 +71,14 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 												asChild
 												isActive={active}
 												tooltip={item.title}
-												className="
-                                                    gap-3
-                                                    data-[active=true]:bg-muted/70
-                                                    data-[active=true]:text-foreground
-                                                    data-[active=true]:font-semibold
-                                                    group-data-[collapsible=icon]:justify-center
-                                                "
+												className="rounded-none gap-3 transition-colors data-[active=true]:bg-transparent data-[active=true]:text-foreground data-[active=true]:font-semibold hover:bg-muted/20 group-data-[collapsible=icon]:justify-center"
 											>
 												<Link
 													href={item.url}
 													className="flex w-full items-center gap-3 overflow-hidden"
 												>
-													<Icon className="size-4 shrink-0" />
-													<span className="truncate text-sm font-medium group-data-[collapsible=icon]:hidden">
+													<Icon className={active ? "size-4 shrink-0 text-primary" : "size-4 shrink-0 text-muted-foreground"} />
+													<span className={`truncate text-sm group-data-[collapsible=icon]:hidden ${active ? "font-semibold text-foreground" : "font-normal text-muted-foreground"}`}>
 														{item.title}
 													</span>
 												</Link>

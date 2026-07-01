@@ -11,7 +11,6 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Separator } from "@/components/ui/separator";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -61,9 +60,11 @@ import {
     XCircle,
     Info,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { toast } from "sonner";
 import { z } from "zod";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
+import { EASE } from "@/hooks/use-motion-config";
 import { FieldError } from "@/components/ui/field";
 import { CaregiverInviteCard } from "@/components/caregiver-invite-card";
 import {
@@ -399,6 +400,12 @@ export default function ProfilePage() {
 
     return (
         <UserPageShell>
+            <motion.div
+                className="contents"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: EASE }}
+            >
             <UserPageHeader
                 sectionLabel="Your Profile"
                 title="Health Profile"
@@ -407,22 +414,20 @@ export default function ProfilePage() {
             
             {/* Profile Completion Banner */}
             {profileCompletion < 100 && (
-                <Card className="mb-6 border-primary/20 bg-primary/5">
-                    <CardContent className="pt-6">
-                        <div className="flex items-center justify-between flex-wrap gap-4">
-                            <div className="flex-1">
-                                <p className="text-base font-medium mb-1">Profile Completion</p>
-                                <div className="flex items-center gap-4">
-                                    <Progress value={profileCompletion} className="flex-1 h-2" />
-                                    <span className="text-base font-semibold">{profileCompletion}%</span>
-                                </div>
-                                <p className="text-base text-muted-foreground mt-2">
-                                    Complete your profile to help healthcare providers serve you better
-                                </p>
+                <div className="border-b border-border/40 pb-4">
+                    <div className="flex items-center justify-between flex-wrap gap-4">
+                        <div className="flex-1">
+                            <div className="flex items-center justify-between mb-2">
+                                <p className="text-sm font-medium text-foreground">Profile Completion</p>
+                                <span className="font-mono text-xs text-muted-foreground">{profileCompletion}%</span>
                             </div>
+                            <Progress value={profileCompletion} className="h-1.5" />
+                            <p className="text-xs text-muted-foreground mt-1.5">
+                                Complete your profile to help healthcare providers serve you better
+                            </p>
                         </div>
-                    </CardContent>
-                </Card>
+                    </div>
+                </div>
             )}
 
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -430,8 +435,7 @@ export default function ProfilePage() {
                 <div className="lg:col-span-4 space-y-6">
                     {/* Profile Overview Card */}
                     <Card className="border-border overflow-hidden">
-                        <div className="relative h-24 bg-linear-to-r from-primary/15 via-primary/8 to-transparent" />
-                        <CardContent className="p-6 relative">
+                        <CardContent className="p-6 pt-6 relative">
                             <div className="flex flex-col items-center -mt-12">
                                 {/* Avatar with edit button */}
                                 <div className="relative mb-4">
@@ -485,29 +489,26 @@ export default function ProfilePage() {
                                     </div>
                                 </div>
 
-                                {/* Stats Grid */}
-                                <div className="grid grid-cols-3 gap-3 w-full pt-4 border-t">
-                                    <div className="text-center p-2 rounded-lg bg-muted/30">
-                                        <Clock className="h-4 w-4 mx-auto mb-1 text-primary" />
-                                        <p className="text-lg font-bold text-foreground">
+                                {/* Stats */}
+                                <div className="w-full pt-4 border-t">
+                                    <div className="flex items-center justify-between border-b border-border/40 py-2.5">
+                                        <span className="text-xs text-muted-foreground">Member since</span>
+                                        <span className="font-mono text-xs font-semibold text-foreground">
                                             {profile?.created_at
                                                 ? new Date(profile.created_at).getFullYear()
                                                 : "2024"}
-                                        </p>
-                                        <p className="text-base text-muted-foreground">Member Since</p>
+                                        </span>
                                     </div>
                                     {age && (
-                                        <div className="text-center p-2 rounded-lg bg-muted/30">
-                                            <Baby className="h-4 w-4 mx-auto mb-1 text-primary" />
-                                            <p className="text-lg font-bold text-foreground">{age}</p>
-                                            <p className="text-base text-muted-foreground">Years Old</p>
+                                        <div className="flex items-center justify-between border-b border-border/40 py-2.5">
+                                            <span className="text-xs text-muted-foreground">Age</span>
+                                            <span className="font-mono text-xs font-semibold text-foreground">{age} yrs</span>
                                         </div>
                                     )}
                                     {bmi && (
-                                        <div className="text-center p-2 rounded-lg bg-muted/30">
-                                            <Activity className="h-4 w-4 mx-auto mb-1 text-primary" />
-                                            <p className="text-lg font-bold text-foreground">{bmi}</p>
-                                            <p className="text-base text-muted-foreground">BMI</p>
+                                        <div className="flex items-center justify-between py-2.5">
+                                            <span className="text-xs text-muted-foreground">BMI</span>
+                                            <span className="font-mono text-xs font-semibold text-foreground">{bmi}</span>
                                         </div>
                                     )}
                                 </div>
@@ -546,58 +547,56 @@ export default function ProfilePage() {
                         </CardContent>
                     </Card>
 
-                    {/* Health Summary Card */}
+                    {/* Health Summary */}
                     {(profile?.patient_profile?.chronic_conditions || profile?.patient_profile?.allergies) && (
-                        <Card>
-                            <CardHeader>
-                                <CardTitle className="text-base flex items-center gap-2">
-                                    <HeartPulse className="h-4 w-4 text-primary" />
-                                    Health Summary
-                                </CardTitle>
-                            </CardHeader>
-                            <CardContent className="space-y-3">
-                                {profile.patient_profile.allergies && (
-                                    <div>
-                                        <p className="text-base font-medium text-muted-foreground mb-1">Allergies</p>
-                                        <p className="text-base">{profile.patient_profile.allergies}</p>
-                                    </div>
-                                )}
-                                {profile.patient_profile.chronic_conditions && (
-                                    <div>
-                                        <p className="text-base font-medium text-muted-foreground mb-1">Chronic Conditions</p>
-                                        <p className="text-base">{profile.patient_profile.chronic_conditions}</p>
-                                    </div>
-                                )}
-                            </CardContent>
-                        </Card>
+                        <div className="space-y-3">
+                            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                                Health Summary
+                            </p>
+                            <div className="h-px bg-border/50" />
+                            {profile.patient_profile.allergies && (
+                                <div className="border-b border-border/40 py-3 last:border-0">
+                                    <p className="text-xs text-muted-foreground mb-0.5">Allergies</p>
+                                    <p className="text-sm text-foreground">{profile.patient_profile.allergies}</p>
+                                </div>
+                            )}
+                            {profile.patient_profile.chronic_conditions && (
+                                <div className="py-3">
+                                    <p className="text-xs text-muted-foreground mb-0.5">Chronic Conditions</p>
+                                    <p className="text-sm text-foreground">{profile.patient_profile.chronic_conditions}</p>
+                                </div>
+                            )}
+                        </div>
                     )}
                 </div>
 
                 {/* Right Column - Edit Form with Tabs */}
                 <div className="lg:col-span-8">
-                    <Card className="border-border">
-                        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <CardHeader className="pb-4">
-                                <TabsList className="grid w-full grid-cols-2">
-                                    <TabsTrigger value="personal" className="gap-2">
-                                        <User className="h-4 w-4" />
-                                        Personal Info
-                                    </TabsTrigger>
-                                    <TabsTrigger value="medical" className="gap-2">
-                                        <HeartPulse className="h-4 w-4" />
-                                        Medical Details
-                                    </TabsTrigger>
-                                </TabsList>
-                        </CardHeader>
-                        <CardContent>
+                    <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+                        <TabsList className="h-auto gap-0 rounded-none border-b border-border bg-transparent p-0 w-full justify-start mb-6">
+                            <TabsTrigger
+                                value="personal"
+                                className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                            >
+                                Personal Info
+                            </TabsTrigger>
+                            <TabsTrigger
+                                value="medical"
+                                className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
+                            >
+                                Medical Details
+                            </TabsTrigger>
+                        </TabsList>
+                        <div>
                             <form onSubmit={handleSubmit(handleUpdate)} className="space-y-6" noValidate>
                                 <TabsContent value="personal" className="mt-0 space-y-6">
                                     {/* Personal Information */}
                                     <div className="space-y-4">
                                         <div>
-                                            <h3 className="text-base font-semibold text-foreground mb-4">
+                                            <p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                                                 Basic Information
-                                            </h3>
+                                            </p>
+                                            <div className="h-px bg-border/50 mb-4" />
                                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                                 <div className="space-y-2">
                                                     <Label htmlFor="email" className="text-base font-medium">
@@ -637,13 +636,14 @@ export default function ProfilePage() {
                                             </div>
                                         </div>
 
-                                        <Separator />
+                                        <div className="h-px bg-border/50 my-2" />
 
                                         {/* Contact Information */}
                                         <div>
-                                            <h3 className="text-base font-semibold text-foreground mb-4">
+                                            <p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                                                 Contact Information
-                                            </h3>
+                                            </p>
+                                            <div className="h-px bg-border/50 mb-4" />
                                             <div className="space-y-4">
                                                 <div className="space-y-2">
                                                     <Label htmlFor="phone_number" className="text-base font-medium">
@@ -668,9 +668,10 @@ export default function ProfilePage() {
 
                                 <TabsContent value="medical" className="mt-0 space-y-6">
                                     <div className="space-y-4">
-                                        <h3 className="text-base font-semibold text-foreground mb-4">
+                                        <p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                                             Medical Profile
-                                        </h3>
+                                        </p>
+                                        <div className="h-px bg-border/50 mb-4" />
                                         
                                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                             {/* Date of Birth */}
@@ -817,20 +818,14 @@ export default function ProfilePage() {
                                             </div>
                                         </div>
 
-                                        {/* BMI Display */}
+                                                        {/* BMI Display */}
                                         {currentBMI && (
-                                            <div className="p-4 rounded-lg bg-muted/30">
-                                                <div className="flex items-center justify-between">
-                                                    <div className="flex items-center gap-2">
-                                                        <Activity className="h-5 w-5 text-primary" />
-                                                        <span className="text-base font-medium">Your BMI</span>
-                                                    </div>
-                                                    <span className="text-2xl font-bold">{currentBMI}</span>
+                                            <div className="flex items-center justify-between border-b border-border/40 py-3">
+                                                <div className="flex items-center gap-2">
+                                                    {bmiCategory.icon && <bmiCategory.icon className={`h-3.5 w-3.5 ${bmiCategory.color}`} />}
+                                                    <span className="text-sm text-muted-foreground">BMI — {bmiCategory.label}</span>
                                                 </div>
-                                                <div className="flex items-center gap-2 mt-2">
-                                                    {bmiCategory.icon && <bmiCategory.icon className={`h-4 w-4 ${bmiCategory.color}`} />}
-                                                    <span className={`text-base ${bmiCategory.color}`}>{bmiCategory.label}</span>
-                                                </div>
+                                                <span className="font-mono text-sm font-bold text-foreground">{currentBMI}</span>
                                             </div>
                                         )}
 
@@ -872,7 +867,7 @@ export default function ProfilePage() {
                                     </div>
                                 </TabsContent>
 
-                                <Separator />
+                                <div className="h-px bg-border/50" />
 
                                 {/* Form Actions */}
                                 <div className="flex flex-col-reverse md:flex-row gap-3 pt-2">
@@ -904,9 +899,8 @@ export default function ProfilePage() {
                                     </Button>
                                 </div>
                             </form>
-                        </CardContent>
-                        </Tabs>
-                    </Card>
+                        </div>
+                    </Tabs>
                 </div>
             </div>
 
@@ -915,6 +909,7 @@ export default function ProfilePage() {
                     <CaregiverInviteCard />
                 </div>
             ) : null}
+            </motion.div>
         </UserPageShell>
     );
 }

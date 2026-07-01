@@ -210,7 +210,7 @@ export default function BlockchainPage() {
 			/>
 
 			{/* How it works */}
-			<div className="grid gap-4 sm:grid-cols-3">
+			<div className="grid gap-0 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
 				{[
 					{
 						icon: Lock,
@@ -228,28 +228,22 @@ export default function BlockchainPage() {
 						body: "Click Verify to re-hash live record and compare against on-chain proof. Tamper → mismatch.",
 					},
 				].map(({ icon: Icon, title, body }) => (
-					<div
-						key={title}
-						className="rounded-xl border border-border bg-card p-4"
-					>
-						<div className="flex items-center gap-3">
-							<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-								<Icon className="h-4 w-4" />
-							</div>
-							<p className="font-semibold text-foreground">{title}</p>
+					<div key={title} className="py-4 sm:px-5 first:pl-0 last:pr-0">
+						<div className="flex items-center gap-2 mb-2">
+							<Icon className="h-3.5 w-3.5 shrink-0 text-primary" />
+							<p className="font-semibold text-sm text-foreground">{title}</p>
 						</div>
-						<p className="mt-3 text-base leading-6 text-muted-foreground">
-							{body}
-						</p>
+						<p className="text-sm leading-6 text-muted-foreground">{body}</p>
 					</div>
 				))}
 			</div>
 
 			{/* Audit log */}
 			<div>
-				<h2 className="mb-4 text-base font-bold uppercase tracking-wider text-muted-foreground">
+				<p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
 					Audit trail
-				</h2>
+				</p>
+				<div className="h-px bg-border/50 mb-5" />
 
 				{loading ? (
 					<div className="space-y-3">
@@ -268,17 +262,15 @@ export default function BlockchainPage() {
 						</div>
 					</div>
 				) : entries.length === 0 ? (
-					<div className="rounded-xl border border-dashed p-8 text-center">
-						<p className="font-medium text-foreground">
-							No audit entries yet
-						</p>
-						<p className="mx-auto mt-2 max-w-sm text-base text-muted-foreground">
+					<div className="py-12 text-center">
+						<p className="font-medium text-foreground">No audit entries yet</p>
+						<p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
 							Actions on your health data will appear here as they occur.
 						</p>
 					</div>
 				) : (
-					<div className="space-y-2">
-						{entries.map((entry) => {
+					<div>
+						{entries.map((entry, idx) => {
 							const result = verifyResults[entry.id];
 							const isVerifying = verifying[entry.id];
 							const canVerify =
@@ -291,10 +283,10 @@ export default function BlockchainPage() {
 									key={entry.id}
 									initial={{ opacity: 0, y: 6 }}
 									animate={{ opacity: 1, y: 0 }}
-									transition={{ duration: 0.2 }}
-									className="rounded-xl border border-border bg-card"
+									transition={{ duration: 0.3, delay: Math.min(idx, 7) * 0.03 }}
+									className="border-b border-border/40 last:border-0"
 								>
-									<div className="flex flex-wrap items-center justify-between gap-4 px-4 py-3">
+									<div className="flex flex-wrap items-center justify-between gap-4 py-3">
 										<div className="flex items-center gap-3">
 											<span
 												className={cn(

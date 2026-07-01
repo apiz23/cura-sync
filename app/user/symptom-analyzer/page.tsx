@@ -415,27 +415,25 @@ function AnalysisProgressPanel() {
 				</div>
 				<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
 			</div>
-			<div className="grid gap-2 sm:grid-cols-5">
+			<div className="grid gap-0 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
 				{ANALYSIS_STEPS.map((step, index) => (
 					<motion.div
 						key={step.label}
 						initial={{ opacity: 0, y: 6 }}
 						animate={{ opacity: 1, y: 0 }}
 						transition={{ delay: index * 0.08 }}
-						className="rounded-lg border border-border/60 bg-card p-3"
+						className="py-2 sm:px-3 first:pl-0 last:pr-0"
 					>
-						<div className="mb-2 flex items-center gap-2">
-							<div className="flex h-7 w-7 items-center justify-center rounded-lg bg-muted text-muted-foreground">
-								<step.icon className="h-3.5 w-3.5" />
-							</div>
-							<span className="font-mono text-xs text-muted-foreground">
+						<div className="mb-1 flex items-center gap-2">
+							<step.icon className="h-3 w-3 shrink-0 text-primary" />
+							<span className="font-mono text-[10px] text-muted-foreground">
 								0{index + 1}
 							</span>
 						</div>
-						<p className="text-sm font-semibold leading-tight text-foreground">
+						<p className="text-xs font-semibold leading-tight text-foreground">
 							{step.label}
 						</p>
-						<p className="mt-1 text-xs leading-snug text-muted-foreground">
+						<p className="mt-0.5 text-[11px] leading-snug text-muted-foreground">
 							{step.description}
 						</p>
 					</motion.div>

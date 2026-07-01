@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useUser, useClerk } from "@clerk/nextjs";
 import { motion } from "framer-motion";
-import { Shield, ShieldCheck, Lock, Mail, CalendarDays, Key, LogOut, ExternalLink, CheckCircle, XCircle } from "lucide-react";
+import { ShieldCheck, Lock, Mail, Key, LogOut, ExternalLink, CheckCircle, XCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
@@ -125,22 +125,21 @@ export default function SecurityPage() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Account identity
                 </p>
-                <div className="rounded-xl border border-border bg-card p-5 space-y-3">
-                    <div className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                            <Mail className="h-4 w-4" />
-                        </div>
-                        <div className="flex-1 min-w-0">
-                            <p className="truncate font-medium text-foreground">{primaryEmail}</p>
-                            <p className="text-base text-muted-foreground">
-                                {emailVerified ? "Verified" : "Not verified"}
-                            </p>
-                        </div>
+                <div className="h-px bg-border/50" />
+                <div className="flex items-center justify-between gap-4 py-1">
+                    <div className="flex items-center gap-2 min-w-0">
+                        <Mail className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+                        <p className="truncate text-sm font-medium text-foreground">{primaryEmail}</p>
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
                         {emailVerified ? (
-                            <CheckCircle className="h-4 w-4 shrink-0 text-primary" />
+                            <CheckCircle className="h-3.5 w-3.5 text-primary" />
                         ) : (
-                            <XCircle className="h-4 w-4 shrink-0 text-muted-foreground" />
+                            <XCircle className="h-3.5 w-3.5 text-muted-foreground" />
                         )}
+                        <span className="text-sm text-muted-foreground">
+                            {emailVerified ? "Verified" : "Not verified"}
+                        </span>
                     </div>
                 </div>
             </section>
@@ -150,7 +149,8 @@ export default function SecurityPage() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Security status
                 </p>
-                <div className="space-y-2">
+                <div className="h-px bg-border/50" />
+                <div className="space-y-0">
                     <StatusRow
                         label="Two-factor authentication"
                         value={mfaEnabled ? "Enabled" : "Not enabled"}
@@ -181,18 +181,14 @@ export default function SecurityPage() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Actions
                 </p>
-                <div className="space-y-3">
-                    <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                <Key className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="font-medium text-foreground">Password & 2FA</p>
-                                <p className="text-base text-muted-foreground">
-                                    Update password and manage two-factor authentication
-                                </p>
-                            </div>
+                <div className="h-px bg-border/50" />
+                <div>
+                    <div className="flex items-center justify-between gap-4 border-b border-border/40 py-4">
+                        <div>
+                            <p className="text-sm font-medium text-foreground">Password & 2FA</p>
+                            <p className="text-xs text-muted-foreground">
+                                Update password and manage two-factor authentication
+                            </p>
                         </div>
                         <Button
                             variant="outline"
@@ -205,17 +201,12 @@ export default function SecurityPage() {
                         </Button>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-xl border border-border bg-card p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                <CalendarDays className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="font-medium text-foreground">Connected accounts</p>
-                                <p className="text-base text-muted-foreground">
-                                    Add or remove OAuth connections (Google, etc.)
-                                </p>
-                            </div>
+                    <div className="flex items-center justify-between gap-4 border-b border-border/40 py-4">
+                        <div>
+                            <p className="text-sm font-medium text-foreground">Connected accounts</p>
+                            <p className="text-xs text-muted-foreground">
+                                Add or remove OAuth connections (Google, etc.)
+                            </p>
                         </div>
                         <Button
                             variant="outline"
@@ -228,17 +219,12 @@ export default function SecurityPage() {
                         </Button>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/5 p-4">
-                        <div className="flex items-center gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
-                                <LogOut className="h-4 w-4" />
-                            </div>
-                            <div>
-                                <p className="font-medium text-foreground">Sign out</p>
-                                <p className="text-base text-muted-foreground">
-                                    End your current session on this device
-                                </p>
-                            </div>
+                    <div className="flex items-center justify-between gap-4 py-4">
+                        <div>
+                            <p className="text-sm font-medium text-foreground">Sign out</p>
+                            <p className="text-xs text-muted-foreground">
+                                End your current session on this device
+                            </p>
                         </div>
                         <Button
                             variant="destructive"
@@ -257,42 +243,36 @@ export default function SecurityPage() {
                 <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
                     Record protection
                 </p>
-                <div className="rounded-xl border border-border bg-card p-5">
-                    <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3">
-                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                <ShieldCheck className="h-4 w-4" />
+                <div className="h-px bg-border/50" />
+                <div className="flex items-start justify-between gap-4 py-2">
+                    <div className="space-y-1 max-w-lg">
+                        <p className="text-sm font-semibold text-foreground">Blockchain record protection</p>
+                        <p className="text-sm text-muted-foreground">
+                            Your health records will be hashed and anchored on the Polygon Amoy testnet
+                            each time your clinic adds or updates a record. Verify them on the{" "}
+                            <a href="/user/blockchain" className="text-primary hover:underline">
+                                Blockchain page
+                            </a>
+                            .
+                        </p>
+                        {facilityPlan === "basic" && (
+                            <div className="flex items-center gap-1.5 text-xs text-chart-5 dark:text-chart-5">
+                                <Lock className="h-3 w-3" />
+                                Requires Clinic plan or above — ask your clinic to upgrade
                             </div>
-                            <div className="space-y-1">
-                                <p className="font-semibold text-foreground">Blockchain record protection</p>
-                                <p className="text-sm text-muted-foreground">
-                                    Your health records will be hashed and anchored on the Polygon Amoy testnet
-                                    each time your clinic adds or updates a record. Verify them on the{" "}
-                                    <a href="/user/blockchain" className="text-primary hover:underline">
-                                        Blockchain page
-                                    </a>
-                                    .
-                                </p>
-                                {facilityPlan === "basic" && (
-                                    <div className="mt-2 flex items-center gap-1.5 text-xs text-chart-5 dark:text-chart-5">
-                                        <Lock className="h-3 w-3" />
-                                        Requires Clinic plan or above — ask your clinic to upgrade
-                                    </div>
-                                )}
-                            </div>
-                        </div>
-                        <div className="shrink-0">
-                            {blockchainLoading ? (
-                                <div className="h-6 w-11 animate-pulse rounded-full bg-muted" />
-                            ) : (
-                                <Switch
-                                    checked={blockchainEnabled}
-                                    onCheckedChange={handleBlockchainToggle}
-                                    disabled={toggleLoading || facilityPlan === "basic"}
-                                    className="data-[state=checked]:bg-primary"
-                                />
-                            )}
-                        </div>
+                        )}
+                    </div>
+                    <div className="shrink-0 pt-0.5">
+                        {blockchainLoading ? (
+                            <div className="h-6 w-11 animate-pulse rounded-full bg-muted" />
+                        ) : (
+                            <Switch
+                                checked={blockchainEnabled}
+                                onCheckedChange={handleBlockchainToggle}
+                                disabled={toggleLoading || facilityPlan === "basic"}
+                                className="data-[state=checked]:bg-primary"
+                            />
+                        )}
                     </div>
                 </div>
             </section>

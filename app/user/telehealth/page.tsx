@@ -14,11 +14,12 @@ import {
     Shield,
     Wifi,
 } from "lucide-react";
+import { motion } from "framer-motion";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
+import { EASE } from "@/hooks/use-motion-config";
 
 type TelehealthAppointment = {
     id: string;
@@ -182,6 +183,12 @@ export default function TelehealthPage() {
 
     return (
         <UserPageShell>
+            <motion.div
+                className="contents"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: EASE }}
+            >
             <UserPageHeader
                 sectionLabel="Virtual Consultations"
                 title="Telehealth"
@@ -189,61 +196,63 @@ export default function TelehealthPage() {
             />
 
             {/* Info banner */}
-            <div className="flex items-start gap-3 rounded-xl border border-sky-200 bg-sky-50 p-4 dark:border-sky-800 dark:bg-sky-950/30">
-                <Info className="mt-0.5 h-4 w-4 shrink-0 text-sky-600 dark:text-sky-400" />
-                <div className="text-sm text-sky-700 dark:text-sky-300">
-                    <p className="font-medium">How it works</p>
-                    <p className="mt-1 text-sky-600 dark:text-sky-400">
+            <div className="flex items-start gap-3 border-b border-border/40 pb-4">
+                <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="text-sm">
+                    <p className="font-medium text-foreground">How it works</p>
+                    <p className="mt-0.5 text-muted-foreground">
                         Book a &ldquo;Telehealth&rdquo; appointment from the Appointments page. The Join button activates 10 minutes before your scheduled time.
                     </p>
                 </div>
             </div>
 
-            {/* Requirements card */}
-            <div className="grid gap-4 sm:grid-cols-3">
+            {/* Requirements */}
+            <div className="grid gap-0 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
                 {[
                     { icon: Wifi, label: "Stable internet", desc: "Min. 2 Mbps recommended" },
                     { icon: Video, label: "Camera & mic", desc: "Browser permission required" },
                     { icon: Shield, label: "Private session", desc: "End-to-end encrypted" },
                 ].map((item) => (
-                    <Card key={item.label} className="border shadow-sm">
-                        <CardContent className="flex items-start gap-3 p-4">
-                            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10">
-                                <item.icon className="h-4 w-4 text-primary" />
-                            </div>
-                            <div>
-                                <p className="text-sm font-medium">{item.label}</p>
-                                <p className="text-xs text-muted-foreground">{item.desc}</p>
-                            </div>
-                        </CardContent>
-                    </Card>
+                    <div key={item.label} className="flex items-start gap-3 py-3 sm:px-5 first:pl-0 last:pr-0">
+                        <item.icon className="h-3.5 w-3.5 shrink-0 text-primary mt-0.5" />
+                        <div>
+                            <p className="text-sm font-medium text-foreground">{item.label}</p>
+                            <p className="text-xs text-muted-foreground">{item.desc}</p>
+                        </div>
+                    </div>
                 ))}
             </div>
 
             {/* Upcoming appointments */}
-            <Card className="border shadow-sm">
-                <CardHeader className="pb-3">
-                    <CardTitle className="text-base">Upcoming Appointments</CardTitle>
-                </CardHeader>
-                <CardContent className="space-y-3 p-4 pt-0">
-                    {loading ? (
-                        Array.from({ length: 2 }).map((_, i) => (
-                            <Skeleton key={i} className="h-20 w-full rounded-xl" />
-                        ))
-                    ) : appointments.length === 0 ? (
-                        <div className="rounded-xl border border-dashed p-6 text-center">
-                            <p className="text-sm font-medium text-muted-foreground">No upcoming appointments</p>
-                            <p className="mt-1 text-xs text-muted-foreground">
-                                Book an appointment with Telehealth type to start a video consultation.
-                            </p>
-                        </div>
-                    ) : (
-                        appointments.map((appt) => {
+            <section className="space-y-4">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+                    Upcoming Appointments
+                </p>
+                <div className="h-px bg-border/50" />
+                {loading ? (
+                    <div className="space-y-3">
+                        {Array.from({ length: 2 }).map((_, i) => (
+                            <Skeleton key={i} className="h-16 w-full" />
+                        ))}
+                    </div>
+                ) : appointments.length === 0 ? (
+                    <div className="py-10 text-center">
+                        <p className="text-sm font-medium text-foreground">No upcoming appointments</p>
+                        <p className="mt-1 text-xs text-muted-foreground">
+                            Book an appointment with Telehealth type to start a video consultation.
+                        </p>
+                    </div>
+                ) : (
+                    <div>
+                        {appointments.map((appt, i) => {
                             const joinable = isJoinable(appt);
                             return (
-                                <div
+                                <motion.div
                                     key={appt.id}
-                                    className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border bg-card p-4"
+                                    className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 py-4 last:border-0"
+                                    initial={{ opacity: 0, y: 6 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.05, ease: EASE }}
                                 >
                                     <div className="space-y-1">
                                         <div className="flex items-center gap-2">
@@ -254,7 +263,7 @@ export default function TelehealthPage() {
                                                 {appt.status}
                                             </Badge>
                                         </div>
-                                        <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                                        <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground">
                                             <span className="flex items-center gap-1.5">
                                                 <Calendar className="h-3.5 w-3.5" />
                                                 {formatDate(appt.appointment_date)}
@@ -277,12 +286,13 @@ export default function TelehealthPage() {
                                         <Video className="mr-1.5 h-4 w-4" />
                                         {joinable ? "Join now" : "Not yet open"}
                                     </Button>
-                                </div>
+                                </motion.div>
                             );
-                        })
-                    )}
-                </CardContent>
-            </Card>
+                        })}
+                    </div>
+                )}
+            </section>
+            </motion.div>
         </UserPageShell>
     );
 }

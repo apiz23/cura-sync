@@ -1,32 +1,20 @@
 "use client";
 
 import { useState, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useSignIn, useUser } from "@clerk/nextjs";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Loader2, AlertCircle } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-	Card,
-	CardContent,
-	CardDescription,
-	CardHeader,
-	CardTitle,
-} from "@/components/ui/card";
-import {
-	FieldDescription,
-	FieldGroup,
-	FieldSeparator,
-} from "@/components/ui/field";
 import { toast } from "sonner";
 import { BrandLogo } from "@/components/brand-logo";
 import Link from "next/link";
 
-export function LoginForm({
-	className,
-	...props
-}: React.ComponentProps<"div">) {
+const ease: [number, number, number, number] = [0.22, 1, 0.36, 1];
+
+export function LoginForm({ className }: React.ComponentProps<"div">) {
 	const { isLoaded: isSignInLoaded, signIn } = useSignIn();
 	const { isLoaded: userLoaded, isSignedIn } = useUser();
 	const router = useRouter();
@@ -35,7 +23,6 @@ export function LoginForm({
 	const nextPath = useMemo(() => {
 		const raw = searchParams.get("next");
 		if (!raw) return "/user/dashboard";
-		// allow only same-origin relative paths
 		if (!raw.startsWith("/") || raw.startsWith("//")) return "/user/dashboard";
 		return raw;
 	}, [searchParams]);
@@ -95,92 +82,174 @@ export function LoginForm({
 
 	if (!hasMounted || !userLoaded) {
 		return (
-			<div className="flex flex-col items-center justify-center gap-4 py-16">
-				<Loader2 className="h-8 w-8 animate-spin text-primary" />
-				<p className="text-sm text-muted-foreground">Loading...</p>
+			<div className="flex flex-col items-center justify-center gap-3 py-20">
+				<Loader2 className="h-5 w-5 animate-spin text-primary" />
+				<p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
+					Loading
+				</p>
 			</div>
 		);
 	}
 
 	if (isSignedIn) {
 		return (
-			<div className="flex flex-col items-center justify-center gap-4 py-16">
-				<BrandLogo className="size-16 rounded-2xl shadow-lg" />
-				<p className="text-sm text-muted-foreground">
-					Redirecting to your dashboard...
+			<div className="flex flex-col items-center justify-center gap-4 py-20">
+				<BrandLogo className="size-12 rounded-xl" />
+				<p className="font-mono text-[10px] tracking-widest text-muted-foreground uppercase">
+					Redirecting...
 				</p>
-				<Loader2 className="h-5 w-5 animate-spin text-primary" />
+				<Loader2 className="h-4 w-4 animate-spin text-primary" />
 			</div>
 		);
 	}
 
 	return (
-		<div className={cn("flex flex-col gap-6", className)} {...props}>
-			<Card className="overflow-hidden border shadow-sm">
-				<CardHeader className="flex flex-col items-center gap-4 p-8 pb-6 text-center">
-					<Link href="/" className="transition-opacity hover:opacity-80">
-						<BrandLogo className="size-14 rounded-2xl shadow-md" />
-					</Link>
-					<div className="space-y-1.5">
-						<CardTitle className="text-2xl font-bold tracking-tight">
-							Welcome to CuraSync
-						</CardTitle>
-						<CardDescription>
-							Sign in or create an account automatically
-						</CardDescription>
-					</div>
-				</CardHeader>
+		<motion.div
+			className={cn("flex flex-col", className)}
+			initial={{ opacity: 0, y: 16 }}
+			animate={{ opacity: 1, y: 0 }}
+			transition={{ duration: 0.55, ease }}
+		>
+			{/* Mobile-only logo */}
+			<motion.div
+				className="mb-8 lg:hidden"
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ duration: 0.4, ease }}
+			>
+				<Link href="/" className="inline-flex items-center gap-2.5">
+					<BrandLogo className="size-8 rounded-lg" />
+					<span className="text-sm font-semibold tracking-tight text-foreground">
+						CuraSync
+					</span>
+				</Link>
+			</motion.div>
 
-				<CardContent className="px-8 pb-8">
-					<FieldGroup>
-						{error && (
-							<div className="flex items-center gap-2 rounded-lg border border-destructive/20 bg-destructive/8 px-4 py-3 text-sm text-destructive">
-								<AlertCircle className="h-4 w-4 shrink-0" />
-								{error}
-							</div>
-						)}
+			{/* Heading */}
+			<div className="mb-8">
+				<motion.p
+					className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ delay: 0.1, duration: 0.4 }}
+				>
+					Patient Portal
+				</motion.p>
+				<motion.h2
+					className="text-[1.85rem] font-bold tracking-[-0.035em] text-foreground leading-tight"
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={{ duration: 0.5, delay: 0.13, ease }}
+				>
+					Welcome back.
+				</motion.h2>
+				<motion.p
+					className="mt-2 text-[0.85rem] text-muted-foreground"
+					initial={{ opacity: 0 }}
+					animate={{ opacity: 1 }}
+					transition={{ delay: 0.22, duration: 0.4 }}
+				>
+					Sign in or create an account automatically.
+				</motion.p>
+			</div>
 
-						<Button
-							variant="outline"
-							type="button"
-							disabled={loadingStrategy !== null}
-							onClick={() => void handleSocialAuth("oauth_google")}
-							className={cn(
-								"h-11 w-full rounded-xl border transition-all duration-200",
-								"hover:border-primary/30 hover:bg-primary/5",
-								"active:scale-[0.98]",
-								loadingStrategy && "cursor-not-allowed opacity-70",
-							)}
+			{/* Actions */}
+			<motion.div
+				className="space-y-3"
+				initial={{ opacity: 0, y: 10 }}
+				animate={{ opacity: 1, y: 0 }}
+				transition={{ duration: 0.5, delay: 0.28, ease }}
+			>
+				<AnimatePresence mode="popLayout">
+					{error && (
+						<motion.div
+							key="error"
+							className="flex items-center gap-2 overflow-hidden rounded-lg border border-destructive/20 bg-destructive/8 px-4 py-3 text-sm text-destructive"
+							initial={{ opacity: 0, height: 0 }}
+							animate={{ opacity: 1, height: "auto" }}
+							exit={{ opacity: 0, height: 0 }}
+							transition={{ duration: 0.22, ease }}
 						>
-							{loadingStrategy === "oauth_google" ? (
-								<>
-									<Loader2 className="mr-2 h-4 w-4 animate-spin" />
-									Connecting...
-								</>
-							) : (
-								<>
-									<FcGoogle className="mr-2 h-5 w-5" />
-									Continue with Google
-								</>
-							)}
-						</Button>
+							<AlertCircle className="h-4 w-4 shrink-0" />
+							{error}
+						</motion.div>
+					)}
+				</AnimatePresence>
 
-						<div id="clerk-captcha" data-cl-theme="auto" data-cl-size="flexible" className="min-h-0" />
-					</FieldGroup>
-				</CardContent>
-			</Card>
+				<motion.div
+					whileTap={{ scale: 0.97 }}
+					transition={{ type: "spring", stiffness: 500, damping: 30 }}
+				>
+					<Button
+						variant="outline"
+						type="button"
+						disabled={loadingStrategy !== null}
+						onClick={() => void handleSocialAuth("oauth_google")}
+						className={cn(
+							"h-12 w-full rounded-xl border-border/70 text-[0.85rem] font-medium",
+							"transition-all duration-200 hover:border-primary/35 hover:bg-primary/[0.04]",
+							loadingStrategy && "cursor-not-allowed opacity-55",
+						)}
+					>
+						{loadingStrategy === "oauth_google" ? (
+							<>
+								<Loader2 className="mr-2 h-4 w-4 animate-spin" />
+								Connecting...
+							</>
+						) : (
+							<>
+								<FcGoogle className="mr-2 h-5 w-5" />
+								Continue with Google
+							</>
+						)}
+					</Button>
+				</motion.div>
 
-			<FieldDescription className="px-4 text-center">
+				<div
+					id="clerk-captcha"
+					data-cl-theme="auto"
+					data-cl-size="flexible"
+					className="min-h-0"
+				/>
+			</motion.div>
+
+			{/* Legal */}
+			<motion.p
+				className="mt-8 text-[0.72rem] text-muted-foreground"
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ delay: 0.48, duration: 0.4 }}
+			>
 				By signing in, you agree to our{" "}
-				<Link href="/terms" className="underline underline-offset-4 hover:text-primary">
+				<Link
+					href="/terms"
+					className="underline underline-offset-4 hover:text-foreground transition-colors duration-150"
+				>
 					Terms of Service
 				</Link>{" "}
 				and{" "}
-				<Link href="/privacy" className="underline underline-offset-4 hover:text-primary">
+				<Link
+					href="/privacy"
+					className="underline underline-offset-4 hover:text-foreground transition-colors duration-150"
+				>
 					Privacy Policy
 				</Link>
 				.
-			</FieldDescription>
-		</div>
+			</motion.p>
+
+			<motion.p
+				className="mt-3 text-[0.72rem] text-muted-foreground"
+				initial={{ opacity: 0 }}
+				animate={{ opacity: 1 }}
+				transition={{ delay: 0.54, duration: 0.4 }}
+			>
+				<Link
+					href="/auth/admin"
+					className="underline underline-offset-4 hover:text-foreground transition-colors duration-150"
+				>
+					Staff / Admin access →
+				</Link>
+			</motion.p>
+		</motion.div>
 	);
 }

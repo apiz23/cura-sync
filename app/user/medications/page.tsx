@@ -14,7 +14,6 @@ import {
 	ShieldCheck,
 } from "lucide-react";
 import { Medication } from "@/app/types";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useUser } from "@clerk/nextjs";
@@ -346,100 +345,52 @@ export default function MedicationPage() {
 					description="Review clinician-managed prescriptions and log your adherence."
 				/>
 
-				<Card className="border-primary/20 bg-linear-to-r from-primary/5 to-primary/10">
-					<CardContent className="flex items-start gap-3 p-5">
-						<ShieldCheck className="mt-0.5 h-5 w-5 text-primary" />
-						<div className="space-y-1">
-							<p className="font-medium text-foreground">
-								Prescriptions are clinician-managed
-							</p>
-							<p className="text-base text-muted-foreground">
-								You can review prescriptions and mark doses as taken. Medication
-								creation, edits, and stop actions are restricted to doctors or admins.
-							</p>
-						</div>
-					</CardContent>
-				</Card>
+				{/* Clinician notice */}
+				<div className="flex items-start gap-3 border-b border-border/40 pb-4">
+					<ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
+					<div>
+						<p className="text-sm font-medium text-foreground">
+							Prescriptions are clinician-managed
+						</p>
+						<p className="text-xs text-muted-foreground mt-0.5">
+							You can review prescriptions and mark doses as taken. Medication
+							creation, edits, and stop actions are restricted to doctors or admins.
+						</p>
+					</div>
+				</div>
 
 				{/* Stats Overview */}
-				<div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-					<Card className="border border-primary/20 hover:border-primary/20 transition-all duration-300 hover:shadow-md">
-						<CardContent className="p-6">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-base font-medium text-muted-foreground">
-										Total Medications
-									</p>
-									<h3 className="text-3xl font-bold mt-2">{meds.length}</h3>
-								</div>
-								<div className="p-3 rounded-full bg-primary/10">
-									<Pill className="h-6 w-6 text-primary" />
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card className="border border-chart-2/20 hover:border-chart-2/30 transition-all duration-300 hover:shadow-md">
-						<CardContent className="p-6">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-base font-medium text-muted-foreground">Active</p>
-									<h3 className="text-3xl font-bold mt-2">{activeMeds.length}</h3>
-								</div>
-								<div className="p-3 rounded-full bg-chart-2/10">
-									<Clock className="h-6 w-6 text-chart-2" />
-								</div>
-							</div>
-							<div className="mt-3 text-base text-muted-foreground">
-								{todayMeds.length} due today
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card className="border border-chart-4/20 transition-all duration-300 hover:border-chart-4/30 hover:shadow-md">
-						<CardContent className="p-6">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-base font-medium text-muted-foreground">Completed</p>
-									<h3 className="text-3xl font-bold mt-2">
-										{meds.filter((m) => m.status === "COMPLETED").length}
-									</h3>
-								</div>
-								<div className="p-3 rounded-full bg-chart-4/10">
-									<Calendar className="h-6 w-6 text-chart-4" />
-								</div>
-							</div>
-						</CardContent>
-					</Card>
-
-					<Card className="border border-chart-5/20 hover:border-chart-5/30 transition-all duration-300 hover:shadow-md">
-						<CardContent className="p-6">
-							<div className="flex items-center justify-between">
-								<div>
-									<p className="text-base font-medium text-muted-foreground">
-										Needs Review
-									</p>
-									<h3 className="text-3xl font-bold mt-2">{expiredMeds.length}</h3>
-								</div>
-								<div className="p-3 rounded-full bg-chart-5/10">
-									<AlertCircle className="h-6 w-6 text-chart-5" />
-								</div>
-							</div>
-							{expiredMeds.length > 0 && (
-								<div className="mt-3 text-base font-medium text-chart-5">
-									{expiredMeds.length} expired
-								</div>
-							)}
-						</CardContent>
-					</Card>
+				<div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border/40">
+					<div className="py-4 pr-5">
+						<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Total</p>
+						<p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">{meds.length}</p>
+					</div>
+					<div className="py-4 px-5">
+						<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Active</p>
+						<p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">{activeMeds.length}</p>
+						<p className="mt-1 text-xs text-muted-foreground">{todayMeds.length} due today</p>
+					</div>
+					<div className="py-4 px-5">
+						<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Completed</p>
+						<p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+							{meds.filter((m) => m.status === "COMPLETED").length}
+						</p>
+					</div>
+					<div className="py-4 pl-5">
+						<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Review</p>
+						<p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">{expiredMeds.length}</p>
+						{expiredMeds.length > 0 && (
+							<p className="mt-1 text-xs font-medium text-chart-5">{expiredMeds.length} expired</p>
+						)}
+					</div>
 				</div>
 
 				{/* Medications Table */}
 				<div className="space-y-4">
 					<div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
 						<div>
-							<h2 className="text-2xl font-semibold">Your Medications</h2>
-							<p className="text-base text-muted-foreground mt-1">
+							<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Your Medications</p>
+							<p className="text-xs text-muted-foreground mt-1">
 								{filteredMeds.length} of {meds.length} medications shown
 							</p>
 						</div>
@@ -473,18 +424,13 @@ export default function MedicationPage() {
 					</div>
 
 					{meds.length === 0 ? (
-						<Card className="border border-dashed">
-							<CardContent className="flex flex-col items-center justify-center p-12 text-center">
-								<div className="p-4 rounded-full bg-muted mb-4">
-									<Pill className="h-12 w-12 text-muted-foreground" />
-								</div>
-								<h3 className="text-xl font-semibold mb-2">No medications yet</h3>
-								<p className="text-muted-foreground mb-6 max-w-md">
-									Your prescriptions will appear here once a doctor or admin adds them to
-									your treatment plan.
-								</p>
-							</CardContent>
-						</Card>
+						<div className="py-12 text-center">
+							<p className="font-medium text-foreground">No medications yet</p>
+							<p className="mt-2 text-sm text-muted-foreground max-w-md mx-auto">
+								Your prescriptions will appear here once a doctor or admin adds them to
+								your treatment plan.
+							</p>
+						</div>
 					) : (
 						<div className="rounded-xl border border-border overflow-hidden">
 							<TableProvider columns={columns} data={filteredMeds}>

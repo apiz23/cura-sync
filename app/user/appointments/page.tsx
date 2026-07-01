@@ -1,4 +1,4 @@
-"use client";
+﻿"use client";
 
 import { useEffect, useMemo, useState } from "react";
 import { motion } from "framer-motion";
@@ -116,7 +116,7 @@ function toIcsDate(dateStr: string, timeStr: string): string {
 function exportAppointmentIcs(appointment: Appointment) {
   const dtStart = toIcsDate(appointment.appointment_date, appointment.start_time);
   const dtEnd = toIcsDate(appointment.appointment_date, appointment.end_time || appointment.start_time);
-  const summary = `Appointment — ${appointment.facility_name ?? "Healthcare Facility"}`;
+  const summary = `Appointment â€” ${appointment.facility_name ?? "Healthcare Facility"}`;
   const description = appointment.reason_for_visit?.trim() || "Medical appointment";
   const uid = `cura-sync-appt-${appointment.id}@curasync`;
   const now = new Date().toISOString().replace(/[-:.]/g, "").slice(0, 15);
@@ -188,79 +188,74 @@ function AppointmentList({
 }) {
   if (!appointments.length) {
     return (
-      <Card className="border-dashed">
-        <CardContent className="p-8 text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-muted">
-            <CalendarClock className="h-7 w-7 text-muted-foreground" />
-          </div>
-          <h3 className="text-lg font-semibold">{emptyTitle}</h3>
-          <p className="mt-2 text-base text-muted-foreground">{emptyDescription}</p>
-        </CardContent>
-      </Card>
+      <div className="py-10 text-center">
+        <p className="font-medium text-foreground">{emptyTitle}</p>
+        <p className="mt-2 text-sm text-muted-foreground">{emptyDescription}</p>
+      </div>
     );
   }
 
   return (
-    <div className="grid gap-4">
+    <div>
       {appointments.map((appointment) => {
         const canCancel =
           appointment.status === "PENDING" || appointment.status === "CONFIRMED";
 
         return (
-          <Card key={appointment.id} className="border-border/60">
-            <CardContent className="flex flex-col gap-4 p-5 lg:flex-row lg:items-center lg:justify-between">
-              <div className="space-y-3">
-                <div className="flex flex-wrap items-center gap-2">
-                  <h3 className="text-lg font-semibold">
-                    {appointment.facility_name ?? "Healthcare Facility"}
-                  </h3>
-                  <Badge
-                    variant="outline"
-                    className={getStatusBadgeClasses(appointment.status)}
-                  >
-                    {appointment.status.replaceAll("_", " ")}
-                  </Badge>
-                </div>
-                <div className="flex flex-wrap gap-4 text-base text-muted-foreground">
-                  <span className="flex items-center gap-2">
-                    <Calendar className="h-4 w-4" />
-                    {formatDate(appointment.appointment_date)}
-                  </span>
-                  <span className="flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
-                    {formatTime(appointment.start_time)} -{" "}
-                    {formatTime(appointment.end_time)}
-                  </span>
-                </div>
-                <p className="text-base text-muted-foreground">
-                  {appointment.reason_for_visit?.trim() || "No reason provided."}
+          <div
+            key={appointment.id}
+            className="flex flex-col gap-4 border-b border-border/40 py-4 last:border-0 lg:flex-row lg:items-center lg:justify-between"
+          >
+            <div className="space-y-1.5">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-semibold text-foreground">
+                  {appointment.facility_name ?? "Healthcare Facility"}
                 </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {appointment.facility_id ? (
-                  <Link href={`/user/appointments/${appointment.facility_id}`}>
-                    <Button variant="outline" size="sm">
-                      Book Again
-                    </Button>
-                  </Link>
-                ) : null}
-                <Button
+                <Badge
                   variant="outline"
-                  size="sm"
-                  onClick={() => exportAppointmentIcs(appointment)}
-                  title="Add to calendar"
+                  className={getStatusBadgeClasses(appointment.status)}
                 >
-                  <Download className="mr-1.5 h-3.5 w-3.5" />
-                  .ics
-                </Button>
-                {canCancel ? (
-                  <Badge variant="secondary" className="px-3 py-2 text-base">
-                    Active booking
-                  </Badge>
-                ) : null}
+                  {appointment.status.replaceAll("_", " ")}
+                </Badge>
               </div>
-            </CardContent>
-          </Card>
+              <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
+                <span className="flex items-center gap-1.5">
+                  <Calendar className="h-3.5 w-3.5" />
+                  {formatDate(appointment.appointment_date)}
+                </span>
+                <span className="flex items-center gap-1.5">
+                  <Clock className="h-3.5 w-3.5" />
+                  {formatTime(appointment.start_time)} – {formatTime(appointment.end_time)}
+                </span>
+              </div>
+              <p className="text-sm text-muted-foreground">
+                {appointment.reason_for_visit?.trim() || "No reason provided."}
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {appointment.facility_id ? (
+                <Link href={`/user/appointments/${appointment.facility_id}`}>
+                  <Button variant="outline" size="sm">
+                    Book Again
+                  </Button>
+                </Link>
+              ) : null}
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => exportAppointmentIcs(appointment)}
+                title="Add to calendar"
+              >
+                <Download className="mr-1.5 h-3.5 w-3.5" />
+                .ics
+              </Button>
+              {canCancel ? (
+                <Badge variant="secondary" className="px-3 py-1.5 text-xs">
+                  Active booking
+                </Badge>
+              ) : null}
+            </div>
+          </div>
         );
       })}
     </div>
@@ -533,26 +528,16 @@ export default function AppointmentPage() {
 
   if (!user) {
     return (
-      <UserPageShell contentClassName="justify-center">
-        <Card className="max-w-md w-full border-none shadow-lg">
-          <CardContent className="p-8">
-            <div className="space-y-6 text-center">
-              <div className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl bg-primary/10">
-                <Users className="h-10 w-10 text-primary" />
-              </div>
-              <div className="space-y-3">
-                <h3 className="text-2xl font-bold">Welcome to Cura Health</h3>
-                <p className="text-muted-foreground">
-                  Please sign in to book appointments with trusted healthcare
-                  providers
-                </p>
-              </div>
-              <Button className="h-12 w-full rounded-xl bg-primary shadow-sm hover:bg-primary/90">
-                Sign In to Continue
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      <UserPageShell contentClassName="justify-center items-center">
+        <div className="max-w-sm w-full text-center py-16 space-y-4">
+          <p className="text-lg font-semibold text-foreground">Welcome to Cura Health</p>
+          <p className="text-sm text-muted-foreground">
+            Please sign in to book appointments with trusted healthcare providers
+          </p>
+          <Button className="w-full">
+            Sign In to Continue
+          </Button>
+        </div>
       </UserPageShell>
     );
   }
@@ -576,60 +561,25 @@ export default function AppointmentPage() {
           }
         />
 
-        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
-          <Card className="border-primary/10">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-medium text-muted-foreground">
-                    Active Appointments
-                  </p>
-                  <h3 className="mt-2 text-3xl font-bold">
-                    {isAppointmentsLoading ? "--" : activeAppointments.length}
-                  </h3>
-                </div>
-                <div className="rounded-xl bg-primary/10 p-3">
-                  <CalendarClock className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/60">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-medium text-muted-foreground">
-                    Appointment History
-                  </p>
-                  <h3 className="mt-2 text-3xl font-bold">
-                    {isAppointmentsLoading ? "--" : appointmentHistory.length}
-                  </h3>
-                </div>
-                <div className="rounded-xl bg-muted p-3">
-                  <History className="h-6 w-6 text-foreground" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/60">
-            <CardContent className="p-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-medium text-muted-foreground">
-                    Available Facilities
-                  </p>
-                  <h3 className="mt-2 text-3xl font-bold">
-                    {isFacilitiesLoading ? "--" : facilities.length}
-                  </h3>
-                </div>
-                <div className="rounded-xl bg-primary/10 p-3">
-                  <Building className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border/40">
+          <div className="py-4 lg:pr-5">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Active Appointments</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+              {isAppointmentsLoading ? "â€”" : activeAppointments.length}
+            </p>
+          </div>
+          <div className="py-4 lg:px-5">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Appointment History</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+              {isAppointmentsLoading ? "â€”" : appointmentHistory.length}
+            </p>
+          </div>
+          <div className="py-4 lg:pl-5">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Available Facilities</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+              {isFacilitiesLoading ? "â€”" : facilities.length}
+            </p>
+          </div>
         </div>
 
         <Tabs defaultValue="active" className="space-y-4">
@@ -732,74 +682,27 @@ export default function AppointmentPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-          <Card className="border border-primary/20 transition-all hover:border-primary/20">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-medium text-muted-foreground">
-                    Active Facilities
-                  </p>
-                  <h3 className="mt-2 text-3xl font-bold">
-                    {facilities.filter((facility) => facility.is_active).length}
-                  </h3>
-                </div>
-                <div className="shrink-0 rounded-xl bg-primary/10 p-3">
-                  <Building className="h-6 w-6 text-primary" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-chart-2/20 transition-all hover:border-chart-2/30">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-medium text-muted-foreground">
-                    With Schedules
-                  </p>
-                  <h3 className="mt-2 text-3xl font-bold">
-                    {scheduledFacilitiesCount}
-                  </h3>
-                </div>
-                <div className="shrink-0 rounded-xl bg-chart-2/10 p-3">
-                  <Clock className="h-6 w-6 text-chart-2" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-chart-5/20 transition-all hover:border-chart-5/30">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-medium text-muted-foreground">
-                    Facility Types
-                  </p>
-                  <h3 className="mt-2 text-3xl font-bold">{facilityTypes.length}</h3>
-                </div>
-                <div className="shrink-0 rounded-xl bg-chart-5/10 p-3">
-                  <Filter className="h-6 w-6 text-chart-5" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="border border-chart-4/20 transition-all hover:border-chart-4/30">
-            <CardContent className="p-6">
-              <div className="flex items-center justify-between">
-                <div>
-                  <p className="text-base font-medium text-muted-foreground">
-                    Specialties
-                  </p>
-                  <h3 className="mt-2 text-3xl font-bold">{specialtyCount}</h3>
-                </div>
-                <div className="shrink-0 rounded-xl bg-chart-4/10 p-3">
-                  <Calendar className="h-6 w-6 text-chart-4" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+        <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-border/40">
+          <div className="py-4 pr-5">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Active</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+              {facilities.filter((f) => f.is_active).length}
+            </p>
+          </div>
+          <div className="py-4 px-5">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Scheduled</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
+              {scheduledFacilitiesCount}
+            </p>
+          </div>
+          <div className="py-4 px-5">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Types</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">{facilityTypes.length}</p>
+          </div>
+          <div className="py-4 pl-5">
+            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Specialties</p>
+            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">{specialtyCount}</p>
+          </div>
         </div>
 
         <div className="space-y-4">
@@ -831,29 +734,24 @@ export default function AppointmentPage() {
               ))}
             </div>
           ) : filteredFacilities.length === 0 ? (
-            <Card className="border-dashed">
-              <CardContent className="p-12 text-center">
-                <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-muted">
-                  <Search className="h-10 w-10 text-muted-foreground" />
-                </div>
-                <h3 className="mb-3 text-xl font-semibold">No facilities found</h3>
-                <p className="mb-6 text-muted-foreground">
-                  {searchQuery
-                    ? `No results for "${searchQuery}". Try different keywords.`
-                    : "No healthcare facilities available at the moment."}
-                </p>
-                {searchQuery ? (
-                  <Button
-                    variant="outline"
-                    onClick={() => setSearchQuery("")}
-                    className="gap-2"
-                  >
-                    <X className="h-4 w-4" />
-                    Clear Search
-                  </Button>
-                ) : null}
-              </CardContent>
-            </Card>
+            <div className="py-12 text-center">
+              <p className="font-medium text-foreground">No facilities found</p>
+              <p className="mt-2 text-sm text-muted-foreground">
+                {searchQuery
+                  ? `No results for "${searchQuery}". Try different keywords.`
+                  : "No healthcare facilities available at the moment."}
+              </p>
+              {searchQuery ? (
+                <Button
+                  variant="outline"
+                  onClick={() => setSearchQuery("")}
+                  className="mt-4 gap-2"
+                >
+                  <X className="h-4 w-4" />
+                  Clear Search
+                </Button>
+              ) : null}
+            </div>
           ) : (
             <div className="overflow-x-auto rounded-xl border border-border bg-card">
               <div className="min-w-[900px]">
@@ -886,3 +784,4 @@ export default function AppointmentPage() {
     </UserPageShell>
   );
 }
+

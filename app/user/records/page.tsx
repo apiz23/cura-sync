@@ -1,11 +1,13 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { FileText, AlertTriangle, ExternalLink, Paperclip, Stethoscope, Scissors, CalendarDays } from "lucide-react";
+import { motion } from "framer-motion";
+import { AlertTriangle, ExternalLink, Paperclip } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
+import { EASE } from "@/hooks/use-motion-config";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -87,9 +89,9 @@ function severityClass(severity: string | null) {
 
 function EmptyState({ label }: { label: string }) {
     return (
-        <div className="rounded-xl border border-dashed p-8 text-center">
+        <div className="py-12 text-center">
             <p className="font-medium text-foreground">No {label} recorded</p>
-            <p className="mx-auto mt-2 max-w-sm text-base text-muted-foreground">
+            <p className="mx-auto mt-2 max-w-sm text-sm text-muted-foreground">
                 Your clinic can update this section during your next visit. Records
                 appear here once added by your care team.
             </p>
@@ -129,6 +131,12 @@ export default function RecordsPage() {
 
     return (
         <UserPageShell>
+            <motion.div
+                className="contents"
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.4, ease: EASE }}
+            >
             <UserPageHeader
                 sectionLabel="Medical Records"
                 title="Medical History"
@@ -156,7 +164,7 @@ export default function RecordsPage() {
                     <AlertTriangle className="h-5 w-5 shrink-0 text-destructive" />
                     <div>
                         <p className="font-medium text-foreground">Could not load records</p>
-                        <p className="text-base text-muted-foreground">{error}</p>
+                        <p className="text-sm text-muted-foreground">{error}</p>
                     </div>
                 </div>
             ) : records ? (
@@ -168,7 +176,7 @@ export default function RecordsPage() {
                         >
                             Conditions
                             {records.conditions.length ? (
-                                <span className="ml-2 rounded-full bg-primary/10 px-1.5 py-0.5 text-base font-semibold text-primary">
+                                <span className="ml-2 font-mono text-[10px] text-muted-foreground">
                                     {records.conditions.length}
                                 </span>
                             ) : null}
@@ -200,24 +208,24 @@ export default function RecordsPage() {
                     </TabsList>
 
                     {/* Conditions */}
-                    <TabsContent value="conditions" className="mt-4 space-y-3">
+                    <TabsContent value="conditions" className="mt-0">
                         {records.conditions.length === 0 ? (
                             <EmptyState label="conditions" />
                         ) : (
-                            records.conditions.map((condition) => (
-                                <div
-                                    key={condition.id}
-                                    className="rounded-xl border border-border bg-card p-4"
-                                >
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                <Stethoscope className="h-4 w-4" />
-                                            </div>
+                            <div>
+                                {records.conditions.map((condition, i) => (
+                                    <motion.div
+                                        key={condition.id}
+                                        className="border-b border-border/40 py-4 last:border-0"
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}
+                                    >
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
                                             <div>
                                                 <p className="font-semibold text-foreground">{condition.name}</p>
                                                 {condition.onset_date ? (
-                                                    <p className="text-base text-muted-foreground">
+                                                    <p className="mt-0.5 text-sm text-muted-foreground">
                                                         Since {formatDate(condition.onset_date)}
                                                         {condition.resolved_date
                                                             ? ` · Resolved ${formatDate(condition.resolved_date)}`
@@ -225,167 +233,166 @@ export default function RecordsPage() {
                                                     </p>
                                                 ) : null}
                                             </div>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge variant={conditionStatusVariant(condition.status)}>
-                                                {condition.status}
-                                            </Badge>
-                                            {condition.severity ? (
-                                                <Badge variant="outline" className={severityClass(condition.severity)}>
-                                                    {condition.severity}
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge variant={conditionStatusVariant(condition.status)}>
+                                                    {condition.status}
                                                 </Badge>
-                                            ) : null}
+                                                {condition.severity ? (
+                                                    <Badge variant="outline" className={severityClass(condition.severity)}>
+                                                        {condition.severity}
+                                                    </Badge>
+                                                ) : null}
+                                            </div>
                                         </div>
-                                    </div>
-                                    {condition.notes ? (
-                                        <p className="mt-3 text-base text-muted-foreground">{condition.notes}</p>
-                                    ) : null}
-                                </div>
-                            ))
+                                        {condition.notes ? (
+                                            <p className="mt-2 text-sm text-muted-foreground">{condition.notes}</p>
+                                        ) : null}
+                                    </motion.div>
+                                ))}
+                            </div>
                         )}
                     </TabsContent>
 
                     {/* Allergies */}
-                    <TabsContent value="allergies" className="mt-4 space-y-3">
+                    <TabsContent value="allergies" className="mt-0">
                         {records.allergies.length === 0 ? (
                             <EmptyState label="allergies" />
                         ) : (
-                            records.allergies.map((allergy) => (
-                                <div
-                                    key={allergy.id}
-                                    className="rounded-xl border border-border bg-card p-4"
-                                >
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-destructive/10 text-destructive">
-                                                <AlertTriangle className="h-4 w-4" />
-                                            </div>
+                            <div>
+                                {records.allergies.map((allergy, i) => (
+                                    <motion.div
+                                        key={allergy.id}
+                                        className="border-b border-border/40 py-4 last:border-0"
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}
+                                    >
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
                                             <div>
                                                 <p className="font-semibold text-foreground">{allergy.allergen}</p>
                                                 {allergy.reaction ? (
-                                                    <p className="text-base text-muted-foreground">
+                                                    <p className="mt-0.5 text-sm text-muted-foreground">
                                                         Reaction: {allergy.reaction}
                                                     </p>
                                                 ) : null}
                                             </div>
-                                        </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge variant={allergy.status === "ACTIVE" ? "destructive" : "outline"}>
-                                                {allergy.status}
-                                            </Badge>
-                                            {allergy.severity ? (
-                                                <Badge variant="outline" className={severityClass(allergy.severity)}>
-                                                    {allergy.severity}
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge variant={allergy.status === "ACTIVE" ? "destructive" : "outline"}>
+                                                    {allergy.status}
                                                 </Badge>
-                                            ) : null}
+                                                {allergy.severity ? (
+                                                    <Badge variant="outline" className={severityClass(allergy.severity)}>
+                                                        {allergy.severity}
+                                                    </Badge>
+                                                ) : null}
+                                            </div>
                                         </div>
-                                    </div>
-                                    {allergy.notes ? (
-                                        <p className="mt-3 text-base text-muted-foreground">{allergy.notes}</p>
-                                    ) : null}
-                                </div>
-                            ))
+                                        {allergy.notes ? (
+                                            <p className="mt-2 text-sm text-muted-foreground">{allergy.notes}</p>
+                                        ) : null}
+                                    </motion.div>
+                                ))}
+                            </div>
                         )}
                     </TabsContent>
 
                     {/* Procedures */}
-                    <TabsContent value="procedures" className="mt-4 space-y-3">
+                    <TabsContent value="procedures" className="mt-0">
                         {records.procedures.length === 0 ? (
                             <EmptyState label="procedures" />
                         ) : (
-                            records.procedures.map((procedure) => (
-                                <div
-                                    key={procedure.id}
-                                    className="rounded-xl border border-border bg-card p-4"
-                                >
-                                    <div className="flex items-center gap-3">
-                                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                            <Scissors className="h-4 w-4" />
-                                        </div>
-                                        <div>
-                                            <p className="font-semibold text-foreground">{procedure.name}</p>
-                                            <p className="text-base text-muted-foreground">
-                                                {procedure.procedure_date ? formatDate(procedure.procedure_date) : "Date unknown"}
-                                                {procedure.facility_name ? ` · ${procedure.facility_name}` : null}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    {procedure.outcome ? (
-                                        <p className="mt-3 text-base text-muted-foreground">
-                                            <span className="font-medium text-foreground">Outcome: </span>
-                                            {procedure.outcome}
+                            <div>
+                                {records.procedures.map((procedure, i) => (
+                                    <motion.div
+                                        key={procedure.id}
+                                        className="border-b border-border/40 py-4 last:border-0"
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}
+                                    >
+                                        <p className="font-semibold text-foreground">{procedure.name}</p>
+                                        <p className="mt-0.5 text-sm text-muted-foreground">
+                                            {procedure.procedure_date ? formatDate(procedure.procedure_date) : "Date unknown"}
+                                            {procedure.facility_name ? ` · ${procedure.facility_name}` : null}
                                         </p>
-                                    ) : null}
-                                    {procedure.notes ? (
-                                        <p className="mt-1 text-base text-muted-foreground">{procedure.notes}</p>
-                                    ) : null}
-                                </div>
-                            ))
+                                        {procedure.outcome ? (
+                                            <p className="mt-2 text-sm text-muted-foreground">
+                                                <span className="font-medium text-foreground">Outcome: </span>
+                                                {procedure.outcome}
+                                            </p>
+                                        ) : null}
+                                        {procedure.notes ? (
+                                            <p className="mt-1 text-sm text-muted-foreground">{procedure.notes}</p>
+                                        ) : null}
+                                    </motion.div>
+                                ))}
+                            </div>
                         )}
                     </TabsContent>
 
                     {/* Encounters */}
-                    <TabsContent value="encounters" className="mt-4 space-y-3">
+                    <TabsContent value="encounters" className="mt-0">
                         {records.encounters.length === 0 ? (
                             <EmptyState label="encounters" />
                         ) : (
-                            records.encounters.map((encounter) => (
-                                <div
-                                    key={encounter.id}
-                                    className="rounded-xl border border-border bg-card p-4"
-                                >
-                                    <div className="flex flex-wrap items-start justify-between gap-3">
-                                        <div className="flex items-center gap-3">
-                                            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
-                                                <CalendarDays className="h-4 w-4" />
-                                            </div>
+                            <div>
+                                {records.encounters.map((encounter, i) => (
+                                    <motion.div
+                                        key={encounter.id}
+                                        className="border-b border-border/40 py-4 last:border-0"
+                                        initial={{ opacity: 0, y: 6 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}
+                                    >
+                                        <div className="flex flex-wrap items-start justify-between gap-3">
                                             <div>
                                                 <p className="font-semibold text-foreground">
                                                     {encounter.reason ?? "Visit"}
                                                 </p>
-                                                <p className="text-base text-muted-foreground">
+                                                <p className="mt-0.5 text-sm text-muted-foreground">
                                                     {formatDate(encounter.encounter_date)}
                                                     {encounter.facility_name ? ` · ${encounter.facility_name}` : null}
                                                     {encounter.provider_name ? ` · ${encounter.provider_name}` : null}
                                                 </p>
                                             </div>
+                                            <div className="flex flex-wrap gap-2">
+                                                <Badge variant="outline">{encounter.encounter_type}</Badge>
+                                                {encounter.ipfs_cid ? (
+                                                    <Badge variant="outline" className="gap-1 border-sky-500/30 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
+                                                        <Paperclip className="h-3 w-3" />
+                                                        Document
+                                                    </Badge>
+                                                ) : null}
+                                            </div>
                                         </div>
-                                        <div className="flex flex-wrap gap-2">
-                                            <Badge variant="outline">{encounter.encounter_type}</Badge>
-                                            {encounter.ipfs_cid ? (
-                                                <Badge variant="outline" className="gap-1 border-sky-500/30 bg-sky-50 text-sky-700 dark:bg-sky-950/30 dark:text-sky-300">
-                                                    <Paperclip className="h-3 w-3" />
-                                                    Document
-                                                </Badge>
-                                            ) : null}
-                                        </div>
-                                    </div>
-                                    {encounter.diagnosis_summary ? (
-                                        <p className="mt-3 text-base text-muted-foreground">
-                                            <span className="font-medium text-foreground">Diagnosis: </span>
-                                            {encounter.diagnosis_summary}
-                                        </p>
-                                    ) : null}
-                                    {encounter.notes ? (
-                                        <p className="mt-1 text-base text-muted-foreground">{encounter.notes}</p>
-                                    ) : null}
-                                    {encounter.ipfs_cid ? (
-                                        <a
-                                            href={`https://gateway.pinata.cloud/ipfs/${encounter.ipfs_cid}`}
-                                            target="_blank"
-                                            rel="noopener noreferrer"
-                                            className="mt-3 inline-flex items-center gap-1.5 rounded-lg border border-sky-200 bg-sky-50 px-3 py-1.5 text-xs font-medium text-sky-700 hover:bg-sky-100 dark:border-sky-800 dark:bg-sky-950/30 dark:text-sky-300 dark:hover:bg-sky-900/40"
-                                        >
-                                            <ExternalLink className="h-3 w-3" />
-                                            View attached document (IPFS)
-                                        </a>
-                                    ) : null}
-                                </div>
-                            ))
+                                        {encounter.diagnosis_summary ? (
+                                            <p className="mt-2 text-sm text-muted-foreground">
+                                                <span className="font-medium text-foreground">Diagnosis: </span>
+                                                {encounter.diagnosis_summary}
+                                            </p>
+                                        ) : null}
+                                        {encounter.notes ? (
+                                            <p className="mt-1 text-sm text-muted-foreground">{encounter.notes}</p>
+                                        ) : null}
+                                        {encounter.ipfs_cid ? (
+                                            <a
+                                                href={`https://gateway.pinata.cloud/ipfs/${encounter.ipfs_cid}`}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="mt-3 inline-flex items-center gap-1.5 text-xs font-medium text-primary hover:underline"
+                                            >
+                                                <ExternalLink className="h-3 w-3" />
+                                                View attached document (IPFS)
+                                            </a>
+                                        ) : null}
+                                    </motion.div>
+                                ))}
+                            </div>
                         )}
                     </TabsContent>
                 </Tabs>
             ) : null}
+            </motion.div>
         </UserPageShell>
     );
 }
