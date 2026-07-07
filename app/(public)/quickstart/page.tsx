@@ -1,4 +1,5 @@
 import type { Metadata } from "next"
+import { CheckCircle2, Cpu, Globe, Smartphone, Terminal } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import {
   Card,
@@ -9,6 +10,7 @@ import {
 } from "@/components/ui/card"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { CodeBlock } from "@/components/quickstart/code-block"
+import { cn } from "@/lib/utils"
 
 export const metadata: Metadata = {
   title: "Quickstart – CuraSync",
@@ -103,21 +105,32 @@ const aiSteps: Step[] = [
 
 function StepList({ steps }: { steps: Step[] }) {
   return (
-    <ol className="space-y-6">
-      {steps.map((step, i) => (
-        <li key={step.title} className="flex gap-4">
-          <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary">
-            {i + 1}
-          </span>
-          <div className="flex-1 space-y-2 pt-0.5">
-            <p className="font-medium text-foreground">{step.title}</p>
-            {step.description && (
-              <p className="text-sm text-muted-foreground">{step.description}</p>
-            )}
-            {step.code && <CodeBlock code={step.code} />}
-          </div>
-        </li>
-      ))}
+    <ol>
+      {steps.map((step, i) => {
+        const isLast = i === steps.length - 1
+        return (
+          <li key={step.title} className="flex gap-4">
+            <div className="flex flex-col items-center">
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-primary/10 text-sm font-semibold text-primary ring-4 ring-background">
+                {i + 1}
+              </span>
+              {!isLast && (
+                <span
+                  aria-hidden="true"
+                  className="mt-1 w-px flex-1 bg-border"
+                />
+              )}
+            </div>
+            <div className={cn("flex-1 space-y-2 pt-0.5", !isLast && "pb-6")}>
+              <p className="font-medium text-foreground">{step.title}</p>
+              {step.description && (
+                <p className="text-sm text-muted-foreground">{step.description}</p>
+              )}
+              {step.code && <CodeBlock code={step.code} />}
+            </div>
+          </li>
+        )
+      })}
     </ol>
   )
 }
@@ -127,7 +140,11 @@ export default function QuickstartPage() {
     <div className="public-grid-page public-line-page">
       <main className="public-page-content public-text-panel mx-auto my-16 max-w-4xl space-y-10 px-6 py-16">
         <div className="space-y-4">
-          <h1 className="text-3xl font-bold">Quickstart</h1>
+          <span className="inline-flex items-center gap-2 rounded-full border border-border bg-muted px-3.5 py-1.5 font-mono text-xs font-medium text-muted-foreground">
+            <Terminal className="h-3 w-3 text-primary" aria-hidden="true" />
+            Developer Quickstart
+          </span>
+          <h1 className="text-3xl font-bold tracking-tight">Quickstart</h1>
           <p className="text-muted-foreground">
             Run the CuraSync web app, mobile app, and AI service locally.
           </p>
@@ -144,21 +161,40 @@ export default function QuickstartPage() {
             <CardDescription>Have these ready before you start.</CardDescription>
           </CardHeader>
           <CardContent>
-            <ul className="list-disc list-inside space-y-1.5 text-sm text-muted-foreground">
-              <li>Node.js 20+ and pnpm</li>
-              <li>Python 3.11+</li>
-              <li>A Supabase project (URL + anon/service keys)</li>
-              <li>A Clerk project (publishable + secret keys)</li>
-              <li>A JamAI Base personal access token (PAT) and project ID</li>
+            <ul className="space-y-2 text-sm text-muted-foreground">
+              {[
+                "Node.js 20+ and pnpm",
+                "Python 3.11+",
+                "A Supabase project (URL + anon/service keys)",
+                "A Clerk project (publishable + secret keys)",
+                "A JamAI Base personal access token (PAT) and project ID",
+              ].map((item) => (
+                <li key={item} className="flex items-start gap-2">
+                  <CheckCircle2
+                    className="mt-0.5 h-4 w-4 shrink-0 text-primary"
+                    aria-hidden="true"
+                  />
+                  {item}
+                </li>
+              ))}
             </ul>
           </CardContent>
         </Card>
 
         <Tabs defaultValue="web">
           <TabsList>
-            <TabsTrigger value="web">Web</TabsTrigger>
-            <TabsTrigger value="app">Mobile App</TabsTrigger>
-            <TabsTrigger value="ai">AI Service</TabsTrigger>
+            <TabsTrigger value="web" className="gap-1.5">
+              <Globe className="h-4 w-4" aria-hidden="true" />
+              Web
+            </TabsTrigger>
+            <TabsTrigger value="app" className="gap-1.5">
+              <Smartphone className="h-4 w-4" aria-hidden="true" />
+              Mobile App
+            </TabsTrigger>
+            <TabsTrigger value="ai" className="gap-1.5">
+              <Cpu className="h-4 w-4" aria-hidden="true" />
+              AI Service
+            </TabsTrigger>
           </TabsList>
           <TabsContent value="web" className="pt-6">
             <StepList steps={webSteps} />
