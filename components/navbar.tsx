@@ -45,7 +45,7 @@ export default function Navbar() {
                     </span>
                 </Link>
 
-                {/* Desktop nav — visible only at xl where all 5 items fit */}
+                {/* Desktop nav — visible only at xl where all 6 items fit */}
                 <nav className="hidden items-center gap-1 xl:flex">
                     {navItems.map((item) => {
                         const isActive = pathname === item.href

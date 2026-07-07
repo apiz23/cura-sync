@@ -34,8 +34,8 @@ const webSteps: Step[] = [
   {
     title: "Configure environment variables",
     description:
-      "Copy the example env file, then fill in Clerk, Supabase, and JamAI credentials.",
-    code: "cp .env.example .env.local",
+      "Copy the example env file, then fill in Clerk, Supabase, JamAI (PAT, PROJECT_ID), CURA_STAFF_JWT_SECRET, and CURA_SYNC_AI_URL.",
+    code: "cp .env.example .env.local\n# Windows: copy .env.example .env.local",
   },
   {
     title: "Start the dev server",

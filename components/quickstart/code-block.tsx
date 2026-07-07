@@ -14,9 +14,13 @@ export function CodeBlock({ code, lang = "bash", className }: CodeBlockProps) {
   const [copied, setCopied] = useState(false)
 
   async function handleCopy() {
-    await navigator.clipboard.writeText(code)
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
+    try {
+      await navigator.clipboard.writeText(code)
+      setCopied(true)
+      setTimeout(() => setCopied(false), 2000)
+    } catch {
+      // Clipboard unavailable (insecure context, denied permission, etc.) — ignore.
+    }
   }
 
   return (
