@@ -196,7 +196,7 @@ export default function TelehealthPage() {
             />
 
             {/* Info banner */}
-            <div className="flex items-start gap-3 border-b border-border/40 pb-4">
+            <div className="flex items-start gap-3 border-b border-border/70 pb-4">
                 <Info className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="text-sm">
                     <p className="font-medium text-foreground">How it works</p>
@@ -207,7 +207,7 @@ export default function TelehealthPage() {
             </div>
 
             {/* Requirements */}
-            <div className="grid gap-0 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
+            <div className="grid gap-0 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/70">
                 {[
                     { icon: Wifi, label: "Stable internet", desc: "Min. 2 Mbps recommended" },
                     { icon: Video, label: "Camera & mic", desc: "Browser permission required" },
@@ -249,7 +249,7 @@ export default function TelehealthPage() {
                             return (
                                 <motion.div
                                     key={appt.id}
-                                    className="flex flex-wrap items-center justify-between gap-3 border-b border-border/40 py-4 last:border-0"
+                                    className="flex flex-wrap items-center justify-between gap-3 border-b border-border/70 py-4 last:border-0"
                                     initial={{ opacity: 0, y: 6 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.05, ease: EASE }}

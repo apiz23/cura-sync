@@ -16,7 +16,7 @@ import {
 	UserCog,
 	CheckCircle,
 	XCircle,
-	MoreHorizontal,
+	X,
 	Edit,
 	Trash2,
 	Building,
@@ -160,6 +160,7 @@ export default function ViewStaffSheet({
 									onClick={() => {
 										if (onEdit) onEdit(staff);
 									}}
+									aria-label="Edit staff"
 								>
 									<Edit className="h-4 w-4" />
 								</Button>
@@ -169,8 +170,9 @@ export default function ViewStaffSheet({
 								size="icon"
 								className="h-9 w-9 rounded-lg hover:bg-muted"
 								onClick={() => onOpenChange(false)}
+								aria-label="Close"
 							>
-								<MoreHorizontal className="h-4 w-4" />
+								<X className="h-4 w-4" />
 							</Button>
 						</div>
 					</div>

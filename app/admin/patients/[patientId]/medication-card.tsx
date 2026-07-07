@@ -120,7 +120,7 @@ export default function MedicationCard({
             {/* Simple Card - Click to open Sheet */}
             <Sheet open={isSheetOpen} onOpenChange={setIsSheetOpen}>
                 <SheetTrigger asChild>
-                    <Card className="border-border/40 bg-card rounded-xl shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20 cursor-pointer group p-0">
+                    <Card className="border-border/70 bg-card rounded-xl shadow-sm hover:shadow-md transition-all duration-200 hover:border-primary/20 cursor-pointer group p-0">
                         <CardContent className="p-4">
                             <div className="space-y-3">
                                 {/* Header with Options */}
@@ -155,6 +155,7 @@ export default function MedicationCard({
                                                     e.stopPropagation();
                                                     setIsEditSheetOpen(true);
                                                 }}
+                                                aria-label="Edit medication"
                                             >
                                                 <Pencil className="h-3.5 w-3.5" />
                                             </Button>
@@ -222,7 +223,7 @@ export default function MedicationCard({
                 </SheetTrigger>
 
                 {/* Detailed View Sheet */}
-                <SheetContent className="sm:max-w-[500px] w-full p-0 border-border/40">
+                <SheetContent className="sm:max-w-[500px] w-full p-0 border-border/70">
                     <div className="h-full flex flex-col">
                         {/* Header */}
                         <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border/50 px-6 py-4">

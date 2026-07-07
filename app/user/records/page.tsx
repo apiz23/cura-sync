@@ -216,7 +216,7 @@ export default function RecordsPage() {
                                 {records.conditions.map((condition, i) => (
                                     <motion.div
                                         key={condition.id}
-                                        className="border-b border-border/40 py-4 last:border-0"
+                                        className="border-b border-border/70 py-4 last:border-0"
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}
@@ -262,7 +262,7 @@ export default function RecordsPage() {
                                 {records.allergies.map((allergy, i) => (
                                     <motion.div
                                         key={allergy.id}
-                                        className="border-b border-border/40 py-4 last:border-0"
+                                        className="border-b border-border/70 py-4 last:border-0"
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}
@@ -305,7 +305,7 @@ export default function RecordsPage() {
                                 {records.procedures.map((procedure, i) => (
                                     <motion.div
                                         key={procedure.id}
-                                        className="border-b border-border/40 py-4 last:border-0"
+                                        className="border-b border-border/70 py-4 last:border-0"
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}
@@ -339,7 +339,7 @@ export default function RecordsPage() {
                                 {records.encounters.map((encounter, i) => (
                                     <motion.div
                                         key={encounter.id}
-                                        className="border-b border-border/40 py-4 last:border-0"
+                                        className="border-b border-border/70 py-4 last:border-0"
                                         initial={{ opacity: 0, y: 6 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3, delay: Math.min(i, 7) * 0.04, ease: EASE }}

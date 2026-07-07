@@ -14,8 +14,12 @@ export function AdminHeader() {
 
     if (loading) {
         return (
-            <header className="flex h-(--header-height) items-center justify-between border-b bg-background/95 px-4 md:px-6">
-                Loading...
+            <header className="flex h-(--header-height) shrink-0 items-center justify-between gap-4 border-b bg-background/95 px-4 md:px-6">
+                <div className="h-4 w-48 bg-muted animate-pulse rounded-lg" />
+                <div className="flex items-center gap-3">
+                    <div className="h-9 w-9 bg-muted animate-pulse rounded-lg" />
+                    <div className="h-8 w-8 rounded-full bg-muted animate-pulse" />
+                </div>
             </header>
         );
     }

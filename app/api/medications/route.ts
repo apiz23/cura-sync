@@ -1,7 +1,12 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import supabase from "@/lib/supabase";
-import { requireAnySession, requireStaffSession, requirePatientSession } from "@/lib/authz";
+import {
+    requireAnySession,
+    requireStaffSession,
+    requirePatientSession,
+    requireCaregiverSession,
+} from "@/lib/authz";
 import { MEDICATION_STATUS } from "@/lib/constants";
 import { logAudit, actorFromSession } from "@/lib/audit";
 import { presentMedications } from "@/lib/medication-presenter";
@@ -64,21 +69,85 @@ export async function GET(req: NextRequest) {
     }
 
     // Patient accessing their own medications.
-    const session = await requirePatientSession(req);
-    if (session instanceof NextResponse) return session;
+    const patientSession = await requirePatientSession(req);
+    if (!(patientSession instanceof NextResponse)) {
+        const { data, error } = await supabase
+            .from("cura_medications")
+            .select("*")
+            .eq("profile_id", patientSession.profileId)
+            .is("deleted_at", null)
+            .order("created_at", { ascending: false });
 
-    const { data, error } = await supabase
-        .from("cura_medications")
-        .select("*")
-        .eq("profile_id", session.profileId)
-        .is("deleted_at", null)
-        .order("created_at", { ascending: false });
+        if (error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
 
-    if (error) {
-        return NextResponse.json({ error: error.message }, { status: 500 });
+        return NextResponse.json(await presentMedications(data ?? []));
     }
 
-    return NextResponse.json(await presentMedications(data ?? []));
+    // Caregiver accessing their own medications plus every linked patient's.
+    const caregiverSession = await requireCaregiverSession(req);
+    if (caregiverSession instanceof NextResponse) return caregiverSession;
+
+    const [{ data: ownMeds, error: ownError }, { data: links, error: linksError }] =
+        await Promise.all([
+            supabase
+                .from("cura_medications")
+                .select("*")
+                .eq("profile_id", caregiverSession.profileId)
+                .is("deleted_at", null),
+            supabase
+                .from("cura_caregiver_links")
+                .select(
+                    "patient_profile_id, patient:cura_profiles!cura_caregiver_links_patient_fkey(full_name)"
+                )
+                .eq("caregiver_profile_id", caregiverSession.profileId)
+                .eq("status", "ACTIVE"),
+        ]);
+
+    if (ownError) {
+        return NextResponse.json({ error: ownError.message }, { status: 500 });
+    }
+    if (linksError) {
+        return NextResponse.json({ error: linksError.message }, { status: 500 });
+    }
+
+    const patientNameById = new Map<string, string | null>();
+    for (const link of links ?? []) {
+        const patient = Array.isArray(link.patient) ? link.patient[0] : link.patient;
+        patientNameById.set(link.patient_profile_id, patient?.full_name ?? null);
+    }
+
+    const patientIds = Array.from(patientNameById.keys());
+
+    let patientMeds: Record<string, unknown>[] = [];
+    if (patientIds.length) {
+        const { data, error } = await supabase
+            .from("cura_medications")
+            .select("*")
+            .in("profile_id", patientIds)
+            .is("deleted_at", null);
+
+        if (error) {
+            return NextResponse.json({ error: error.message }, { status: 500 });
+        }
+        patientMeds = data ?? [];
+    }
+
+    const tagged = [
+        ...(ownMeds ?? []).map((med) => ({ ...med, patient_name: null, is_own: true })),
+        ...patientMeds.map((med) => ({
+            ...med,
+            patient_name: patientNameById.get(med.profile_id as string) ?? null,
+            is_own: false,
+        })),
+    ].sort(
+        (a, b) =>
+            new Date(b.created_at as string).getTime() -
+            new Date(a.created_at as string).getTime()
+    );
+
+    return NextResponse.json(await presentMedications(tagged));
 }
 
 /* =========================

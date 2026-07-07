@@ -40,7 +40,6 @@
         "clsx": "^2.1.1",
         "cmdk": "^1.1.1",
         "date-fns": "^4.1.0",
-        "ethers": "^6.16.0",
         "framer-motion": "^12.27.5",
         "jamaibase": "^0.4.0",
         "jose": "^6.1.0",

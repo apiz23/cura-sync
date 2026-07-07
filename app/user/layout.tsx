@@ -8,21 +8,19 @@ export const metadata: Metadata = {
 	description: "Personal healthcare dashboard for CuraSync users",
 };
 
+const SIDEBAR_STYLE = {
+	"--sidebar-width": "clamp(14rem, 16vw, 18rem)",
+	"--sidebar-width-mobile": "22rem",
+	"--header-height": "calc(var(--spacing) * 12)",
+} as React.CSSProperties;
+
 export default function UserLayout({
 	children,
 }: Readonly<{
 	children: React.ReactNode;
 }>) {
 	return (
-		<SidebarProvider
-			style={
-				{
-					"--sidebar-width": "calc(var(--spacing) * 72)",
-					"--sidebar-width-mobile": "22rem",
-					"--header-height": "calc(var(--spacing) * 12)",
-				} as React.CSSProperties
-			}
-		>
+		<SidebarProvider style={SIDEBAR_STYLE}>
 			<UserSidebar />
 			<SidebarInset className="overflow-hidden bg-background text-foreground">
 				<UserHeader />

@@ -204,7 +204,7 @@ function AppointmentList({
         return (
           <div
             key={appointment.id}
-            className="flex flex-col gap-4 border-b border-border/40 py-4 last:border-0 lg:flex-row lg:items-center lg:justify-between"
+            className="flex flex-col gap-4 border-b border-border/70 py-4 last:border-0 lg:flex-row lg:items-center lg:justify-between"
           >
             <div className="space-y-1.5">
               <div className="flex flex-wrap items-center gap-2">
@@ -561,7 +561,7 @@ export default function AppointmentPage() {
           }
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border/40">
+        <div className="grid grid-cols-1 lg:grid-cols-3 divide-y lg:divide-y-0 lg:divide-x divide-border/70">
           <div className="py-4 lg:pr-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Active Appointments</p>
             <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
@@ -659,6 +659,7 @@ export default function AppointmentPage() {
                   size="icon"
                   className="absolute top-1/2 right-3 h-8 w-8 -translate-y-1/2"
                   onClick={() => setSearchQuery("")}
+                  aria-label="Clear search"
                 >
                   <X className="h-4 w-4" />
                 </Button>
@@ -682,7 +683,7 @@ export default function AppointmentPage() {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-border/40">
+        <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-border/70">
           <div className="py-4 pr-5">
             <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Active</p>
             <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">

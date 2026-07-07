@@ -341,6 +341,7 @@ export default function PatientDetailPage() {
 								size="icon"
 								onClick={() => router.push("/admin/patients")}
 								className="rounded-full hover:bg-primary/10"
+								aria-label="Back to patients"
 							>
 								<ArrowLeft className="w-5 h-5" />
 							</Button>
@@ -386,7 +387,7 @@ export default function PatientDetailPage() {
 						<div className="flex items-center gap-2">
 							<DropdownMenu>
 								<DropdownMenuTrigger asChild>
-									<Button variant="outline" size="icon">
+									<Button variant="outline" size="icon" aria-label="More actions">
 										<MoreVertical className="w-4 h-4" />
 									</Button>
 								</DropdownMenuTrigger>
@@ -416,7 +417,7 @@ export default function PatientDetailPage() {
 				<div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
 					{/* Left Column */}
 					<div className="lg:col-span-1 space-y-6">
-						<Card className="border-border/40">
+						<Card className="border-border/70">
 							<CardContent className="p-6">
 								<h3 className="font-semibold text-lg mb-4">Quick Info</h3>
 								<div className="space-y-4">
@@ -453,7 +454,7 @@ export default function PatientDetailPage() {
 							</CardContent>
 						</Card>
 
-						<Card className="border-border/40">
+						<Card className="border-border/70">
 							<CardContent className="p-6">
 								<h3 className="font-semibold text-lg mb-4">Contact Info</h3>
 								<div className="space-y-4">
@@ -471,7 +472,7 @@ export default function PatientDetailPage() {
 						</Card>
 
 						{(patient.blood_type || patient.height_cm || patient.weight_kg) && (
-							<Card className="border-border/40">
+							<Card className="border-border/70">
 								<CardContent className="p-6">
 									<h3 className="font-semibold text-lg mb-4">Health Stats</h3>
 									<div className="space-y-4">
@@ -527,7 +528,7 @@ export default function PatientDetailPage() {
 
 					{/* Right Column */}
 					<div className="lg:col-span-2 space-y-6">
-						<div className="border-border/40 pt-0">
+						<div className="border-border/70 pt-0">
 							<Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
 								<div className="border-b overflow-x-auto">
 									<TabsList className="w-full justify-start rounded-none border-0 bg-transparent p-0 h-14">

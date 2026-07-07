@@ -158,6 +158,7 @@ export default function StaffDetailPage() {
                             size="icon"
                             onClick={() => router.push("/admin/staff")}
                             className="rounded-full"
+                            aria-label="Back to staff"
                         >
                             <ArrowLeft className="h-4 w-4" />
                         </Button>

@@ -1,30 +1,20 @@
 import "server-only";
 
-import { Contract, JsonRpcProvider, Wallet, type Log } from "ethers";
+import { createHash, createHmac } from "crypto";
 
+import supabaseAdmin from "@/lib/supabase-admin";
 import { hashRecord } from "@/lib/canonical-hash";
 
-const RPC_URL =
-	process.env.POLYGON_AMOY_RPC || "https://rpc-amoy.polygon.technology";
-const PRIVATE_KEY = process.env.SERVER_WALLET_KEY;
-const CONTRACT_ADDRESS = process.env.CONTRACT_ADDRESS;
-
-const REGISTRY_ABI = [
-	"function registerRecord(string recordId, bytes32 contentHash, string ipfsCid) external",
-	"function verifyRecord(string recordId, bytes32 contentHash) external view returns (bool)",
-	"function getHistory(string recordId) external view returns (tuple(bytes32 contentHash, address registeredBy, uint256 timestamp, string ipfsCid)[])",
-	"function getLatest(string recordId) external view returns (tuple(bytes32 contentHash, address registeredBy, uint256 timestamp, string ipfsCid) entry, bool exists)",
-	"function getVersionCount(string recordId) external view returns (uint256)",
-	"event RecordRegistered(string indexed recordId, bytes32 contentHash, string ipfsCid, uint256 timestamp, address registeredBy)",
-] as const;
+const LEDGER_SIGNING_SECRET = process.env.LEDGER_SIGNING_SECRET;
+const GENESIS_HASH = "0x0000000000000000000000000000000000000000000000000000000000000000";
 
 export type RegisterResult = {
 	txHash: string;
 	blockNumber: number | null;
 	contentHash: string;
 	ipfsCid: string;
-	contractAddress: string;
-	explorerUrl: string;
+	contractAddress: string | null;
+	explorerUrl: string | null;
 };
 
 export type HistoryEntry = {
@@ -36,55 +26,54 @@ export type HistoryEntry = {
 
 export class BlockchainNotConfiguredError extends Error {
 	constructor(missing: string) {
-		super(`Blockchain not configured: missing ${missing}`);
+		super(`Ledger not configured: missing ${missing}`);
 		this.name = "BlockchainNotConfiguredError";
 	}
 }
 
-let _provider: JsonRpcProvider | null = null;
-let _wallet: Wallet | null = null;
-let _contract: Contract | null = null;
+type LedgerRow = {
+	id: string;
+	record_id: string;
+	content_hash: string;
+	prev_hash: string | null;
+	chain_hash: string;
+	signature: string;
+	ipfs_cid: string | null;
+	created_at: string;
+};
 
-function getProvider(): JsonRpcProvider {
-	if (!_provider) _provider = new JsonRpcProvider(RPC_URL, 80002);
-	return _provider;
+function sign(chainHash: string): string {
+	if (!LEDGER_SIGNING_SECRET) throw new BlockchainNotConfiguredError("LEDGER_SIGNING_SECRET");
+	return createHmac("sha256", LEDGER_SIGNING_SECRET).update(chainHash).digest("hex");
 }
 
-function getWallet(): Wallet {
-	if (!_wallet) {
-		if (!PRIVATE_KEY) throw new BlockchainNotConfiguredError("SERVER_WALLET_KEY");
-		_wallet = new Wallet(PRIVATE_KEY, getProvider());
-	}
-	return _wallet;
+function computeChainHash(prevHash: string, contentHash: string, createdAt: string): string {
+	return (
+		"0x" +
+		createHash("sha256").update(`${prevHash}:${contentHash}:${createdAt}`).digest("hex")
+	);
 }
 
-function getContract(readOnly = false): Contract {
-	if (!CONTRACT_ADDRESS) throw new BlockchainNotConfiguredError("CONTRACT_ADDRESS");
-	if (!_contract) {
-		_contract = new Contract(
-			CONTRACT_ADDRESS,
-			REGISTRY_ABI,
-			readOnly ? getProvider() : getWallet(),
-		);
-	}
-	return _contract;
+async function latestEntry(recordId: string): Promise<LedgerRow | null> {
+	const { data } = await supabaseAdmin
+		.from("cura_ledger_entries")
+		.select("*")
+		.eq("record_id", recordId)
+		.order("created_at", { ascending: false })
+		.limit(1)
+		.maybeSingle();
+	return (data as LedgerRow | null) ?? null;
 }
 
 export function isBlockchainConfigured(): boolean {
-	return Boolean(PRIVATE_KEY && CONTRACT_ADDRESS);
-}
-
-export function explorerUrl(txHash: string): string {
-	return `https://amoy.polygonscan.com/tx/${txHash}`;
-}
-
-export function addressExplorerUrl(address: string): string {
-	return `https://amoy.polygonscan.com/address/${address}`;
+	return Boolean(LEDGER_SIGNING_SECRET);
 }
 
 /**
- * Register a record hash + IPFS CID on Polygon Amoy.
- * Returns tx hash immediately after submission; block number after 1 confirmation.
+ * Append a hash-chained, HMAC-signed ledger entry for a record. Each entry
+ * links to the previous entry's chain hash, so altering any past row breaks
+ * the chain (and its signature) for every entry after it — the same tamper-
+ * evidence property a public blockchain gives you, without a wallet or gas.
  */
 export async function registerOnChain(
 	recordId: string,
@@ -92,60 +81,72 @@ export async function registerOnChain(
 	ipfsCid = "",
 ): Promise<RegisterResult> {
 	if (!isBlockchainConfigured()) {
-		throw new BlockchainNotConfiguredError(
-			!PRIVATE_KEY ? "SERVER_WALLET_KEY" : "CONTRACT_ADDRESS",
-		);
+		throw new BlockchainNotConfiguredError("LEDGER_SIGNING_SECRET");
 	}
 
-	const contract = getContract();
-	const tx = await contract.registerRecord(recordId, contentHash, ipfsCid);
-	const receipt = await tx.wait(1);
+	const prev = await latestEntry(recordId);
+	const prevHash = prev?.chain_hash ?? GENESIS_HASH;
+	const createdAt = new Date().toISOString();
+	const chainHash = computeChainHash(prevHash, contentHash, createdAt);
+	const signature = sign(chainHash);
+
+	const { data, error } = await supabaseAdmin
+		.from("cura_ledger_entries")
+		.insert({
+			record_id: recordId,
+			content_hash: contentHash,
+			prev_hash: prevHash,
+			chain_hash: chainHash,
+			signature,
+			ipfs_cid: ipfsCid || null,
+			created_at: createdAt,
+		})
+		.select("id")
+		.single();
+
+	if (error || !data) {
+		throw new Error(error?.message ?? "Failed to write ledger entry");
+	}
 
 	return {
-		txHash: tx.hash,
-		blockNumber: receipt?.blockNumber ?? null,
+		txHash: data.id,
+		blockNumber: null,
 		contentHash,
 		ipfsCid,
-		contractAddress: CONTRACT_ADDRESS!,
-		explorerUrl: explorerUrl(tx.hash),
+		contractAddress: null,
+		explorerUrl: null,
 	};
 }
 
-/** Read-only verification — no gas, no transaction. */
+/** Recomputes the HMAC signature over the stored chain hash and compares content hash. */
 export async function verifyOnChain(
 	recordId: string,
 	contentHash: string,
 ): Promise<boolean> {
-	if (!CONTRACT_ADDRESS) throw new BlockchainNotConfiguredError("CONTRACT_ADDRESS");
-	const contract = getContract(true);
-	return (await contract.verifyRecord(recordId, contentHash)) as boolean;
+	if (!isBlockchainConfigured()) {
+		throw new BlockchainNotConfiguredError("LEDGER_SIGNING_SECRET");
+	}
+	const entry = await latestEntry(recordId);
+	if (!entry) return false;
+	const expectedSignature = sign(entry.chain_hash);
+	return expectedSignature === entry.signature && entry.content_hash === contentHash;
 }
 
 export async function getHistory(recordId: string): Promise<HistoryEntry[]> {
-	if (!CONTRACT_ADDRESS) throw new BlockchainNotConfiguredError("CONTRACT_ADDRESS");
-	const contract = getContract(true);
-	const raw = (await contract.getHistory(recordId)) as Array<
-		[string, string, bigint, string]
-	>;
-	return raw.map(([contentHash, registeredBy, timestamp, ipfsCid]) => ({
-		contentHash,
-		registeredBy,
-		timestamp: Number(timestamp),
-		ipfsCid,
+	const { data, error } = await supabaseAdmin
+		.from("cura_ledger_entries")
+		.select("*")
+		.eq("record_id", recordId)
+		.order("created_at", { ascending: true });
+
+	if (error) throw new Error(error.message);
+
+	return ((data as LedgerRow[]) ?? []).map((row) => ({
+		contentHash: row.content_hash,
+		registeredBy: "CuraSync Server",
+		timestamp: Math.floor(new Date(row.created_at).getTime() / 1000),
+		ipfsCid: row.ipfs_cid ?? "",
 	}));
 }
 
-export async function getServerWalletInfo(): Promise<{
-	address: string;
-	balancePOL: string;
-}> {
-	const wallet = getWallet();
-	const balance = await getProvider().getBalance(wallet.address);
-	return {
-		address: wallet.address,
-		balancePOL: (Number(balance) / 1e18).toFixed(4),
-	};
-}
-
 export { hashRecord };
-export type { Log };

@@ -1,4 +1,4 @@
-import { keccak256, toUtf8Bytes } from "ethers";
+import { createHash } from "crypto";
 
 /**
  * Stable JSON serializer — keys sorted recursively so the same logical record
@@ -20,9 +20,9 @@ export function canonicalize(value: unknown): string {
 	return `{${entries.join(",")}}`;
 }
 
-/** keccak256 of canonical JSON. Returns 0x-prefixed 32-byte hex. */
+/** sha256 of canonical JSON. Returns 0x-prefixed 32-byte hex. */
 export function hashRecord(record: unknown): string {
-	return keccak256(toUtf8Bytes(canonicalize(record)));
+	return "0x" + createHash("sha256").update(canonicalize(record)).digest("hex");
 }
 
 /**

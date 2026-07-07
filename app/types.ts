@@ -85,6 +85,8 @@ export type Medication = {
 	prescribed_by_display?: string | null;
 	created_at: string;
 	updated_at: string;
+	patient_name?: string | null;
+	is_own?: boolean;
 };
 
 export type FacilityEdit = {

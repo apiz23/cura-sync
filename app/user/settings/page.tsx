@@ -67,7 +67,7 @@ export default function SettingsPage() {
                 </p>
                 <div className="h-px bg-border/50 mb-5" />
                 <div className="space-y-0">
-                    <div className="flex items-center justify-between gap-4 border-b border-border/40 py-4">
+                    <div className="flex items-center justify-between gap-4 border-b border-border/70 py-4">
                         <div className="flex items-center gap-3">
                             <Globe className="h-4 w-4 shrink-0 text-muted-foreground" />
                             <div>
@@ -115,7 +115,7 @@ export default function SettingsPage() {
                         { label: "Environment", value: process.env.NODE_ENV ?? "production" },
                         { label: "Project", value: "UTHM FYP 2025/2026" },
                     ].map((row) => (
-                        <div key={row.label} className="flex items-center justify-between gap-4 border-b border-border/40 py-3 last:border-0">
+                        <div key={row.label} className="flex items-center justify-between gap-4 border-b border-border/70 py-3 last:border-0">
                             <span className="text-sm text-muted-foreground">{row.label}</span>
                             <span className="text-sm font-medium text-foreground">{row.value}</span>
                         </div>

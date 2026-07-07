@@ -153,7 +153,7 @@ export default function NotificationsPage() {
                                 key={notif.id}
                                 onClick={() => { if (!notif.read) void markRead([notif.id]); }}
                                 className={cn(
-                                    "group w-full border-b border-border/40 py-4 text-left transition-colors hover:bg-muted/20 last:border-0",
+                                    "group w-full border-b border-border/70 py-4 text-left transition-colors hover:bg-muted/20 last:border-0",
                                     !notif.read && "bg-primary/[0.02]",
                                 )}
                                 initial={{ opacity: 0, y: 6 }}

@@ -14,6 +14,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import { userMenu } from "@/lib/user-menu";
 import UserProfileMenu from "./user-profile-menu";
@@ -24,6 +25,7 @@ import { BrandLogo } from "./brand-logo";
 export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	const pathname = usePathname();
 	const { isLoaded } = useUser();
+	const { isMobile, setOpenMobile } = useSidebar();
 
 	const isMenuActive = (itemUrl: string) => {
 		if (itemUrl === "/user") {
@@ -76,6 +78,9 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 												<Link
 													href={item.url}
 													className="flex w-full items-center gap-3 overflow-hidden"
+													onClick={() => {
+														if (isMobile) setOpenMobile(false);
+													}}
 												>
 													<Icon className={active ? "size-4 shrink-0 text-primary" : "size-4 shrink-0 text-muted-foreground"} />
 													<span className={`truncate text-sm group-data-[collapsible=icon]:hidden ${active ? "font-semibold text-foreground" : "font-normal text-muted-foreground"}`}>

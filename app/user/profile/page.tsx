@@ -414,7 +414,7 @@ export default function ProfilePage() {
             
             {/* Profile Completion Banner */}
             {profileCompletion < 100 && (
-                <div className="border-b border-border/40 pb-4">
+                <div className="border-b border-border/70 pb-4">
                     <div className="flex items-center justify-between flex-wrap gap-4">
                         <div className="flex-1">
                             <div className="flex items-center justify-between mb-2">
@@ -456,6 +456,7 @@ export default function ProfilePage() {
                                                     variant="secondary"
                                                     className="absolute bottom-0 right-0 h-8 w-8 rounded-full border-2 border-background shadow-md hover:scale-105 transition-transform"
                                                     onClick={() => toast.info("Avatar upload coming soon")}
+                                                    aria-label="Change profile photo"
                                                 >
                                                     <Camera className="h-3.5 w-3.5" />
                                                 </Button>
@@ -491,7 +492,7 @@ export default function ProfilePage() {
 
                                 {/* Stats */}
                                 <div className="w-full pt-4 border-t">
-                                    <div className="flex items-center justify-between border-b border-border/40 py-2.5">
+                                    <div className="flex items-center justify-between border-b border-border/70 py-2.5">
                                         <span className="text-xs text-muted-foreground">Member since</span>
                                         <span className="font-mono text-xs font-semibold text-foreground">
                                             {profile?.created_at
@@ -500,7 +501,7 @@ export default function ProfilePage() {
                                         </span>
                                     </div>
                                     {age && (
-                                        <div className="flex items-center justify-between border-b border-border/40 py-2.5">
+                                        <div className="flex items-center justify-between border-b border-border/70 py-2.5">
                                             <span className="text-xs text-muted-foreground">Age</span>
                                             <span className="font-mono text-xs font-semibold text-foreground">{age} yrs</span>
                                         </div>
@@ -555,7 +556,7 @@ export default function ProfilePage() {
                             </p>
                             <div className="h-px bg-border/50" />
                             {profile.patient_profile.allergies && (
-                                <div className="border-b border-border/40 py-3 last:border-0">
+                                <div className="border-b border-border/70 py-3 last:border-0">
                                     <p className="text-xs text-muted-foreground mb-0.5">Allergies</p>
                                     <p className="text-sm text-foreground">{profile.patient_profile.allergies}</p>
                                 </div>
@@ -704,7 +705,7 @@ export default function ProfilePage() {
                                                                 setValue(
                                                                     "patient_profile.date_of_birth",
                                                                     date ? format(date, "yyyy-MM-dd") : "",
-                                                                    { shouldValidate: true }
+                                                                    { shouldValidate: true, shouldDirty: true }
                                                                 );
                                                                 setDobOpen(false);
                                                             }}
@@ -820,7 +821,7 @@ export default function ProfilePage() {
 
                                                         {/* BMI Display */}
                                         {currentBMI && (
-                                            <div className="flex items-center justify-between border-b border-border/40 py-3">
+                                            <div className="flex items-center justify-between border-b border-border/70 py-3">
                                                 <div className="flex items-center gap-2">
                                                     {bmiCategory.icon && <bmiCategory.icon className={`h-3.5 w-3.5 ${bmiCategory.color}`} />}
                                                     <span className="text-sm text-muted-foreground">BMI — {bmiCategory.label}</span>

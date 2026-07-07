@@ -192,7 +192,14 @@ export default function MedicationPage() {
 							/>
 						</div>
 						<div>
-							<div className="font-semibold text-base">{row.original.name}</div>
+							<div className="flex items-center gap-2">
+								<div className="font-semibold text-base">{row.original.name}</div>
+								{row.original.patient_name ? (
+									<Badge variant="outline" className="text-[10px] font-normal">
+										For {row.original.patient_name}
+									</Badge>
+								) : null}
+							</div>
 							<div className="flex items-center gap-1 text-muted-foreground text-base">
 								<span>{row.original.dosage}</span>
 								<ChevronRightIcon size={12} />
@@ -252,6 +259,7 @@ export default function MedicationPage() {
 			cell: ({ row }) => {
 				const statusConfig = getStatusConfig(row.original.status);
 				const isActive = row.original.status === "ACTIVE";
+				const canLogIntake = isActive && row.original.is_own !== false;
 
 				return (
 					<div className="flex items-center gap-2">
@@ -262,7 +270,7 @@ export default function MedicationPage() {
 							<div className={`h-2 w-2 rounded-full ${statusConfig.dotColor}`} />
 							{statusConfig.label}
 						</Badge>
-						{isActive && (
+						{canLogIntake && (
 							<Button
 								variant="outline"
 								size="sm"
@@ -346,7 +354,7 @@ export default function MedicationPage() {
 				/>
 
 				{/* Clinician notice */}
-				<div className="flex items-start gap-3 border-b border-border/40 pb-4">
+				<div className="flex items-start gap-3 border-b border-border/70 pb-4">
 					<ShieldCheck className="mt-0.5 h-4 w-4 shrink-0 text-primary" />
 					<div>
 						<p className="text-sm font-medium text-foreground">
@@ -360,7 +368,7 @@ export default function MedicationPage() {
 				</div>
 
 				{/* Stats Overview */}
-				<div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border/40">
+				<div className="grid grid-cols-2 md:grid-cols-4 divide-x divide-y md:divide-y-0 divide-border/70">
 					<div className="py-4 pr-5">
 						<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Total</p>
 						<p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">{meds.length}</p>

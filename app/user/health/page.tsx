@@ -128,7 +128,7 @@ export default function HealthTrackingPage() {
                         return (
                             <div
                                 key={alert.id}
-                                className="flex items-start gap-3 border-b border-border/40 py-3 last:border-0"
+                                className="flex items-start gap-3 border-b border-border/70 py-3 last:border-0"
                             >
                                 <AlertTriangle className={`mt-0.5 h-3.5 w-3.5 shrink-0 ${colorClass}`} />
                                 <div className="flex-1 text-sm">

@@ -4,7 +4,6 @@ import {
 	AlertTriangle,
 	CheckCircle2,
 	Clock,
-	ExternalLink,
 	FileSearch,
 	Loader2,
 	Lock,
@@ -161,7 +160,7 @@ export default function BlockchainPage() {
 				});
 
 			toast.promise(promise, {
-				loading: "Checking Polygon Amoy...",
+				loading: "Checking ledger...",
 				success: (data) =>
 					data.verified && data.hashesMatch
 						? "Record verified ✓"
@@ -185,7 +184,7 @@ export default function BlockchainPage() {
 			<UserPageHeader
 				sectionLabel="Audit Trail"
 				title="Blockchain Security"
-				description="Records are hashed with keccak256 and anchored on the Polygon Amoy testnet. Click Verify on any entry to re-check the on-chain proof in real time."
+				description="Records are hashed and chained into a tamper-evident, server-signed ledger. Click Verify on any entry to re-check the proof in real time."
 				meta={
 					!loading ? (
 						<>
@@ -210,22 +209,22 @@ export default function BlockchainPage() {
 			/>
 
 			{/* How it works */}
-			<div className="grid gap-0 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
+			<div className="grid gap-0 sm:grid-cols-3 divide-y sm:divide-y-0 sm:divide-x divide-border/70">
 				{[
 					{
 						icon: Lock,
 						title: "Hashed",
-						body: "keccak256 of canonical record JSON. Same record → same 32-byte hash.",
+						body: "sha256 of canonical record JSON. Same record → same 32-byte hash.",
 					},
 					{
 						icon: ShieldCheck,
-						title: "Anchored",
-						body: "Hash + IPFS CID written to Polygon Amoy smart contract. Server pays gas — you don't.",
+						title: "Chained",
+						body: "Hash + IPFS CID appended to a signed hash chain. No gas, no wallet.",
 					},
 					{
 						icon: FileSearch,
 						title: "Verifiable",
-						body: "Click Verify to re-hash live record and compare against on-chain proof. Tamper → mismatch.",
+						body: "Click Verify to re-hash live record and compare against the ledger proof. Tamper → mismatch.",
 					},
 				].map(({ icon: Icon, title, body }) => (
 					<div key={title} className="py-4 sm:px-5 first:pl-0 last:pr-0">
@@ -284,7 +283,7 @@ export default function BlockchainPage() {
 									initial={{ opacity: 0, y: 6 }}
 									animate={{ opacity: 1, y: 0 }}
 									transition={{ duration: 0.3, delay: Math.min(idx, 7) * 0.03 }}
-									className="border-b border-border/40 last:border-0"
+									className="border-b border-border/70 last:border-0"
 								>
 									<div className="flex flex-wrap items-center justify-between gap-4 py-3">
 										<div className="flex items-center gap-3">
@@ -321,20 +320,14 @@ export default function BlockchainPage() {
 
 										<div className="flex flex-wrap items-center gap-3">
 											{entry.tx_hash ? (
-												<a
-													href={`https://amoy.polygonscan.com/tx/${entry.tx_hash}`}
-													target="_blank"
-													rel="noreferrer"
-													className="inline-flex items-center gap-1.5 rounded-full border border-chart-3/30 bg-chart-3/5 px-3 py-1 font-mono text-base font-medium text-chart-3 transition-colors hover:bg-chart-3/10 dark:text-chart-3"
-												>
+												<span className="inline-flex items-center gap-1.5 rounded-full border border-chart-3/30 bg-chart-3/5 px-3 py-1 font-mono text-base font-medium text-chart-3 dark:text-chart-3">
 													<ShieldCheck className="h-3 w-3" />
 													{shortHex(entry.tx_hash)}
-													<ExternalLink className="h-3 w-3" />
-												</a>
+												</span>
 											) : (
 												<span className="inline-flex items-center gap-1.5 rounded-full border border-border bg-muted px-3 py-1 font-mono text-base text-muted-foreground">
 													<Clock className="h-3 w-3" />
-													Off-chain only
+													Not ledgered
 												</span>
 											)}
 
@@ -384,7 +377,7 @@ export default function BlockchainPage() {
 														<>
 															<CheckCircle2 className="h-4 w-4 text-chart-3 dark:text-chart-3" />
 															<span className="text-chart-3 dark:text-chart-3">
-																Verified on Polygon Amoy
+																Verified — ledger signature valid
 															</span>
 														</>
 													) : (
@@ -409,12 +402,6 @@ export default function BlockchainPage() {
 															? shortHex(result.storedHash, 14, 8)
 															: "—"}
 													</p>
-													{result.blockNumber ? (
-														<p>
-															<span className="text-foreground">Block:</span>{" "}
-															#{result.blockNumber}
-														</p>
-													) : null}
 													{result.ipfsCid ? (
 														<p>
 															<span className="text-foreground">IPFS:</span>{" "}
@@ -444,27 +431,16 @@ export default function BlockchainPage() {
 				)}
 			</div>
 
-			{/* Contract info footer */}
+			{/* Ledger info footer */}
 			<div className="mt-6 rounded-xl border border-border bg-muted/30 p-4">
-				<div className="flex flex-wrap items-center justify-between gap-3">
-					<div className="flex items-center gap-2 text-base">
-						<ShieldX className="h-4 w-4 text-muted-foreground" />
-						<span className="text-muted-foreground">
-							Anchored on{" "}
-							<span className="font-semibold text-foreground">
-								Polygon Amoy testnet
-							</span>
+				<div className="flex items-center gap-2 text-base">
+					<ShieldX className="h-4 w-4 text-muted-foreground" />
+					<span className="text-muted-foreground">
+						Secured by{" "}
+						<span className="font-semibold text-foreground">
+							CuraSync&apos;s server-signed integrity ledger
 						</span>
-					</div>
-					<a
-						href="https://amoy.polygonscan.com/address/0x2f2E7073d6ed77781656c6d6Ea7A07314d69b4f8"
-						target="_blank"
-						rel="noreferrer"
-						className="inline-flex items-center gap-1.5 text-base font-medium text-primary hover:underline"
-					>
-						View HealthRecordRegistry contract
-						<ExternalLink className="h-3 w-3" />
-					</a>
+					</span>
 				</div>
 			</div>
 		</UserPageShell>

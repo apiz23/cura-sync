@@ -239,7 +239,7 @@ export default function EditMedicationSheet({
 
     return (
         <Sheet open={open} onOpenChange={onOpenChange}>
-            <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0 border-border/40 shadow-lg dark:shadow-none">
+            <SheetContent className="w-full sm:max-w-lg overflow-y-auto p-0 border-border/70 shadow-lg dark:shadow-none">
                 <div className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border/50">
                     <div className="flex items-center justify-between p-6">
                         <div className="flex items-center gap-3">
@@ -284,6 +284,7 @@ export default function EditMedicationSheet({
                                 size="icon"
                                 onClick={() => onOpenChange(false)}
                                 className="h-9 w-9 rounded-xl hover:bg-muted"
+                                aria-label="Close"
                             >
                                 <X className="h-4 w-4" />
                             </Button>
@@ -453,7 +454,7 @@ export default function EditMedicationSheet({
                                 </Popover>
                             </div>
 
-                            <div className="flex items-center justify-between p-4 bg-muted/20 rounded-xl border border-border/40">
+                            <div className="flex items-center justify-between p-4 bg-muted/20 rounded-xl border border-border/70">
                                 <div className="space-y-1">
                                     <Label className="text-base font-medium text-foreground">
                                         Ongoing Medication

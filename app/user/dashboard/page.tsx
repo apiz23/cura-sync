@@ -377,7 +377,7 @@ export default function UserDashboardPage() {
 								>
 									<Link
 										href={item.href}
-										className="flex items-center gap-4 border-b border-border/40 py-3.5 transition-colors hover:bg-muted/20 last:border-0"
+										className="flex items-center gap-4 border-b border-border/70 py-3.5 transition-colors hover:bg-muted/20 last:border-0"
 									>
 										<span className="font-mono text-[10px] text-muted-foreground w-16 shrink-0 truncate">
 											{item.detail.split(" ")[0]}
@@ -460,7 +460,7 @@ export default function UserDashboardPage() {
 						Health Overview
 					</p>
 				</div>
-				<div className="grid gap-0 md:grid-cols-2 md:divide-x md:divide-border/40">
+				<div className="grid gap-0 md:grid-cols-2 md:divide-x md:divide-border/70">
 					{/* Wearable snapshot */}
 					<div className="px-6 py-5">
 						<p className="mb-4 text-sm font-semibold text-foreground">
@@ -508,7 +508,7 @@ export default function UserDashboardPage() {
 								{recentHealthSync.slice(0, 3).map((snapshot) => (
 									<div
 										key={snapshot.id}
-										className="flex items-center justify-between gap-4 border-b border-border/40 py-2.5 last:border-0"
+										className="flex items-center justify-between gap-4 border-b border-border/70 py-2.5 last:border-0"
 									>
 										<div className="min-w-0">
 											<p className="truncate text-xs font-medium text-foreground">
@@ -648,7 +648,7 @@ function ActionLink({
 
 function SummaryRow({ label, value }: { label: string; value: string }) {
 	return (
-		<div className="flex items-center justify-between gap-4 border-b border-border/40 py-3 last:border-0">
+		<div className="flex items-center justify-between gap-4 border-b border-border/70 py-3 last:border-0">
 			<span className="text-sm text-muted-foreground">{label}</span>
 			<span className="text-right text-sm font-medium text-foreground">
 				{value}

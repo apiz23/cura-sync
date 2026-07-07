@@ -396,6 +396,7 @@ export default function AddStaffSheet({
                                     onClick={generatePassword}
                                     className="shrink-0"
                                     title="Generate secure password"
+                                    aria-label="Generate secure password"
                                 >
                                     <Sparkles className="w-4 h-4" />
                                 </Button>

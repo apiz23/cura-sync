@@ -3,8 +3,6 @@ import { NextRequest, NextResponse } from "next/server";
 import supabaseAdmin from "@/lib/supabase-admin";
 import { requireAnySession } from "@/lib/authz";
 import {
-	addressExplorerUrl,
-	explorerUrl,
 	getHistory,
 	hashRecord,
 	isBlockchainConfigured,
@@ -114,16 +112,11 @@ export async function GET(
 		registeredBy: string;
 		timestamp: number;
 		ipfsCid: string;
-		registeredByExplorer: string;
 	}> = [];
 
 	try {
 		verified = await verifyOnChain(recordId, liveHash);
-		const raw = await getHistory(recordId);
-		history = raw.map((h) => ({
-			...h,
-			registeredByExplorer: addressExplorerUrl(h.registeredBy),
-		}));
+		history = await getHistory(recordId);
 	} catch (chainErr) {
 		chainError =
 			chainErr instanceof Error ? chainErr.message : "Blockchain read failed";
@@ -138,7 +131,7 @@ export async function GET(
 		blockNumber: auditRow?.block_number ?? null,
 		ipfsCid: auditRow?.ipfs_cid ?? null,
 		anchoredAt: auditRow?.created_at ?? null,
-		explorerUrl: auditRow?.tx_hash ? explorerUrl(auditRow.tx_hash) : null,
+		explorerUrl: null,
 		history,
 		chainError,
 	});

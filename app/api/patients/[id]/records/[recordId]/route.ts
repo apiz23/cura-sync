@@ -200,9 +200,7 @@ export async function PATCH(
 			content_hash: anchor.contentHash,
 			tx_hash: anchor.txHash,
 			block_number: anchor.blockNumber,
-			explorer_url: anchor.txHash
-				? `https://amoy.polygonscan.com/tx/${anchor.txHash}`
-				: null,
+			explorer_url: null,
 			skipped: anchor.skipped,
 			error: anchor.error ?? null,
 		},
@@ -272,9 +270,7 @@ export async function DELETE(
 			content_hash: anchor.contentHash,
 			tx_hash: anchor.txHash,
 			block_number: anchor.blockNumber,
-			explorer_url: anchor.txHash
-				? `https://amoy.polygonscan.com/tx/${anchor.txHash}`
-				: null,
+			explorer_url: null,
 			skipped: anchor.skipped,
 			error: anchor.error ?? null,
 		},

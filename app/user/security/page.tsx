@@ -30,7 +30,7 @@ function StatusRow({
     active?: boolean;
 }) {
     return (
-        <div className="flex items-center justify-between gap-4 border-b border-border/40 py-3 last:border-0">
+        <div className="flex items-center justify-between gap-4 border-b border-border/70 py-3 last:border-0">
             <span className="text-sm text-muted-foreground">{label}</span>
             <div className="flex items-center gap-2">
                 {active !== undefined ? (
@@ -183,7 +183,7 @@ export default function SecurityPage() {
                 </p>
                 <div className="h-px bg-border/50" />
                 <div>
-                    <div className="flex items-center justify-between gap-4 border-b border-border/40 py-4">
+                    <div className="flex items-center justify-between gap-4 border-b border-border/70 py-4">
                         <div>
                             <p className="text-sm font-medium text-foreground">Password & 2FA</p>
                             <p className="text-xs text-muted-foreground">
@@ -201,7 +201,7 @@ export default function SecurityPage() {
                         </Button>
                     </div>
 
-                    <div className="flex items-center justify-between gap-4 border-b border-border/40 py-4">
+                    <div className="flex items-center justify-between gap-4 border-b border-border/70 py-4">
                         <div>
                             <p className="text-sm font-medium text-foreground">Connected accounts</p>
                             <p className="text-xs text-muted-foreground">
@@ -248,8 +248,8 @@ export default function SecurityPage() {
                     <div className="space-y-1 max-w-lg">
                         <p className="text-sm font-semibold text-foreground">Blockchain record protection</p>
                         <p className="text-sm text-muted-foreground">
-                            Your health records will be hashed and anchored on the Polygon Amoy testnet
-                            each time your clinic adds or updates a record. Verify them on the{" "}
+                            Your health records will be hashed and recorded in CuraSync&apos;s
+                            tamper-evident ledger each time your clinic adds or updates a record. Verify them on the{" "}
                             <a href="/user/blockchain" className="text-primary hover:underline">
                                 Blockchain page
                             </a>

@@ -173,7 +173,7 @@ export default function CaregiverPage() {
                                             <Link
                                                 href={`/user/caregiver/${p.id}`}
                                                 className={cn(
-                                                    "flex items-center justify-between border-b border-border/40 py-4 last:border-0",
+                                                    "flex items-center justify-between border-b border-border/70 py-4 last:border-0",
                                                     "transition-colors hover:text-foreground group",
                                                 )}
                                             >
@@ -302,7 +302,7 @@ export default function CaregiverPage() {
                                 { step: "02", text: "Patient generates a 6-digit code (valid 15 minutes)" },
                                 { step: "03", text: "Enter the code above — you're linked instantly" },
                             ].map(({ step, text }) => (
-                                <div key={step} className="flex items-start gap-4 border-b border-border/40 py-3 last:border-0">
+                                <div key={step} className="flex items-start gap-4 border-b border-border/70 py-3 last:border-0">
                                     <span className="font-mono text-[10px] font-semibold text-muted-foreground/60 mt-0.5">
                                         {step}
                                     </span>

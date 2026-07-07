@@ -415,7 +415,7 @@ function AnalysisProgressPanel() {
 				</div>
 				<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
 			</div>
-			<div className="grid gap-0 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-border/40">
+			<div className="grid gap-0 sm:grid-cols-5 divide-y sm:divide-y-0 sm:divide-x divide-border/70">
 				{ANALYSIS_STEPS.map((step, index) => (
 					<motion.div
 						key={step.label}

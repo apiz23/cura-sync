@@ -17,6 +17,7 @@ import {
 	SidebarMenuButton,
 	SidebarMenuItem,
 	SidebarRail,
+	useSidebar,
 } from "@/components/ui/sidebar";
 import { AdminProfileMenu } from "./admin-profile-menu";
 import { adminMenu } from "@/lib/admin-menu";
@@ -26,6 +27,7 @@ import { getStaffRoleLabel } from "@/lib/staff-role";
 export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	const { user, loading } = useAuth();
 	const pathname = usePathname();
+	const { isMobile, setOpenMobile } = useSidebar();
 
 	// 🔑 IMPORTANT: handle loading FIRST
 	if (loading) return null;
@@ -42,7 +44,7 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
 	};
 
 	return (
-		<Sidebar variant="inset" className="overflow-x-hidden" {...props}>
+		<Sidebar className="overflow-x-hidden" {...props}>
 			{/* ================= HEADER ================= */}
 			<SidebarHeader>
 				<SidebarMenu>
@@ -56,7 +58,7 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
                                 group-data-[collapsible=icon]:px-0
                             "
 						>
-							<BrandLogo className="bg-secondary size-8 rounded-lg" />
+							<BrandLogo className="bg-background size-8 rounded-full" />
 							<div className="grid text-left text-base leading-tight group-data-[collapsible=icon]:hidden">
 								<span className="font-semibold">CuraSync</span>
 								<span className="text-base text-muted-foreground">{roleLabel} Console</span>
@@ -72,7 +74,7 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
 					.filter((group) => !group.roles || group.roles.includes(role))
 					.map((group) => (
 						<SidebarGroup key={group.title}>
-							<SidebarGroupLabel className="px-2 text-sm font-semibold uppercase tracking-wider text-muted-foreground">
+							<SidebarGroupLabel className="px-2 font-mono text-[9px] font-semibold uppercase tracking-[0.2em] text-muted-foreground/70">
 								{group.title}
 							</SidebarGroupLabel>
 
@@ -92,16 +94,17 @@ export function AdminSidebar(props: React.ComponentProps<typeof Sidebar>) {
 														asChild
 														isActive={active}
 														tooltip={item.title}
-														className="
-                                                        gap-3
-                                                        data-[active=true]:bg-primary/90
-                                                        data-[active=true]:text-primary-foreground
-                                                        group-data-[collapsible=icon]:justify-center
-                                                    "
+														className="rounded-none gap-3 transition-colors data-[active=true]:bg-transparent data-[active=true]:text-foreground data-[active=true]:font-semibold hover:bg-muted/20 group-data-[collapsible=icon]:justify-center"
 													>
-														<Link href={item.url}>
-															<Icon className="size-4 shrink-0" />
-															<span className="text-sm font-medium group-data-[collapsible=icon]:hidden">
+														<Link
+															href={item.url}
+															className="flex w-full items-center gap-3 overflow-hidden"
+															onClick={() => {
+																if (isMobile) setOpenMobile(false);
+															}}
+														>
+															<Icon className={active ? "size-4 shrink-0 text-primary" : "size-4 shrink-0 text-muted-foreground"} />
+															<span className={`truncate text-sm group-data-[collapsible=icon]:hidden ${active ? "font-semibold text-foreground" : "font-normal text-muted-foreground"}`}>
 																{item.title}
 															</span>
 														</Link>
