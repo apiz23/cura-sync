@@ -169,11 +169,8 @@ export default function RecordsPage() {
                 </div>
             ) : records ? (
                 <Tabs defaultValue="conditions">
-                    <TabsList className="h-auto gap-0 rounded-none border-b border-border bg-transparent p-0 flex-wrap">
-                        <TabsTrigger
-                            value="conditions"
-                            className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-                        >
+                    <TabsList className="flex-wrap">
+                        <TabsTrigger value="conditions">
                             Conditions
                             {records.conditions.length ? (
                                 <span className="ml-2 font-mono text-[10px] text-muted-foreground">
@@ -181,7 +178,7 @@ export default function RecordsPage() {
                                 </span>
                             ) : null}
                         </TabsTrigger>
-                        <TabsTrigger value="allergies" className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">
+                        <TabsTrigger value="allergies">
                             Allergies
                             {records.allergies.length ? (
                                 <span className="ml-2 font-mono text-[10px] text-muted-foreground">
@@ -189,7 +186,7 @@ export default function RecordsPage() {
                                 </span>
                             ) : null}
                         </TabsTrigger>
-                        <TabsTrigger value="procedures" className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">
+                        <TabsTrigger value="procedures">
                             Procedures
                             {records.procedures.length ? (
                                 <span className="ml-2 font-mono text-[10px] text-muted-foreground">
@@ -197,7 +194,7 @@ export default function RecordsPage() {
                                 </span>
                             ) : null}
                         </TabsTrigger>
-                        <TabsTrigger value="encounters" className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none">
+                        <TabsTrigger value="encounters">
                             Encounters
                             {records.encounters.length ? (
                                 <span className="ml-2 font-mono text-[10px] text-muted-foreground">

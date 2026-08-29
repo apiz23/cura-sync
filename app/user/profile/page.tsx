@@ -1,13 +1,12 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format } from "date-fns";
+
 import { useState, useEffect } from "react";
 import { useUser } from "@clerk/nextjs";
 import { useForm } from "react-hook-form";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+
+
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -28,20 +27,13 @@ import {
     TabsList,
     TabsTrigger,
 } from "@/components/ui/tabs";
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipProvider,
-    TooltipTrigger,
-} from "@/components/ui/tooltip";
+
 import {
     Loader2,
     Save,
     User,
     Mail,
     Phone,
-    Edit3,
-    Camera,
     HeartPulse,
     CalendarDays,
     Ruler,
@@ -49,13 +41,8 @@ import {
     AlertTriangle,
     ClipboardList,
     Users,
-    Shield,
     Activity,
     Droplets,
-    Baby,
-    Scissors,
-    Syringe,
-    Clock,
     CheckCircle2,
     XCircle,
     Info,
@@ -128,14 +115,14 @@ const profileFormSchema = z.object({
             .trim()
             .refine(
                 (value: string) => value === "" || !Number.isNaN(Number(value)),
-                "Height must be a valid number"
+                "Enter a valid number or leave empty"
             ),
         weight_kg: z
             .string()
             .trim()
             .refine(
                 (value: string) => value === "" || !Number.isNaN(Number(value)),
-                "Weight must be a valid number"
+                "Enter a valid number or leave empty"
             ),
         allergies: optionalText,
         chronic_conditions: optionalText,
@@ -183,13 +170,6 @@ function buildFormData(profile: UserProfile | null): ProfileFormState {
     };
 }
 
-function parseDobString(dateStr: string | undefined): Date | undefined {
-    if (!dateStr) return undefined;
-    const [year, month, day] = dateStr.split("-").map(Number);
-    if (!year || !month || !day) return undefined;
-    return new Date(year, month - 1, day);
-}
-
 function calculateAge(dateOfBirth: string | undefined | null): number | null {
     if (!dateOfBirth) return null;
     const today = new Date();
@@ -225,7 +205,6 @@ export default function ProfilePage() {
     const [profile, setProfile] = useState<UserProfile | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
-    const [dobOpen, setDobOpen] = useState(false);
     const [activeTab, setActiveTab] = useState("personal");
     const form = useForm<ProfileFormState>({
         resolver: zodResolver(profileFormSchema),
@@ -438,7 +417,7 @@ export default function ProfilePage() {
                         <CardContent className="p-6 pt-6 relative">
                             <div className="flex flex-col items-center -mt-12">
                                 {/* Avatar with edit button */}
-                                <div className="relative mb-4">
+                                <div className="mb-4">
                                     <Avatar className="h-28 w-28 border-4 border-background shadow-lg">
                                         <AvatarImage
                                             src={profile?.avatar_url || user?.imageUrl}
@@ -448,24 +427,6 @@ export default function ProfilePage() {
                                             {profile?.full_name?.[0]?.toUpperCase() || user?.fullName?.[0]?.toUpperCase() || "U"}
                                         </AvatarFallback>
                                     </Avatar>
-                                    <TooltipProvider>
-                                        <Tooltip>
-                                            <TooltipTrigger asChild>
-                                                <Button
-                                                    size="icon"
-                                                    variant="secondary"
-                                                    className="absolute bottom-0 right-0 h-8 w-8 rounded-full border-2 border-background shadow-md hover:scale-105 transition-transform"
-                                                    onClick={() => toast.info("Avatar upload coming soon")}
-                                                    aria-label="Change profile photo"
-                                                >
-                                                    <Camera className="h-3.5 w-3.5" />
-                                                </Button>
-                                            </TooltipTrigger>
-                                            <TooltipContent>
-                                                <p>Change avatar</p>
-                                            </TooltipContent>
-                                        </Tooltip>
-                                    </TooltipProvider>
                                 </div>
 
                                 {/* User Info */}
@@ -574,19 +535,9 @@ export default function ProfilePage() {
                 {/* Right Column - Edit Form with Tabs */}
                 <div className="lg:col-span-8">
                     <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-                        <TabsList className="h-auto gap-0 rounded-none border-b border-border bg-transparent p-0 w-full justify-start mb-6">
-                            <TabsTrigger
-                                value="personal"
-                                className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-                            >
-                                Personal Info
-                            </TabsTrigger>
-                            <TabsTrigger
-                                value="medical"
-                                className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-                            >
-                                Medical Details
-                            </TabsTrigger>
+                        <TabsList className="w-full justify-start mb-6">
+                            <TabsTrigger value="personal">Personal Info</TabsTrigger>
+                            <TabsTrigger value="medical">Medical Details</TabsTrigger>
                         </TabsList>
                         <div>
                             <form onSubmit={handleSubmit(handleUpdate)} className="space-y-6" noValidate>
@@ -680,41 +631,59 @@ export default function ProfilePage() {
                                                 <Label className="text-base font-medium">
                                                     Date of Birth
                                                 </Label>
-                                                <Popover open={dobOpen} onOpenChange={setDobOpen}>
-                                                    <PopoverTrigger asChild>
-                                                        <Button
-                                                            type="button"
-                                                            variant="outline"
-                                                            className={cn(
-                                                                "w-full justify-start text-left font-normal",
-                                                                !watch("patient_profile.date_of_birth") && "text-muted-foreground"
-                                                            )}
-                                                        >
-                                                            <CalendarDays className="mr-2 h-4 w-4" />
-                                                            {watch("patient_profile.date_of_birth")
-                                                                ? format(parseDobString(watch("patient_profile.date_of_birth"))!, "PPP")
-                                                                : "Select date of birth"}
-                                                        </Button>
-                                                    </PopoverTrigger>
-                                                    <PopoverContent className="w-auto p-0" align="start">
-                                                        <Calendar
-                                                            mode="single"
-                                                            captionLayout="dropdown"
-                                                            selected={parseDobString(watch("patient_profile.date_of_birth"))}
-                                                            onSelect={(date) => {
-                                                                setValue(
-                                                                    "patient_profile.date_of_birth",
-                                                                    date ? format(date, "yyyy-MM-dd") : "",
-                                                                    { shouldValidate: true, shouldDirty: true }
-                                                                );
-                                                                setDobOpen(false);
-                                                            }}
-                                                            startMonth={new Date(1900, 0)}
-                                                            endMonth={new Date()}
-                                                            disabled={(date) => date > new Date()}
-                                                        />
-                                                    </PopoverContent>
-                                                </Popover>
+                                                {(() => {
+                                                    const dobValue = watch("patient_profile.date_of_birth");
+                                                    const dobParts = dobValue ? dobValue.split("-") : [];
+                                                    const dobYear = dobParts[0] || "";
+                                                    const dobMonth = dobParts[1] || "";
+                                                    const dobDay = dobParts[2] || "";
+                                                    const currentYear = new Date().getFullYear();
+
+                                                    const updateDob = (y: string, m: string, d: string) => {
+                                                        if (y && m && d) {
+                                                            setValue("patient_profile.date_of_birth", `${y}-${m}-${d}`, { shouldValidate: true, shouldDirty: true });
+                                                        } else {
+                                                            setValue("patient_profile.date_of_birth", "", { shouldValidate: true, shouldDirty: true });
+                                                        }
+                                                    };
+
+                                                    return (
+                                                        <div className="grid grid-cols-3 gap-2">
+                                                            <Select value={dobMonth} onValueChange={(v) => updateDob(dobYear, v, dobDay)}>
+                                                                <SelectTrigger className="h-10">
+                                                                    <SelectValue placeholder="Month" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {["01","02","03","04","05","06","07","08","09","10","11","12"].map((m) => (
+                                                                        <SelectItem key={m} value={m}>
+                                                                            {new Date(2000, Number(m) - 1).toLocaleString("default", { month: "short" })}
+                                                                        </SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <Select value={dobDay} onValueChange={(v) => updateDob(dobYear, dobMonth, v)}>
+                                                                <SelectTrigger className="h-10">
+                                                                    <SelectValue placeholder="Day" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map((d) => (
+                                                                        <SelectItem key={d} value={d}>{d}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                            <Select value={dobYear} onValueChange={(v) => updateDob(v, dobMonth, dobDay)}>
+                                                                <SelectTrigger className="h-10">
+                                                                    <SelectValue placeholder="Year" />
+                                                                </SelectTrigger>
+                                                                <SelectContent>
+                                                                    {Array.from({ length: currentYear - 1899 }, (_, i) => String(currentYear - i)).map((y) => (
+                                                                        <SelectItem key={y} value={y}>{y}</SelectItem>
+                                                                    ))}
+                                                                </SelectContent>
+                                                            </Select>
+                                                        </div>
+                                                    );
+                                                })()}
                                                 <FieldError errors={[errors.patient_profile?.date_of_birth]} />
                                             </div>
 

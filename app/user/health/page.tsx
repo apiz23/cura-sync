@@ -93,12 +93,17 @@ export default function HealthTrackingPage() {
     }, [isLoaded, user]);
 
     function dismissAlert(id: string) {
+        const dismissed = alerts.find((a) => a.id === id);
         setAlerts((prev) => prev.filter((a) => a.id !== id));
         fetch("/api/user/notifications", {
             method: "PATCH",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({ ids: [id] }),
-        }).catch(() => undefined);
+        }).catch(() => {
+            if (dismissed) {
+                setAlerts((prev) => [...prev, dismissed]);
+            }
+        });
     }
 
     const severityIconClass: Record<string, string> = {

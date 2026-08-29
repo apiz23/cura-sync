@@ -11,8 +11,6 @@ import {
 	Calendar,
 	ClipboardList,
 	Pill,
-	ShieldCheck,
-	Sparkles,
 } from "lucide-react";
 
 import type { Appointment, Medication } from "@/app/types";
@@ -239,6 +237,7 @@ export default function UserDashboardPage() {
 		...upcomingAppointments.slice(0, 2).map((appointment) => ({
 			title: `Appointment with ${appointment.facility_name}`,
 			detail: `${formatDate(appointment.appointment_date)} at ${formatTime(appointment.start_time)}`,
+			date: formatDate(appointment.appointment_date),
 			badge: appointment.status,
 			href: "/user/appointments",
 			icon: Calendar,
@@ -246,6 +245,7 @@ export default function UserDashboardPage() {
 		...activeMedications.slice(0, 2).map((medication) => ({
 			title: medication.name,
 			detail: [medication.dosage, medication.frequency].join(" | "),
+			date: "",
 			badge: medication.status,
 			href: "/user/medications",
 			icon: Pill,
@@ -303,13 +303,9 @@ export default function UserDashboardPage() {
 				</div>
 			) : (
 				<UserPageHeader
-					avatar={{
-						src: user?.imageUrl ?? null,
-						alt: userDisplayName,
-						fallback: userInitials,
-					}}
-					title={`Welcome back, ${userDisplayName}`}
-					description="Your real appointments, medications, and health data."
+					sectionLabel="Overview"
+					title="Dashboard"
+					description={`Welcome back, ${userDisplayName}. Your appointments, medications, and health data.`}
 					meta={
 						<>
 							<span className="font-mono text-xs text-muted-foreground">
@@ -335,6 +331,16 @@ export default function UserDashboardPage() {
 				</div>
 			)}
 
+			{/* Onboarding tip for first-time users */}
+			{!loading && activityItems.length === 0 && state.appointments.length === 0 && (
+				<div className="rounded-xl border border-dashed border-border/60 bg-muted/20 px-6 py-5">
+					<p className="text-sm font-medium text-foreground">Welcome to CuraSync</p>
+					<p className="mt-1 text-sm text-muted-foreground">
+						To get started, book an appointment or add your medications from the sidebar.
+					</p>
+				</div>
+			)}
+
 			{/* Metric strip */}
 			<div className="grid grid-cols-2 divide-x divide-y divide-border/50 overflow-hidden rounded-xl border border-border/60 bg-card/60 lg:grid-cols-4 lg:divide-y-0">
 				{metricCards.map((card, i) => (
@@ -354,9 +360,7 @@ export default function UserDashboardPage() {
 				))}
 			</div>
 
-			{/* Activity + Quick Actions */}
-			<div className="grid gap-6 lg:grid-cols-[1.5fr_1fr]">
-				{/* Recent Activity */}
+			{/* Recent Activity */}
 				<div>
 					<p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
 						Recent Activity
@@ -379,9 +383,11 @@ export default function UserDashboardPage() {
 										href={item.href}
 										className="flex items-center gap-4 border-b border-border/70 py-3.5 transition-colors hover:bg-muted/20 last:border-0"
 									>
-										<span className="font-mono text-[10px] text-muted-foreground w-16 shrink-0 truncate">
-											{item.detail.split(" ")[0]}
-										</span>
+										{item.date && (
+											<span className="font-mono text-[10px] text-muted-foreground w-16 shrink-0 truncate">
+												{item.date}
+											</span>
+										)}
 										<div className="flex-1 min-w-0">
 											<p className="text-sm font-medium text-foreground truncate">
 												{item.title}
@@ -418,40 +424,6 @@ export default function UserDashboardPage() {
 						</Link>
 					</div>
 				</div>
-
-				{/* Quick Actions */}
-				<div>
-					<p className="mb-3 font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
-						Quick Actions
-					</p>
-					<div className="h-px bg-border/50 mb-4" />
-					<div className="grid grid-cols-2 gap-3">
-						{[
-							{ href: "/user/appointments", icon: Calendar, label: "Appointments" },
-							{ href: "/user/medications", icon: Pill, label: "Medications" },
-							{ href: "/user/symptom-analyzer", icon: Sparkles, label: "Symptom AI" },
-							{ href: "/user/profile", icon: ShieldCheck, label: "Health Profile" },
-						].map((action, i) => (
-							<motion.div
-								key={action.href}
-								initial={{ opacity: 0, y: 8 }}
-								animate={{ opacity: 1, y: 0 }}
-								transition={{
-									duration: 0.35,
-									delay: 0.25 + i * 0.05,
-									ease: EASE,
-								}}
-							>
-								<ActionLink
-									href={action.href}
-									icon={action.icon}
-									label={action.label}
-								/>
-							</motion.div>
-						))}
-					</div>
-				</div>
-			</div>
 
 			{/* Wearable + Care Summary */}
 			<div className="rounded-xl border border-border/60 bg-card/60">
@@ -620,29 +592,6 @@ function SummaryCard({
 			<p className="mt-0.5 text-xs text-muted-foreground">{description}</p>
 			<Icon className="mt-2 h-3.5 w-3.5 text-muted-foreground/50" />
 		</div>
-	);
-}
-
-function ActionLink({
-	href,
-	icon: Icon,
-	label,
-}: {
-	href: string;
-	icon: typeof Activity;
-	label: string;
-}) {
-	return (
-		<Link href={href}>
-			<motion.div
-				className="group flex flex-col gap-3 rounded-xl border border-border/60 p-4 transition-colors hover:bg-muted/40"
-				whileTap={{ scale: 0.97 }}
-				transition={{ type: "spring", stiffness: 500, damping: 30 }}
-			>
-				<Icon className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-foreground" />
-				<span className="text-sm font-medium text-foreground">{label}</span>
-			</motion.div>
-		</Link>
 	);
 }
 

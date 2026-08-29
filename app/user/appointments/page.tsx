@@ -329,22 +329,6 @@ export default function AppointmentPage() {
     return Array.from(new Set(types));
   }, [facilities]);
 
-  const scheduledFacilitiesCount = useMemo(
-    () =>
-      facilities.filter(
-        (facility) => (facility.cura_facility_schedules?.length ?? 0) > 0,
-      ).length,
-    [facilities],
-  );
-
-  const specialtyCount = useMemo(() => {
-    const specialties = facilities
-      .map((facility) => facility.specialty)
-      .filter(Boolean) as string[];
-
-    return new Set(specialties).size;
-  }, [facilities]);
-
   const filteredFacilities = useMemo(() => {
     let filtered = facilities.filter(
       (facility) =>
@@ -583,17 +567,11 @@ export default function AppointmentPage() {
         </div>
 
         <Tabs defaultValue="active" className="space-y-4">
-          <TabsList className="h-auto gap-0 rounded-none border-b border-border bg-transparent p-0">
-            <TabsTrigger
-              value="active"
-              className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-            >
+          <TabsList>
+            <TabsTrigger value="active">
               Active ({isAppointmentsLoading ? "..." : activeAppointments.length})
             </TabsTrigger>
-            <TabsTrigger
-              value="history"
-              className="rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-muted-foreground shadow-none data-[state=active]:border-primary data-[state=active]:text-foreground data-[state=active]:shadow-none"
-            >
+            <TabsTrigger value="history">
               History ({isAppointmentsLoading ? "..." : appointmentHistory.length})
             </TabsTrigger>
           </TabsList>
@@ -680,29 +658,6 @@ export default function AppointmentPage() {
                 ))}
               </SelectContent>
             </Select>
-          </div>
-        </div>
-
-        <div className="grid grid-cols-2 lg:grid-cols-4 divide-x divide-y lg:divide-y-0 divide-border/70">
-          <div className="py-4 pr-5">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Active</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
-              {facilities.filter((f) => f.is_active).length}
-            </p>
-          </div>
-          <div className="py-4 px-5">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Scheduled</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">
-              {scheduledFacilitiesCount}
-            </p>
-          </div>
-          <div className="py-4 px-5">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Types</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">{facilityTypes.length}</p>
-          </div>
-          <div className="py-4 pl-5">
-            <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">Specialties</p>
-            <p className="mt-2 text-3xl font-bold tabular-nums tracking-tight text-foreground">{specialtyCount}</p>
           </div>
         </div>
 

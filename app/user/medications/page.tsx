@@ -41,6 +41,14 @@ import {
 } from "@/components/ui/select";
 import { UserPageHeader, UserPageShell } from "@/components/user-page-shell";
 import { EASE } from "@/hooks/use-motion-config";
+import {
+	Dialog,
+	DialogContent,
+	DialogDescription,
+	DialogFooter,
+	DialogHeader,
+	DialogTitle,
+} from "@/components/ui/dialog";
 
 export default function MedicationPage() {
 	const [medications, setMedications] = useState<Medication[]>([]);
@@ -48,6 +56,7 @@ export default function MedicationPage() {
 	const [filterStatus, setFilterStatus] = useState<string>("all");
 	const [selectedMedication, setSelectedMedication] =
 		useState<Medication | null>(null);
+	const [confirmIntake, setConfirmIntake] = useState<Medication | null>(null);
 	const [detailsOpen, setDetailsOpen] = useState(false);
 	const { user, isLoaded } = useUser();
 
@@ -275,7 +284,7 @@ export default function MedicationPage() {
 								variant="outline"
 								size="sm"
 								className="h-8 px-3 gap-1.5 bg-primary/10 text-primary hover:bg-primary/20 border-primary/30"
-								onClick={() => markAsTaken(row.original.id)}
+								onClick={() => setConfirmIntake(row.original)}
 							>
 								<CheckCircle className="h-3.5 w-3.5" />
 								<span className="text-base">Take</span>
@@ -406,7 +415,7 @@ export default function MedicationPage() {
 						<div className="flex items-center gap-3">
 							<div className="flex items-center gap-2">
 								<Select value={filterStatus} onValueChange={setFilterStatus}>
-									<SelectTrigger className="w-[180px] bg-transparent text-base">
+									<SelectTrigger className="w-full max-w-[180px] bg-transparent text-base sm:w-auto">
 										<SelectValue placeholder="All Medications" />
 									</SelectTrigger>
 
@@ -522,6 +531,41 @@ export default function MedicationPage() {
 					</div>
 				)}
 			</motion.div>
+
+			<Dialog
+				open={confirmIntake !== null}
+				onOpenChange={(open) => {
+					if (!open) setConfirmIntake(null);
+				}}
+			>
+				<DialogContent>
+					<DialogHeader>
+						<DialogTitle>Confirm intake</DialogTitle>
+						<DialogDescription>
+							Mark <span className="font-semibold text-foreground">{confirmIntake?.name}</span> as
+							taken? This will be recorded in your medication history.
+						</DialogDescription>
+					</DialogHeader>
+					<DialogFooter>
+						<Button
+							variant="outline"
+							onClick={() => setConfirmIntake(null)}
+						>
+							Cancel
+						</Button>
+						<Button
+							onClick={() => {
+								if (confirmIntake) {
+									markAsTaken(confirmIntake.id);
+									setConfirmIntake(null);
+								}
+							}}
+						>
+							Confirm
+						</Button>
+					</DialogFooter>
+				</DialogContent>
+			</Dialog>
 		</UserPageShell>
 	);
 }

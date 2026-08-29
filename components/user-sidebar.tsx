@@ -73,7 +73,7 @@ export function UserSidebar(props: React.ComponentProps<typeof Sidebar>) {
 												asChild
 												isActive={active}
 												tooltip={item.title}
-												className="rounded-none gap-3 transition-colors data-[active=true]:bg-transparent data-[active=true]:text-foreground data-[active=true]:font-semibold hover:bg-muted/20 group-data-[collapsible=icon]:justify-center"
+												className="rounded-md gap-3 transition-colors data-[active=true]:bg-muted/40 data-[active=true]:text-foreground data-[active=true]:font-semibold hover:bg-muted/20 group-data-[collapsible=icon]:justify-center"
 											>
 												<Link
 													href={item.url}

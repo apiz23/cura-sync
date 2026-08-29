@@ -15,7 +15,7 @@ import PageTitle from "@/components/page-title";
 
 const recoveryLinks = [
     {
-        href: "/home",
+        href: "/",
         label: "Back to Home",
         description: "Return to the main landing page",
         icon: Home,
@@ -71,7 +71,7 @@ export default function NotFound() {
                                 size="lg"
                                 className="gap-2 rounded-xl bg-linear-to-r from-primary to-chart-2 px-8 py-6 text-base text-primary-foreground shadow-lg hover:from-primary/90 hover:to-chart-2/90"
                             >
-                                <Link href="/home">
+                                <Link href="/">
                                     <Home className="h-5 w-5" />
                                     Back to Home
                                 </Link>

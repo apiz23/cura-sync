@@ -30,7 +30,7 @@ function formatRelative(value: string) {
     if (hrs < 24) return `${hrs}h ago`;
     const days = Math.floor(hrs / 24);
     if (days < 7) return `${days}d ago`;
-    return new Date(value).toLocaleDateString("en-MY", { day: "numeric", month: "short" });
+    return new Date(value).toLocaleDateString(undefined, { day: "numeric", month: "short" });
 }
 
 function notifIcon(type: string, severity: Notification["severity"]) {

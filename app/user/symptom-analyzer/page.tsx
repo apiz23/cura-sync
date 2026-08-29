@@ -9,7 +9,6 @@ import {
 	Check,
 	Clock,
 	FileText,
-	FlaskRound,
 	HeartPulse,
 	Hospital,
 	Loader2,
@@ -26,7 +25,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { motion, AnimatePresence, type Variants } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { toast } from "sonner";
 
 import type { HealthSyncSnapshot } from "@/components/patient-health-view";
@@ -37,11 +36,11 @@ import { Button } from "@/components/ui/button";
 import {
 	Card,
 	CardContent,
-	CardDescription,
 	CardHeader,
 	CardTitle,
 } from "@/components/ui/card";
 import { Textarea } from "@/components/ui/textarea";
+import { EASE } from "@/hooks/use-motion-config";
 import { cn } from "@/lib/utils";
 
 // ── Types ────────────────────────────────────────────────────────────────────
@@ -169,28 +168,28 @@ function dedupeSymptoms(items: string[]): string[] {
 
 const ANALYSIS_STEPS = [
 	{
-		label: "Red-flag triage",
-		description: "Checks urgent symptoms first.",
+		label: "Urgency check",
+		description: "Screening for urgent warning signs.",
 		icon: ShieldCheck,
 	},
 	{
-		label: "Wearable review",
-		description: "Adds recent vitals when available.",
+		label: "Vitals review",
+		description: "Includes recent wearable data when available.",
 		icon: HeartPulse,
 	},
 	{
-		label: "Knowledge match",
-		description: "Compares common clinical patterns.",
+		label: "Pattern matching",
+		description: "Comparing with known medical conditions.",
 		icon: FileText,
 	},
 	{
-		label: "Clinical NLP",
-		description: "Extracts symptom entities.",
+		label: "Symptom analysis",
+		description: "Identifying key symptoms from your description.",
 		icon: Microscope,
 	},
 	{
-		label: "RAG summary",
-		description: "Generates the care summary.",
+		label: "Care summary",
+		description: "Generating your personalised results.",
 		icon: Brain,
 	},
 ];
@@ -353,10 +352,9 @@ function UrgencySeverityBar({
 					initial={{ scaleX: 0, opacity: 0 }}
 					animate={{ scaleX: 1, opacity: 1 }}
 					transition={{
-						type: "spring",
-						stiffness: 120,
-						damping: 22,
+						duration: 0.35,
 						delay: 0.15 + i * 0.06,
+						ease: EASE,
 					}}
 					style={{ originX: 0 }}
 				/>
@@ -402,6 +400,7 @@ function AnalysisProgressPanel() {
 			initial={{ opacity: 0, y: 8 }}
 			animate={{ opacity: 1, y: 0 }}
 			exit={{ opacity: 0, y: -8 }}
+			transition={{ duration: 0.35, ease: EASE }}
 			className="rounded-xl border border-primary/15 bg-primary/5 p-4"
 		>
 			<div className="mb-4 flex items-center justify-between gap-3">
@@ -410,7 +409,7 @@ function AnalysisProgressPanel() {
 						Analyzing health data
 					</p>
 					<p className="text-xs text-muted-foreground">
-						Running the five-layer review pipeline.
+						Checking your symptoms against medical data.
 					</p>
 				</div>
 				<Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
@@ -421,7 +420,7 @@ function AnalysisProgressPanel() {
 						key={step.label}
 						initial={{ opacity: 0, y: 6 }}
 						animate={{ opacity: 1, y: 0 }}
-						transition={{ delay: index * 0.08 }}
+						transition={{ duration: 0.35, delay: index * 0.08, ease: EASE }}
 						className="py-2 sm:px-3 first:pl-0 last:pr-0"
 					>
 						<div className="mb-1 flex items-center gap-2">
@@ -443,26 +442,11 @@ function AnalysisProgressPanel() {
 	);
 }
 
-// ── Variants ─────────────────────────────────────────────────────────────────
+// ── Animation helpers ────────────────────────────────────────────────────────
 
-const stagger: Variants = {
-	hidden: {},
-	visible: { transition: { staggerChildren: 0.07, delayChildren: 0.05 } },
-};
-
-const fadeUp: Variants = {
-	hidden: { opacity: 0, y: 14 },
-	visible: {
-		opacity: 1,
-		y: 0,
-		transition: { type: "spring", stiffness: 90, damping: 22 },
-	},
-};
-
-const fadeIn: Variants = {
-	hidden: { opacity: 0 },
-	visible: { opacity: 1, transition: { duration: 0.3 } },
-};
+function stagger(index: number) {
+	return { duration: 0.35, delay: 0.08 + index * 0.06, ease: EASE };
+}
 
 // ── Page ─────────────────────────────────────────────────────────────────────
 
@@ -792,41 +776,17 @@ export default function SymptomsCheckPage() {
 	const sourceBadge = result ? sourceLabel(result.source) : null;
 
 	return (
-		<UserPageShell
-			className="bg-background"
-			contentClassName="gap-6 lg:px-8 xl:px-10"
-		>
+		<UserPageShell>
 			<UserPageHeader
 				sectionLabel="AI Health Assistant"
 				title="Symptom Analyzer"
 				description="Capture symptoms, saved profile context, and wearable readings in one review before you talk to a healthcare professional."
-				className="border-border/60 bg-card shadow-none"
 				meta={
-					<>
-						<Badge
-							variant="outline"
-							className="rounded-md border-primary/20 bg-primary/8 text-primary"
-						>
-							<Microscope className="mr-1 h-3 w-3" />
-							BioClinicalBERT
-						</Badge>
-						<Badge
-							variant="outline"
-							className="rounded-md border-chart-4/30 bg-chart-4/10 text-chart-4"
-						>
-							<FlaskRound className="mr-1 h-3 w-3" />
-							JamAIBase RAG
-						</Badge>
-						{iotData ? (
-							<Badge
-								variant="outline"
-								className="rounded-md border-primary/20 bg-primary/8 text-primary"
-							>
-								<HeartPulse className="mr-1 h-3 w-3" />
-								IoT linked
-							</Badge>
-						) : null}
-					</>
+					<span className="font-mono text-xs text-muted-foreground">
+						{allSymptoms.length > 0
+							? `${allSymptoms.length} symptom${allSymptoms.length > 1 ? "s" : ""} selected`
+						: "Five-layer review pipeline"}
+					</span>
 				}
 				actions={
 					(selectedSymptoms.length > 0 || textInput || result) && (
@@ -834,7 +794,7 @@ export default function SymptomsCheckPage() {
 							variant="outline"
 							size="sm"
 							onClick={clearAll}
-							className="gap-1.5 rounded-md border-border text-muted-foreground hover:border-foreground hover:text-foreground"
+							className="gap-1.5"
 						>
 							<RefreshCw className="h-3.5 w-3.5" />
 							Reset
@@ -844,50 +804,43 @@ export default function SymptomsCheckPage() {
 			/>
 
 			{/* Emergency banner */}
-			<motion.div
-				initial={{ opacity: 0, y: 8 }}
-				animate={{ opacity: 1, y: 0 }}
-				transition={{ type: "spring", stiffness: 80, damping: 20 }}
-				className="flex items-start gap-3 rounded-xl border border-destructive/20 bg-destructive/8 px-5 py-4"
-			>
-				<div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-card text-destructive">
-					<AlertTriangle className="h-4 w-4" />
+			<div className="flex items-center justify-between gap-4 rounded-xl border border-destructive/30 bg-destructive/5 px-5 py-4">
+				<div className="flex items-center gap-3">
+					<AlertTriangle className="h-4 w-4 shrink-0 text-destructive" />
+					<p className="text-sm text-foreground">
+						<span className="font-semibold text-destructive">Emergency care first: </span>
+						Chest pain, severe breathing difficulty, or loss of consciousness — seek urgent care now.
+					</p>
 				</div>
-				<p className="max-w-5xl text-sm leading-relaxed text-foreground sm:text-base">
-					<span className="font-semibold text-destructive">Emergency care first: </span>
-					Chest pain, severe breathing difficulty, severe bleeding, or loss of
-					consciousness means you should seek urgent medical care now.
-				</p>
-			</motion.div>
+			</div>
 
-			<motion.div
-				variants={stagger}
-				initial="hidden"
-				animate="visible"
-				className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]"
-			>
+			<div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_420px]">
 				{/* ── Input card ──────────────────────────────────────── */}
-				<motion.div variants={fadeUp}>
-					<Card className="pt-0 overflow-hidden border-border/60 bg-card shadow-none transition-shadow hover:shadow-md">
-						<CardHeader className="border-b border-border/60 bg-muted/30 py-4">
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={stagger(0)}
+				>
+					<Card className="overflow-hidden border-border/60 bg-card shadow-none">
+						<CardHeader className="py-4">
 							<CardTitle className="flex items-center gap-2 text-foreground">
 								<span className="flex h-9 w-9 items-center justify-center rounded-lg bg-muted text-muted-foreground">
 									<Stethoscope className="h-4 w-4" />
 								</span>
 								Symptom input
 							</CardTitle>
-							<CardDescription className="max-w-2xl text-sm text-muted-foreground">
+							<p className="max-w-2xl text-sm text-muted-foreground">
 								Detailed descriptions improve the analysis. Saved profile and IoT data
 								are used automatically when available.
-							</CardDescription>
+							</p>
 						</CardHeader>
 						<CardContent className="space-y-6 p-5 sm:p-6">
 							<div className="space-y-3">
 								<div className="flex items-center justify-between gap-3">
-									<label className="font-mono text-xs font-medium uppercase tracking-widest text-muted-foreground">
+									<label className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
 										Common symptoms
 									</label>
-									<span className="font-mono text-xs text-muted-foreground">
+									<span className="font-mono text-[10px] text-muted-foreground">
 										{selectedSymptoms.length}/12 selected
 									</span>
 								</div>
@@ -901,10 +854,10 @@ export default function SymptomsCheckPage() {
 
 							<div className="space-y-3">
 								<div className="flex items-center justify-between gap-3">
-									<label className="font-mono text-xs font-medium uppercase tracking-widest text-muted-foreground">
+									<label className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
 										Additional details
 									</label>
-									<span className="font-mono text-xs text-muted-foreground">
+									<span className="font-mono text-[10px] text-muted-foreground">
 										{textInput.trim().length}/1000
 									</span>
 								</div>
@@ -919,7 +872,9 @@ export default function SymptomsCheckPage() {
 
 							<div className="grid gap-3 md:grid-cols-2">
 								<motion.div
-									variants={fadeUp}
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={stagger(1)}
 									className={cn(
 										"space-y-3 rounded-xl border p-4",
 										patientContextItems.length
@@ -961,7 +916,9 @@ export default function SymptomsCheckPage() {
 								</motion.div>
 
 								<motion.div
-									variants={fadeUp}
+									initial={{ opacity: 0, y: 8 }}
+									animate={{ opacity: 1, y: 0 }}
+									transition={stagger(2)}
 									className={cn(
 										"space-y-3 rounded-xl border p-4",
 										iotSummaryItems.length
@@ -1005,17 +962,16 @@ export default function SymptomsCheckPage() {
 							{/* Selected preview */}
 							<AnimatePresence>
 								{allSymptoms.length > 0 && (
-									<motion.div
-										initial={{ opacity: 0, height: 0 }}
-										animate={{ opacity: 1, height: "auto" }}
-										exit={{ opacity: 0, height: 0 }}
-										transition={{
-											type: "spring",
-											stiffness: 120,
-											damping: 22,
-										}}
-										className="overflow-hidden"
-									>
+								<motion.div
+									initial={{ opacity: 0, height: 0 }}
+									animate={{ opacity: 1, height: "auto" }}
+									exit={{ opacity: 0, height: 0 }}
+									transition={{
+										duration: 0.35,
+										ease: EASE,
+									}}
+									className="overflow-hidden"
+								>
 										<div className="rounded-xl border border-primary/15 bg-primary/5 p-4">
 											<div className="mb-2 flex items-center justify-between">
 												<p className="font-mono text-sm font-medium text-primary">
@@ -1104,7 +1060,12 @@ export default function SymptomsCheckPage() {
 				</motion.div>
 
 				{/* ── Sidebar ─────────────────────────────────────────── */}
-				<motion.div variants={fadeUp} className="space-y-4 lg:sticky lg:top-6 lg:self-start">
+				<motion.div
+					initial={{ opacity: 0, y: 8 }}
+					animate={{ opacity: 1, y: 0 }}
+					transition={stagger(3)}
+					className="space-y-4 lg:sticky lg:top-6 lg:self-start"
+				>
 					<Card className="border-border/60 bg-card shadow-none">
 						<CardHeader>
 							<CardTitle className="flex items-center gap-2 text-foreground">
@@ -1114,13 +1075,13 @@ export default function SymptomsCheckPage() {
 						</CardHeader>
 						<CardContent className="space-y-3 text-sm leading-relaxed text-muted-foreground">
 							<p>
-								Five-layer pipeline: rule-based red-flag triage, IoT vitals safety,
-								knowledge-base match, BioClinicalBERT NER enrichment, and JamAIBase RAG
-								reasoning.
+								This tool cross-references your symptoms with medical knowledge and
+								your personal health data to help identify possible conditions and
+								recommended next steps.
 							</p>
 							<p>
-								Saved profile, allergies, and recent wearable data feed the model when
-								available.
+								When available, your saved profile, allergies, and recent wearable
+								data are used to personalise the analysis.
 							</p>
 							<p className="font-medium text-foreground">
 								Informational only — not a medical diagnosis.
@@ -1214,7 +1175,7 @@ export default function SymptomsCheckPage() {
 						</CardContent>
 					</Card>
 				</motion.div>
-			</motion.div>
+			</div>
 
 			{/* ── Results ─────────────────────────────────────────────── */}
 			<AnimatePresence mode="wait">
@@ -1222,22 +1183,26 @@ export default function SymptomsCheckPage() {
 					<motion.div
 						ref={resultRef}
 						key="results"
-						variants={stagger}
-						initial="hidden"
-						animate="visible"
+						initial={{ opacity: 0, y: 8 }}
+						animate={{ opacity: 1, y: 0 }}
+						transition={{ duration: 0.35, ease: EASE }}
 						exit={{ opacity: 0, y: -8, transition: { duration: 0.2 } }}
 						className="mt-2 space-y-4"
 					>
 						{/* Hero result card */}
-						<motion.div variants={fadeUp}>
+						<motion.div
+							initial={{ opacity: 0, y: 8 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={stagger(0)}
+						>
 							<Card className="overflow-hidden border-border/60 bg-card shadow-none">
 								<div className={cn("h-1.5 w-full", urgencyCfg.barColor)} />
 								<CardContent className="p-5 sm:p-8 lg:p-10">
 									<div className="flex flex-wrap items-start justify-between gap-5">
 										<div className="max-w-3xl">
-											<p className="font-mono text-xs font-medium uppercase tracking-widest text-muted-foreground">
-												Possible condition
-											</p>
+										<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+											Possible condition
+										</p>
 											<h2
 												className="mt-2 text-2xl font-semibold leading-tight text-foreground sm:text-4xl lg:text-5xl"
 												style={{ letterSpacing: "-0.025em" }}
@@ -1269,21 +1234,21 @@ export default function SymptomsCheckPage() {
 
 									{/* Severity */}
 									<div className="mt-7">
-										<div className="mb-2 flex items-center justify-between">
-											<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
-												Severity level
-											</p>
-											<p className="font-mono text-xs text-muted-foreground">
-												{urgencyCfg.filled}/4
-											</p>
-										</div>
+									<div className="mb-2 flex items-center justify-between">
+										<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
+											Severity level
+										</p>
+										<p className="font-mono text-[10px] text-muted-foreground">
+											{urgencyCfg.filled}/4
+										</p>
+									</div>
 										<UrgencySeverityBar urgency={result.urgency} />
 									</div>
 
 									{/* Stats strip */}
 									<div className="mt-6 grid grid-cols-1 divide-y divide-border overflow-hidden rounded-xl border border-border/60 bg-muted/10 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
 										<div className="px-5 py-4">
-											<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+											<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
 												Confidence
 											</p>
 											<p className="mt-1.5 text-lg font-semibold capitalize text-foreground">
@@ -1291,7 +1256,7 @@ export default function SymptomsCheckPage() {
 											</p>
 										</div>
 										<div className="px-5 py-4">
-											<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+											<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
 												Suggested timeline
 											</p>
 											<div className="mt-1.5 flex items-center gap-1.5">
@@ -1302,7 +1267,7 @@ export default function SymptomsCheckPage() {
 											</div>
 										</div>
 										<div className="px-5 py-4">
-											<p className="font-mono text-xs uppercase tracking-widest text-muted-foreground">
+											<p className="font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-muted-foreground">
 												Next step
 											</p>
 											<p className="mt-1.5 text-sm text-muted-foreground">
@@ -1338,7 +1303,12 @@ export default function SymptomsCheckPage() {
 
 						{/* Actions + sidebar */}
 						<div className="grid gap-4 lg:grid-cols-[1fr_400px]">
-							<motion.div variants={fadeUp} className="space-y-4">
+							<motion.div
+								initial={{ opacity: 0, y: 8 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={stagger(1)}
+								className="space-y-4"
+							>
 								{result.normalized_symptoms?.length ? (
 									<Card className="border-border/60 bg-card shadow-none">
 										<CardHeader>
@@ -1375,10 +1345,9 @@ export default function SymptomsCheckPage() {
 													initial={{ opacity: 0, x: -8 }}
 													animate={{ opacity: 1, x: 0 }}
 													transition={{
-														type: "spring",
-														stiffness: 100,
-														damping: 20,
+														duration: 0.35,
 														delay: 0.1 + i * 0.05,
+														ease: EASE,
 													}}
 													className="flex items-start gap-3 rounded-lg border border-border/50 bg-muted/20 px-4 py-3"
 												>
@@ -1396,7 +1365,12 @@ export default function SymptomsCheckPage() {
 							</motion.div>
 
 							{/* Right column — disclaimer + feedback */}
-							<motion.div variants={fadeUp} className="space-y-4">
+							<motion.div
+								initial={{ opacity: 0, y: 8 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={stagger(2)}
+								className="space-y-4"
+							>
 								<Card className="border-border/60 bg-card shadow-none">
 									<CardContent className="pt-6">
 										<div className="flex items-start gap-3">
@@ -1422,9 +1396,9 @@ export default function SymptomsCheckPage() {
 											{feedbackSent ? (
 												<motion.div
 													key="sent"
-													variants={fadeIn}
-													initial="hidden"
-													animate="visible"
+													initial={{ opacity: 0 }}
+													animate={{ opacity: 1 }}
+													transition={{ duration: 0.3, ease: EASE }}
 													className="flex items-center gap-2"
 												>
 													<Check className="h-4 w-4 text-primary" />
@@ -1435,9 +1409,9 @@ export default function SymptomsCheckPage() {
 											) : (
 												<motion.div
 													key="form"
-													variants={fadeIn}
-													initial="hidden"
-													animate="visible"
+													initial={{ opacity: 0 }}
+													animate={{ opacity: 1 }}
+													transition={{ duration: 0.3, ease: EASE }}
 												>
 													<p className="mb-3 text-sm font-medium text-foreground">
 														Was this analysis accurate?
@@ -1474,7 +1448,11 @@ export default function SymptomsCheckPage() {
 
 						{/* Facilities */}
 						{recommendedFacilities.length ? (
-							<motion.div variants={fadeUp}>
+							<motion.div
+								initial={{ opacity: 0, y: 8 }}
+								animate={{ opacity: 1, y: 0 }}
+								transition={stagger(3)}
+							>
 								<Card className="border-border/60 bg-card shadow-none">
 									<CardHeader>
 										<CardTitle className="flex items-center gap-2 text-base text-foreground">
@@ -1487,13 +1465,12 @@ export default function SymptomsCheckPage() {
 											{recommendedFacilities.map((facility, i) => (
 												<motion.div
 													key={facility.id}
-													initial={{ opacity: 0, y: 12 }}
+													initial={{ opacity: 0, y: 8 }}
 													animate={{ opacity: 1, y: 0 }}
 													transition={{
-														type: "spring",
-														stiffness: 100,
-														damping: 22,
-														delay: i * 0.07,
+														duration: 0.35,
+														delay: i * 0.06,
+														ease: EASE,
 													}}
 													className="flex flex-col gap-3 rounded-xl border border-border/60 bg-muted/10 p-4 transition-shadow hover:shadow-md"
 												>
@@ -1542,7 +1519,12 @@ export default function SymptomsCheckPage() {
 						) : null}
 
 						{/* Reset */}
-						<motion.div variants={fadeUp} className="flex justify-center">
+						<motion.div
+							initial={{ opacity: 0, y: 8 }}
+							animate={{ opacity: 1, y: 0 }}
+							transition={stagger(4)}
+							className="flex justify-center"
+						>
 							<Button
 								variant="outline"
 								onClick={clearAll}

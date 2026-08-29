@@ -314,7 +314,7 @@ export async function requireUserSession(
         userId = browserAuth.userId;
     }
 
-    const { data, error } = await supabase
+    let { data, error } = await supabase
         .from("cura_profiles")
         .select("role")
         .eq("id", userId)
@@ -324,7 +324,22 @@ export async function requireUserSession(
         return NextResponse.json({ error: "Profile lookup failed" }, { status: 500 });
     }
 
-    const role = String(data?.role ?? "patient").toLowerCase();
+    if (!data) {
+        const emailMatch = await findProfileByClerkEmail(userId);
+        if (emailMatch) {
+            return {
+                kind: "user",
+                profileId: emailMatch.id,
+                role: String(emailMatch.role ?? "patient").toLowerCase(),
+            };
+        }
+
+        const provisioned = await provisionPatientProfile(userId);
+        if (provisioned instanceof NextResponse) return provisioned;
+        data = provisioned;
+    }
+
+    const role = String(data.role ?? "patient").toLowerCase();
     return { kind: "user", profileId: userId, role };
 }
 

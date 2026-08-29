@@ -368,6 +368,17 @@
 			animation-iteration-count: 1 !important;
 			transition-duration: 0.01ms !important;
 		}
+
+		/* Preserve state feedback for interactive elements */
+		:where(button, [role="button"], a, input, textarea, select) {
+			transition: none !important;
+		}
+
+		/* Keep focus ring visible */
+		:where(button, [role="button"], a, input, textarea, select, summary):focus-visible {
+			outline: 2px solid var(--primary) !important;
+			outline-offset: 2px !important;
+		}
 	}
 
 	.leaflet-container {

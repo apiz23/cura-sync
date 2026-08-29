@@ -28,6 +28,14 @@ import { useState } from "react";
 import { Medication } from "@/app/types";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from "@/components/ui/dialog";
 import { isMedicationExpired, parseEndDate, parseStartDate } from "@/lib/medication-dates";
 
 interface MedicationDetailsSheetProps {
@@ -44,6 +52,7 @@ export default function MedicationDetailsSheet({
     onUpdate,
 }: MedicationDetailsSheetProps) {
     const [isTaking, setIsTaking] = useState(false);
+    const [confirmIntakeOpen, setConfirmIntakeOpen] = useState(false);
     const prescribedByLabel =
         medication.prescribed_by_display ||
         medication.prescribed_by_name ||
@@ -152,6 +161,7 @@ export default function MedicationDetailsSheet({
         : null;
 
     return (
+        <>
         <Sheet open={open} onOpenChange={onOpenChange}>
             <SheetContent className="w-full sm:max-w-lg h-full p-0 border-border/70 shadow-lg dark:shadow-none">
                 <SheetHeader className="sticky top-0 z-10 bg-card/95 backdrop-blur-sm border-b border-border/50">
@@ -360,7 +370,7 @@ export default function MedicationDetailsSheet({
                     <SheetFooter className="space-y-2 pt-2">
                         {isActive && medication.is_own !== false && (
                             <Button
-                                onClick={markAsTaken}
+                                onClick={() => setConfirmIntakeOpen(true)}
                                 disabled={isTaking}
                                 className="w-full gap-2 bg-primary hover:bg-primary/90"
                             >
@@ -397,5 +407,31 @@ export default function MedicationDetailsSheet({
                 </div>
             </SheetContent>
         </Sheet>
+
+        <Dialog open={confirmIntakeOpen} onOpenChange={setConfirmIntakeOpen}>
+            <DialogContent>
+                <DialogHeader>
+                    <DialogTitle>Confirm intake</DialogTitle>
+                    <DialogDescription>
+                        Mark <span className="font-semibold text-foreground">{medication.name}</span> as
+                        taken? This will be recorded in your medication history.
+                    </DialogDescription>
+                </DialogHeader>
+                <DialogFooter>
+                    <Button variant="outline" onClick={() => setConfirmIntakeOpen(false)}>
+                        Cancel
+                    </Button>
+                    <Button
+                        onClick={() => {
+                            setConfirmIntakeOpen(false);
+                            markAsTaken();
+                        }}
+                    >
+                        Confirm
+                    </Button>
+                </DialogFooter>
+            </DialogContent>
+        </Dialog>
+        </>
     );
 }
