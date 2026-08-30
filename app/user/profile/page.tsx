@@ -349,15 +349,15 @@ export default function ProfilePage() {
         if (!profile) return 0;
         let completed = 0;
         let total = 7;
-        
-        if (profile.full_name) completed++;
-        if (profile.phone_number || profile.phone) completed++;
+
+        if (profile.full_name?.trim()) completed++;
+        if (profile.phone_number?.trim() || profile.phone?.trim()) completed++;
         if (profile.patient_profile?.date_of_birth) completed++;
         if (profile.patient_profile?.blood_type) completed++;
-        if (profile.patient_profile?.height_cm) completed++;
-        if (profile.patient_profile?.weight_kg) completed++;
-        if (profile.patient_profile?.emergency_contact) completed++;
-        
+        if (profile.patient_profile?.height_cm != null && profile.patient_profile.height_cm > 0) completed++;
+        if (profile.patient_profile?.weight_kg != null && profile.patient_profile.weight_kg > 0) completed++;
+        if (profile.patient_profile?.emergency_contact?.trim()) completed++;
+
         return Math.round((completed / total) * 100);
     }
 
@@ -415,9 +415,9 @@ export default function ProfilePage() {
                 {/* Left Column - Profile Card */}
                 <div className="lg:col-span-4 space-y-6">
                     {/* Profile Overview Card */}
-                    <Card className="border-border overflow-hidden">
-                        <CardContent className="p-6 pt-6 relative">
-                            <div className="flex flex-col items-center -mt-12">
+                    <Card className="border-border overflow-hidden pb-0">
+                        <CardContent className="p-6 pt-6 relative pb-0">
+                            <div className="flex flex-col items-center -mt-8">
                                 {/* Avatar with edit button */}
                                 <div className="mb-4">
                                     <Avatar className="h-28 w-28 border-4 border-background shadow-lg">

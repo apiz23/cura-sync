@@ -222,11 +222,11 @@ export default function UserDashboardPage() {
 		: null;
 
 	const profileFields = [
-		state.profile?.full_name,
+		state.profile?.full_name?.trim(),
 		state.profile?.patient_profile?.date_of_birth,
 		state.profile?.patient_profile?.gender,
 		state.profile?.patient_profile?.blood_type,
-		state.profile?.patient_profile?.emergency_contact,
+		state.profile?.patient_profile?.emergency_contact?.trim(),
 	];
 	const completedProfileFields = profileFields.filter(Boolean).length;
 	const profileCompletion = Math.round(

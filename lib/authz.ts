@@ -164,28 +164,49 @@ async function migrateProfileId(oldId: string, newId: string) {
             .eq("patient_profile_id", oldId),
     ]);
 
-    // cura_patient_profiles: profile_id IS the primary key — must delete + re-insert
-    const { data: oldPatientProfile } = await supabaseAdmin
+    // cura_patient_profiles: profile_id IS the primary key — must delete + re-insert.
+    // Only delete old row AFTER upsert succeeds to prevent data loss.
+    const { data: oldPatientProfile, error: readErr } = await supabaseAdmin
         .from("cura_patient_profiles")
         .select("*")
         .eq("profile_id", oldId)
         .maybeSingle();
 
     if (oldPatientProfile) {
-        await supabaseAdmin
+        const { error: upsertErr } = await supabaseAdmin
             .from("cura_patient_profiles")
             .upsert(
                 { ...oldPatientProfile, profile_id: newId },
                 { onConflict: "profile_id" }
             );
+
+        if (upsertErr) {
+            console.error(`[authz] Failed to upsert patient profile for ${newId}:`, upsertErr);
+            throw new Error(`Patient profile migration failed: ${upsertErr.message}`);
+        }
+
         await supabaseAdmin
             .from("cura_patient_profiles")
             .delete()
             .eq("profile_id", oldId);
+    } else if (readErr) {
+        console.error(`[authz] Failed to read patient profile for ${oldId}:`, readErr);
     }
 
-    // Remove the old profile row — the caller's upsert will create the new one
-    await supabaseAdmin.from("cura_profiles").delete().eq("id", oldId);
+    // Preserve ALL cura_profiles fields (phone_number, etc.) for the new ID.
+    // Do NOT delete the old row — other tables may still reference it and it's harmless.
+    const { data: oldProfile } = await supabaseAdmin
+        .from("cura_profiles")
+        .select("*")
+        .eq("id", oldId)
+        .maybeSingle();
+
+    if (oldProfile) {
+        const { id: _, created_at: __, ...rest } = oldProfile;
+        await supabaseAdmin
+            .from("cura_profiles")
+            .upsert({ ...rest, id: newId }, { onConflict: "id" });
+    }
 
     console.log(`[authz] Migrated profile ${oldId} → ${newId}`);
 }
