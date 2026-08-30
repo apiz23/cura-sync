@@ -108,10 +108,86 @@ async function findProfileByClerkEmail(
             .limit(1)
             .maybeSingle();
 
+        if (!data) return null;
+
+        // If the old profile has a different id than the current Clerk userId,
+        // migrate all data to the new id so future lookups hit the correct row.
+        if (data.id !== userId) {
+            await migrateProfileId(data.id, userId);
+            return { id: userId, role: data.role };
+        }
+
         return data ?? null;
     } catch {
         return null;
     }
+}
+
+// Migrate all profile data from oldId to newId when a Clerk ID mismatch is detected.
+// This happens when a user's email exists in the DB under a different Clerk instance ID
+// (e.g. after switching from a dev Clerk environment to prod).
+async function migrateProfileId(oldId: string, newId: string) {
+    // Tables where profile_id is a non-PK text column referencing cura_profiles.id
+    const profileIdTables = [
+        "cura_conditions",
+        "cura_allergies",
+        "cura_medications",
+        "cura_medication_logs",
+        "cura_appointments",
+        "cura_encounters",
+        "cura_procedures",
+        "cura_health_sync_snapshots",
+        "cura_notifications",
+        "cura_patient_facilities",
+        "cura_symptom_analyses",
+    ] as const;
+
+    await Promise.all(
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        profileIdTables.map((table) =>
+            supabaseAdmin
+                .from(table as any)
+                .update({ profile_id: newId })
+                .eq("profile_id", oldId)
+        )
+    );
+
+    // cura_caregiver_links has two separate profile_id columns
+    await Promise.all([
+        supabaseAdmin
+            .from("cura_caregiver_links")
+            .update({ caregiver_profile_id: newId })
+            .eq("caregiver_profile_id", oldId),
+        supabaseAdmin
+            .from("cura_caregiver_links")
+            .update({ patient_profile_id: newId })
+            .eq("patient_profile_id", oldId),
+    ]);
+
+    // cura_patient_profiles: profile_id IS the primary key — must delete + re-insert
+    const { data: oldPatientProfile } = await supabaseAdmin
+        .from("cura_patient_profiles")
+        .select("*")
+        .eq("profile_id", oldId)
+        .maybeSingle();
+
+    if (oldPatientProfile) {
+        await supabaseAdmin
+            .from("cura_patient_profiles")
+            .upsert(
+                { ...oldPatientProfile, profile_id: newId },
+                { onConflict: "profile_id" }
+            );
+        await supabaseAdmin
+            .from("cura_patient_profiles")
+            .delete()
+            .eq("profile_id", oldId);
+    }
+
+    // Remove the old profile row — the caller's upsert will create the new one
+    await supabaseAdmin.from("cura_profiles").delete().eq("id", oldId);
+
+    console.log(`[authz] Migrated profile ${oldId} → ${newId}`);
 }
 
 async function provisionPatientProfile(

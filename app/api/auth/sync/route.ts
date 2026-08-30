@@ -100,6 +100,7 @@ async function migrateProfileId(oldId: string, newId: string) {
         "cura_health_sync_snapshots",
         "cura_notifications",
         "cura_patient_facilities",
+        "cura_symptom_analyses",
     ] as const;
 
     await Promise.all(

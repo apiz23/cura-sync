@@ -61,6 +61,8 @@ import {
     SelectTrigger,
     SelectValue,
 } from "@/components/ui/select";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
 
 interface PatientProfile {
     profile_id: string;
@@ -633,55 +635,45 @@ export default function ProfilePage() {
                                                 </Label>
                                                 {(() => {
                                                     const dobValue = watch("patient_profile.date_of_birth");
-                                                    const dobParts = dobValue ? dobValue.split("-") : [];
-                                                    const dobYear = dobParts[0] || "";
-                                                    const dobMonth = dobParts[1] || "";
-                                                    const dobDay = dobParts[2] || "";
-                                                    const currentYear = new Date().getFullYear();
-
-                                                    const updateDob = (y: string, m: string, d: string) => {
-                                                        if (y && m && d) {
-                                                            setValue("patient_profile.date_of_birth", `${y}-${m}-${d}`, { shouldValidate: true, shouldDirty: true });
-                                                        } else {
-                                                            setValue("patient_profile.date_of_birth", "", { shouldValidate: true, shouldDirty: true });
-                                                        }
-                                                    };
+                                                    const dobDate = dobValue ? new Date(dobValue) : undefined;
+                                                    const isValidDate = dobDate && !Number.isNaN(dobDate.getTime());
 
                                                     return (
-                                                        <div className="grid grid-cols-3 gap-2">
-                                                            <Select value={dobMonth} onValueChange={(v) => updateDob(dobYear, v, dobDay)}>
-                                                                <SelectTrigger className="h-10">
-                                                                    <SelectValue placeholder="Month" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {["01","02","03","04","05","06","07","08","09","10","11","12"].map((m) => (
-                                                                        <SelectItem key={m} value={m}>
-                                                                            {new Date(2000, Number(m) - 1).toLocaleString("default", { month: "short" })}
-                                                                        </SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <Select value={dobDay} onValueChange={(v) => updateDob(dobYear, dobMonth, v)}>
-                                                                <SelectTrigger className="h-10">
-                                                                    <SelectValue placeholder="Day" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {Array.from({ length: 31 }, (_, i) => String(i + 1).padStart(2, "0")).map((d) => (
-                                                                        <SelectItem key={d} value={d}>{d}</SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                            <Select value={dobYear} onValueChange={(v) => updateDob(v, dobMonth, dobDay)}>
-                                                                <SelectTrigger className="h-10">
-                                                                    <SelectValue placeholder="Year" />
-                                                                </SelectTrigger>
-                                                                <SelectContent>
-                                                                    {Array.from({ length: currentYear - 1899 }, (_, i) => String(currentYear - i)).map((y) => (
-                                                                        <SelectItem key={y} value={y}>{y}</SelectItem>
-                                                                    ))}
-                                                                </SelectContent>
-                                                            </Select>
-                                                        </div>
+                                                        <Popover>
+                                                            <PopoverTrigger asChild>
+                                                                <button
+                                                                    type="button"
+                                                                    className="flex h-10 w-full items-center justify-between gap-2 rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs transition-colors hover:bg-accent/50 focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 outline-none disabled:cursor-not-allowed disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-destructive/20"
+                                                                >
+                                                                    <span className={isValidDate ? "text-foreground" : "text-muted-foreground"}>
+                                                                        {isValidDate
+                                                                            ? dobDate!.toLocaleDateString("en-MY", { day: "numeric", month: "long", year: "numeric" })
+                                                                            : "Pick a date"
+                                                                        }
+                                                                    </span>
+                                                                    <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
+                                                                </button>
+                                                            </PopoverTrigger>
+                                                            <PopoverContent className="w-auto p-0" align="start">
+                                                                <Calendar
+                                                                    mode="single"
+                                                                    selected={isValidDate ? dobDate! : undefined}
+                                                                    captionLayout="dropdown"
+                                                                    defaultMonth={isValidDate ? dobDate! : new Date(2000, 0, 1)}
+                                                                    disabled={(date) => date > new Date() || date < new Date("1900-01-01")}
+                                                                    onSelect={(day) => {
+                                                                        if (day) {
+                                                                            const y = String(day.getFullYear());
+                                                                            const m = String(day.getMonth() + 1).padStart(2, "0");
+                                                                            const d = String(day.getDate()).padStart(2, "0");
+                                                                            setValue("patient_profile.date_of_birth", `${y}-${m}-${d}`, { shouldValidate: true, shouldDirty: true });
+                                                                        } else {
+                                                                            setValue("patient_profile.date_of_birth", "", { shouldValidate: true, shouldDirty: true });
+                                                                        }
+                                                                    }}
+                                                                />
+                                                            </PopoverContent>
+                                                        </Popover>
                                                     );
                                                 })()}
                                                 <FieldError errors={[errors.patient_profile?.date_of_birth]} />

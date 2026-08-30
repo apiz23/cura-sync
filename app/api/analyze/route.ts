@@ -222,24 +222,39 @@ export async function POST(req: NextRequest) {
 		// doctor/staff session also hits this endpoint for clinical lookups,
 		// and that is not "checking their own symptoms".
 		if (session.kind === "patient") {
-			void supabaseAdmin
-				.from("cura_symptom_analyses")
-				.insert({
-					profile_id: session.profileId,
-					symptoms_text: symptoms.trim(),
-					possible_disease: responsePayload.possible_disease ?? null,
-					confidence_level: responsePayload.confidence_level ?? null,
-					urgency: responsePayload.urgency,
-					suggested_action: responsePayload.suggested_action ?? null,
-					source: responsePayload.source ?? null,
-					normalized_symptoms: normalizedSymptoms,
-					iot_flags: iotFlags,
-				})
-				.then(({ error }) => {
-					if (error) {
-						console.error("symptom-history insert failed:", error.message);
-					}
-				});
+			const profileId = session.profileId;
+			void (async () => {
+				// Ensure the profile row exists — cura_symptom_analyses has a
+				// FK constraint on profile_id, so the insert would silently fail
+				// if the row is missing (e.g. first-ever mobile analysis).
+				const { error: upsertErr } = await supabaseAdmin
+					.from("cura_profiles")
+					.upsert(
+						{ id: profileId, role: "patient", updated_at: new Date().toISOString() },
+						{ onConflict: "id" },
+					);
+				if (upsertErr) {
+					console.error("profile upsert before history insert failed:", upsertErr.message);
+					return;
+				}
+
+				const { error: insertErr } = await supabaseAdmin
+					.from("cura_symptom_analyses")
+					.insert({
+						profile_id: profileId,
+						symptoms_text: symptoms.trim(),
+						possible_disease: responsePayload.possible_disease ?? null,
+						confidence_level: responsePayload.confidence_level ?? null,
+						urgency: responsePayload.urgency,
+						suggested_action: responsePayload.suggested_action ?? null,
+						source: responsePayload.source ?? null,
+						normalized_symptoms: normalizedSymptoms,
+						iot_flags: iotFlags,
+					});
+				if (insertErr) {
+					console.error("symptom-history insert failed:", insertErr.message);
+				}
+			})();
 		}
 
 		return NextResponse.json(responsePayload);
